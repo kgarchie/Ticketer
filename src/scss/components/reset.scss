@@ -1,0 +1,15 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --accent: hsl(246, 83%, 67%);
+  --font: 'Lato', sans-serif;
+  --secondary: hsl(184, 70%, 54%);
+  --white: #F9FBFF;
+  --dark: #777777;
+}

@@ -1,0 +1,58 @@
+import {UserAuth} from "~/types";
+import {updateNotifications} from "~/helpers/frontEndHelpers";
+// Note these files are ran in alphabetical order, it's imperative that this file is ran before websocket.client.ts
+
+export default defineNuxtPlugin(async () => {
+    let _user_id: string | null = null
+    const userState = useUser()
+
+    if (userState.value.user_id) return
+
+    // @ts-ignore
+    let user = await useCookie('auth')?.value as UserAuth
+
+    if (user == null || user?.user_id == '') {
+        const {data: response} = await useFetch('/api/auth/identity')
+
+        if (response?.value?.statusCode === 200) {
+            user = response.value.body.data as UserAuth
+            _user_id = user.user_id
+
+            // @ts-ignore
+            let auth_user_token = await useCookie('auth').value?.auth_key
+
+            if (auth_user_token === '') {
+                useCookie<UserAuth | undefined>('auth', {expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365 * 10)}).value = {
+                    // @ts-ignore
+                    auth_key: response.value.body.auth_key,
+                    user_id: _user_id,
+                    // @ts-ignore
+                    is_admin: response.value.body.is_admin,
+                } as UserAuth
+                console.log('Auth cookie set | forcefully')
+            }
+
+            console.log('User fetched')
+
+
+            userState.value = user
+        } else {
+            console.log("User could not be fetched")
+        }
+    } else {
+        console.log('User Cookie found | Checking if valid...')
+        const {data: response} = await useFetch(`/api/user/${user.user_id}`)
+
+        if (response?.value?.statusCode === 200) {
+            console.log('User is valid')
+            userState.value = user
+        } else {
+            // remove cookie and reload
+            console.log('User is invalid | Removing cookie')
+            useCookie('auth').value = null
+            window.location.reload()
+        }
+    }
+
+    updateNotifications(useNotifications(), userState.value.user_id)
+})

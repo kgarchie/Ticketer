@@ -1,0 +1,30 @@
+@import "components/reset";
+@import "components/chat/chat_ui";
+@import "components/dashboard/dashboard";
+@import "components/table/view";
+@import "components/notification";
+@import "components/nav";
+
+.not_active {
+  visibility: hidden;
+  cursor: unset;
+  pointer-events: none;
+  display: none;
+}
+
+.is-absolute{
+  position: absolute;
+}
+
+.sentence{
+  text-transform: capitalize;
+}
+
+//a.is-primary{
+//  //background-color: hsl(184, 70%, 54%) !important;
+//  background: linear-gradient(90deg, hsl(184, 70%, 64%) 0%, hsl(176, 68%, 54%) 100%) !important;
+//
+//  &:hover{
+//    background: linear-gradient(90deg, hsl(184, 70%, 64%) 0%, hsl(176, 68%, 54%) 100%) !important;
+//  }
+//}

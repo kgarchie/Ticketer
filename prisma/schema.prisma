@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db" // env("DATABASE_URL")
+}
+
+model Company {
+  id      Int       @id @default(autoincrement())
+  name    String    @unique
+  User    User[]
+  Paybill Paybill[]
+}
+
+model EphemeralUser {
+  id         Int      @id @default(autoincrement())
+  user_id    String   @unique
+  created_at DateTime @default(now())
+  is_active  Boolean  @default(false)
+}
+
+model Token {
+  id         Int      @id @default(autoincrement())
+  token      String   @unique
+  is_valid   Boolean  @default(true)
+  created_at DateTime @default(now())
+  is_active  Boolean  @default(false)
+  User       User?    @relation(fields: [userId], references: [id])
+  userId     Int?
+}
+
+model User {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  name       String
+  companyId  Int?
+  company    Company? @relation(fields: [companyId], references: [id])
+  is_admin   Boolean  @default(false)
+  is_active  Boolean  @default(false)
+  user_id    String?  @unique
+  password   String?
+  token      Token[]
+  created_at DateTime @default(now())
+}
+
+model Ticket {
+  id               Int       @id @default(autoincrement())
+  transaction_date DateTime
+  reference        String    @unique
+  safaricom_no     String
+  name             String
+  paybill_no       String
+  airtel_no        String
+  issue            String    @default("Default")
+  amount           Float
+  a_info           String?
+  urgency          String    @default("Default")
+  created_at       DateTime  @default(now())
+  resolved_at      DateTime?
+  status           String    @default("Open")
+  company          String?
+  creator          String?
+  deleted          Boolean   @default(false)
+  user_id          String?
+  chats            Chat[]
+  comments         Comment[]
+}
+
+model Comment {
+  id            Int       @id @default(autoincrement())
+  comment       String
+  ticketId      Int
+  ticket        Ticket    @relation(fields: [ticketId], references: [id])
+  parentId      Int?
+  parent        Comment?  @relation("ChildComments", fields: [parentId], references: [id])
+  createdAt     DateTime  @default(now())
+  commentor     String
+  ChildComments Comment[] @relation("ChildComments")
+}
+
+model Chat {
+  id         Int       @id @default(autoincrement())
+  ticketId   Int?
+  ticket     Ticket?   @relation(fields: [ticketId], references: [id])
+  created_at DateTime  @default(now())
+  chat_id    String    @unique
+  Message    Message[]
+}
+
+model Message {
+  id           Int      @id @default(autoincrement())
+  message      String
+  created_at   DateTime @default(now())
+  opened       Boolean  @default(false)
+  chatId       Int
+  chat         Chat     @relation(fields: [chatId], references: [id])
+  from_user_id String?
+  to_user_id   String?
+}
+
+model Paybill {
+  id        Int     @id @default(autoincrement())
+  number    Int
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+}
+
+model Notification {
+  id          Int      @id @default(autoincrement())
+  type        String
+  message     String
+  created_at  DateTime @default(now())
+  opened      Boolean  @default(false)
+  for_user_id String?
+}

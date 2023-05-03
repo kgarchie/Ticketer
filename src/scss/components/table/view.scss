@@ -1,0 +1,14 @@
+.table.is-truncated {
+  width: 100%;
+  table-layout: fixed;
+  white-space: nowrap;
+
+  td {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &:first-child {
+      text-overflow: clip;
+    }
+  }
+}

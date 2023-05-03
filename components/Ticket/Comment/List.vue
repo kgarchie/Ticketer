@@ -1,0 +1,129 @@
+<template>
+    <div class="content box">
+        <p>
+            <strong>{{ comment?.comment.split(' : ')[0] }}</strong>
+            <br>
+            {{ comment?.comment.split(' : ')[1] }}
+            <br>
+            <small>
+                <a @click.prevent="showReplyForm(comment)">Reply</a> · <a
+                    v-if="comment?.commentor.toString() === user.user_id" @click.prevent="deleteComment(comment)">Delete ·
+            </a>
+                {{ formatDate(comment?.createdAt) }}
+            </small>
+        </p>
+        <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm" />
+        <!-- display child comments in recursive nest -->
+        <div v-if="comment?.children.length > 0">
+            <TicketCommentList v-for="child in comment?.children" :key="child.id" :comment="child"
+                                   :ticket="props.ticket" />
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+import {SocketStatus} from "~/types";
+
+const user = useUser()
+
+const props = defineProps({
+    comment: {
+        type: Object,
+        required: true
+    },
+    ticket: {
+        type: Object,
+        required: true
+    }
+})
+
+
+if (props.comment) {
+    props.comment.children = computed(() => {
+        // console.log(props.ticket.comments)
+        return props.ticket.comments.filter((comment: any) => comment?.parentId === props?.comment?.id)
+    })
+    // console.log(props.comment.children)
+}
+
+let commentToReply = ref<Comment | null>(null)
+
+function showReplyForm(comment: any) {
+    commentToReply.value = comment
+}
+
+function cancelReplyForm() {
+    commentToReply.value = null
+}
+
+async function submitComment(comment: string) {
+    if (comment === '') return alert('Please enter a comment before submitting')
+    const { data: db_user } = await useFetch(`/api/user/${user.value.user_id}`)
+
+    if (db_user?.value?.statusCode === 200) {
+        // prepend name to comment
+        // @ts-ignore
+        comment = `${db_user.value.body?.data.name || db_user.value.body?.data.user_id} : ${comment}`
+        // console.log(comment)
+
+        const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
+            method: 'POST',
+            body: JSON.stringify({
+                comment: comment,
+                commentor: user.value.user_id,
+                parentId: commentToReply?.value?.id || null
+            })
+        })
+
+        if (response?.value?.statusCode !== 200) {
+            console.log(response.value.body)
+            alert('An error occurred')
+        } else {
+            let comment = response?.value?.body?.data
+
+            // console.log(comment)
+
+            // if comment doesn't exist in comments array, add it
+            if(useWsServerStatus().value !== SocketStatus.OPEN){
+                props.ticket.comments.push(comment)
+            } else {
+                setTimeout(() => {
+                    if (!props.ticket.comments.find((c: any) => c.id === comment.id)) {
+                        props.ticket.comments.push(comment)
+                        console.log('comment added via post request')
+                    } else {
+                        console.log('comment added via websocket')
+                    }
+                }, 1000);
+            }
+        }
+    } else {
+        alert('An error occurred; refreshing the page')
+        location.reload()
+    }
+
+    commentToReply.value = null
+}
+
+async function deleteComment(comment: any) {
+    const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment/delete`, {
+        method: 'POST',
+        body: { commentId: comment.id }
+    })
+
+    if (response?.value?.statusCode !== 200) {
+        alert('An error occurred')
+        console.log(response?.value?.body)
+    }
+}
+
+function formatDate(dateString: string) {
+    const date = new Date(dateString)
+    return date.toLocaleString()
+}
+
+</script>
+<style scoped>
+.box {
+    box-shadow: inset 0 0 0 1px #ccc;
+}
+</style>
