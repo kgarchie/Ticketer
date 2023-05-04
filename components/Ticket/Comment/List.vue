@@ -67,11 +67,11 @@ async function submitComment(comment: string) {
 
         const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
             method: 'POST',
-            body: JSON.stringify({
+            body: {
                 comment: comment,
                 commentor: user.value.user_id,
                 parentId: commentToReply?.value?.id || null
-            })
+            }
         })
 
         if (response?.value?.statusCode !== 200) {
@@ -97,8 +97,7 @@ async function submitComment(comment: string) {
             }
         }
     } else {
-        alert('An error occurred; refreshing the page')
-        location.reload()
+        alert('An error occurred; try refreshing the page')
     }
 
     commentToReply.value = null

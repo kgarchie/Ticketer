@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
     const page = JSON.parse(decoded_parameters).page || 0
     const filter = JSON.parse(decoded_parameters).filter || null
 
-
+    if(filter !== null){
     return {
         statusCode: 200,
         type: HttpResponseType.SUCCESS,
@@ -29,6 +29,16 @@ export default defineEventHandler(async (event) => {
                 },
                 skip: page * 10,
                 take: 10
+            })
+        } as Payload
+    } as HttpResponseTemplate}
+
+    return {
+        statusCode: 200,
+        type: HttpResponseType.SUCCESS,
+        body: {
+            data: await prisma.ticket.findMany({
+                skip: page * 10,
             })
         } as Payload
     } as HttpResponseTemplate

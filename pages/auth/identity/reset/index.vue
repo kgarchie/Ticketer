@@ -51,11 +51,6 @@ const reset = async () => {
     }
 }
 
-onMounted(async () => {
-    if (!user.auth_key || user.auth_key === '') {
-        await navigateTo('/auth/identity/login')
-    }
-})
 </script>
 
 <style scoped>
