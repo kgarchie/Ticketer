@@ -46,7 +46,6 @@ model User {
   password            String?
   token               Token[]
   created_at          DateTime              @default(now())
-  PasswordResetTokens PasswordResetTokens[]
 }
 
 model Ticket {
