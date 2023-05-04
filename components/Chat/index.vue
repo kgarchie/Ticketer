@@ -348,9 +348,17 @@ function showChatButton() {
     }
 }
 
+function positionMessages() {
+    nextTick(() => {
+        // @ts-ignore
+        document.getElementById("messages_container").scrollTop = document.getElementById("messages_container").scrollHeight;
+    })
+}
+
 getChats()
 
 watch(useNewMessage(), newMessage => {
+    console.log("new message", newMessage)
     let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
 
     if (chat && newMessage) {
@@ -370,6 +378,10 @@ watch(useNewMessage(), newMessage => {
     } else {
         getChats()
     }
+
+
+    positionMessages()
+    show_all_unread_count()
 })
 
 </script>

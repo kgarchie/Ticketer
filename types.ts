@@ -1,5 +1,5 @@
-import { WebSocket } from "ws";
-import {Message, Comment, Ticket} from "@prisma/client";
+import {WebSocket} from "ws";
+import {Comment, Message, Ticket} from "@prisma/client";
 
 /*
     *  Define custom types here
@@ -19,6 +19,13 @@ export type MessageTemplate = {
 
 export type Payload = {
     data: Object | Message | Notification | Comment | Ticket
+}
+
+export type SearchQuery = {
+    reference_number: string | undefined,
+    userNameOrEmail: string | undefined,
+    date_from: Date | undefined,
+    date_to: Date | undefined
 }
 
 export enum SocketResponseType {
@@ -161,6 +168,7 @@ export enum CannedResponseMessages {
     NO_CHAT_PROVIDED = "No chat provided",
     NO_COMPANY_ID_PROVIDED = "No company id provided",
 }
+
 export enum CHOICES {
     EA = "Excess Airtime", // Excess Airtime
     BWN = "Buying To Wrong Number", // Buying To Wrong Number
@@ -211,3 +219,94 @@ export enum Actor {
  */
 
 export const websocketPort = 9000;
+
+export function PASSWORD_RESET_TEMPLATE(link:any) {
+    return `<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Password Reset</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #1a1a1a;
+        }
+
+        .email-container {
+            width: 400px;
+            height: 300px;
+            background: #fff;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .email-header {
+            background: linear-gradient(to bottom right, #9b08ff, #1ae7a3);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-footer {
+            background: linear-gradient(to bottom right, #1ae7a3, #9b08ff);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        p {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+            font-weight: 300;
+            line-height: 22px;
+            margin: 0;
+        }
+
+        a {
+            color: #9b08ff;
+            text-decoration: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="email-content">
+        <div class="email-container">
+            <div class="email-header">
+                <h1>Password Reset</h1>
+            </div>
+            <div class="email-body">
+                <p>Hi there, you can reset your password by clicking this <strong><a href="${link}">link</a></strong>.</p>
+            </div>
+            <div class="email-footer">
+                <p>If you didn't request this, safely ignore this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+`
+}

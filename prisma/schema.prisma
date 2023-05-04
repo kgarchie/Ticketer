@@ -35,17 +35,18 @@ model Token {
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  name       String
-  companyId  Int?
-  company    Company? @relation(fields: [companyId], references: [id])
-  is_admin   Boolean  @default(false)
-  is_active  Boolean  @default(false)
-  user_id    String?  @unique
-  password   String?
-  token      Token[]
-  created_at DateTime @default(now())
+  id                  Int                   @id @default(autoincrement())
+  email               String                @unique
+  name                String
+  companyId           Int?
+  company             Company?              @relation(fields: [companyId], references: [id])
+  is_admin            Boolean               @default(false)
+  is_active           Boolean               @default(false)
+  user_id             String?               @unique
+  password            String?
+  token               Token[]
+  created_at          DateTime              @default(now())
+  PasswordResetTokens PasswordResetTokens[]
 }
 
 model Ticket {

@@ -1,6 +1,8 @@
-import {CannedResponseMessages, MessageTemplate, NOTIFICATION_TYPE} from "~/types";
+import {CannedResponseMessages, MessageTemplate, NOTIFICATION_TYPE, PASSWORD_RESET_TEMPLATE} from "~/types";
 import prisma from "~/helpers/script";
 import {EphemeralUser, User} from "@prisma/client";
+import nodemailer from "nodemailer";
+
 
 export async function getUser(user_id: string) {
     let user: User | EphemeralUser | null;
@@ -152,13 +154,13 @@ export async function notifyAllAdmins(message: string) {
         where: {
             is_admin: true
         }
-    }).then((data:any) => {
+    }).then((data: any) => {
         if (data) {
             return data;
         } else {
             return null;
         }
-    }).catch((err:any) => {
+    }).catch((err: any) => {
         console.log(err);
         return null;
     });
@@ -230,7 +232,7 @@ export async function messageAllAdmins(message: MessageTemplate) {
     }
 }
 
-export async function loginWithEmailPassword(email:string, password:string, previous_token_string:string | null) {
+export async function loginWithEmailPassword(email: string, password: string, previous_token_string: string | null) {
     return await prisma.user.findFirst({
         where: {
             email: email
@@ -286,4 +288,41 @@ export async function loginWithEmailPassword(email:string, password:string, prev
             console.log(error);
             return null
         })
+}
+
+export const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+        user: process.env.EMAIL,
+        pass: process.env.PASSWORD
+    }
+})
+
+
+export async function sendMail(mailDetails: any) {
+    try {
+        return await transporter.sendMail(mailDetails);
+    } catch (e) {
+        console.log(e);
+        return e;
+    }
+}
+
+export async function mailResetPasswordLink(email: string, origin: string, token: string, user_id: string) {
+    const link = `${origin}/auth/identity/reset/${user_id}&${email}/${token}`;
+
+    const message = "Click the link below to reset your password\n\n" + link;
+    const options = {
+        to: email,
+        subject: "Reset your password",
+        text: message,
+        html: PASSWORD_RESET_TEMPLATE(link)
+    }
+
+    console.log(message)
+
+    return await sendMail(options)
 }

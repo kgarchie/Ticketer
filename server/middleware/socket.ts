@@ -23,10 +23,10 @@ export default defineEventHandler((event) => {
     let server = event.node.res.socket?.server;
     if (!global.wss && server) {
         // Production
-        wss = new WebSocketServer({server: server});
+        // wss = new WebSocketServer({server: server});
 
         // Development
-        // wss = new WebSocketServer({ port: websocketPort, host: "localhost" });
+        wss = new WebSocketServer({ port: websocketPort, host: "localhost" });
 
         wss.on("connection", (ws) => {
             const client: Client = {

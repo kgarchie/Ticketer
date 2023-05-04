@@ -132,11 +132,11 @@
                                         </span>
                                     </a>
                                 </header>
-                                <form class="card-content" action="/search/general" method="get">
+                                <form class="card-content" method="get">
                                     <div class="content">
                                         <div class="control has-icons-left has-icons-right">
-                                            <input class="input" type="text" placeholder="Enter Phone Number or Name(s)"
-                                                   name="general_search_tag">
+                                            <input class="input" type="text" placeholder="Enter Email or Name(s)"
+                                                   name="name_of_email">
                                             <span class="icon is-medium is-left">
                                                 <i class="fa fa-search"></i>
                                             </span>
@@ -182,11 +182,16 @@
     </main>
 </template>
 <script setup lang="ts">
-import {STATUS} from "~/types";
+import {SearchQuery, STATUS} from "~/types";
 import {updateNewTickets, updateTicketsMetaData} from "~/helpers/frontEndHelpers";
 
 const tickets = useNewTickets()
 const ticketsMetaDataState = useTicketsMetaData()
+
+const search_date_from = ref<Date | null>(null)
+const search_date_to = ref<Date | null>(null)
+const search_transaction_code_or_reference = ref('')
+const email_or_name = ref('')
 
 const user = useUser().value
 const notifications = useNotifications()
@@ -202,6 +207,30 @@ async function pendTicket(id: any) {
             // @ts-ignore
             ticket.status = STATUS.P
         }
+    }
+}
+
+async function search(){
+    let query = {
+        reference_number: search_transaction_code_or_reference.value,
+        userNameOrEmail: email_or_name.value,
+        date_from: search_date_from.value,
+        date_to: search_date_to.value
+    } as SearchQuery
+
+    const {data: res} = await useFetch('/api/tickets/search', {
+        method: 'POST',
+        body: query
+    })
+
+    const response = res.value
+
+    if (response && response.statusCode === 200) {
+        // navigate to /tickets with response as props
+        const tickets = response.data
+        await navigateTo(`/tickets/search/${JSON.stringify({tickets})}`)
+    } else {
+        alert('Error searching tickets')
     }
 }
 
