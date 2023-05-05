@@ -60,10 +60,10 @@
                             <div class="control">
                                 <div class="select my-select">
                                     <select name="issue" v-model="issue">
-                                        <option value="EA">Excess Airtime</option>
-                                        <option value="BWN">Buying To Wrong Number</option>
-                                        <option value="NC">Not Credited</option>
-                                        <option value="O">Other</option>
+                                        <option :value="CHOICES.EA">Excess Airtime</option>
+                                        <option :value="CHOICES.BWN">Buying To Wrong Number</option>
+                                        <option :value="CHOICES.NC">Not Credited</option>
+                                        <option :value="CHOICES.O">Other</option>
                                     </select>
                                 </div>
                             </div>
@@ -120,11 +120,11 @@
                             <label class="label">Elevation</label>
                             <div class="control">
                                 <label class="radio">
-                                    <input type="radio" name="urgency" value="urgent" v-model="urgency">
+                                    <input type="radio" name="urgency" :value="URGENCY.U" v-model="urgency">
                                     Urgent
                                 </label>
                                 <label class="radio">
-                                    <input type="radio" name="urgency" value="emergency" v-model="urgency">
+                                    <input type="radio" name="urgency" :value="URGENCY.E" v-model="urgency">
                                     Emergency
                                 </label>
                             </div>
@@ -160,6 +160,8 @@
 </style>
 
 <script setup>
+import {CHOICES, URGENCY} from "~/types";
+
 let paybills = null
 let companies = null
 const {data: paybills_data} = await useFetch('/api/paybills')
@@ -180,12 +182,12 @@ const safaricom_no = ref('')
 const airtel_no = ref('')
 const amount = ref('')
 const name = ref('')
-const issue = ref('')
+const issue = ref(CHOICES.D)
 const company = ref('')
 const paybill_no = ref('')
 const transaction_date = ref('')
 const a_info = ref('')
-const urgency = ref('')
+const urgency = ref(URGENCY.D)
 const reference = ref('')
 const user = useUser()
 
@@ -202,7 +204,7 @@ const createNewTicket = async () => {
         a_info: a_info.value,
         urgency: urgency.value,
         reference: reference.value,
-        user_id: user.value.user_id
+        creator: user.value.user_id
     }
     const {data: response} = await useFetch('/api/tickets/create', {
         method: 'POST',

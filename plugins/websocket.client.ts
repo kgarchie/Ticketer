@@ -7,8 +7,7 @@ import {
     Payload,
     SocketResponseTemplate,
     SocketResponseType,
-    SocketStatus,
-    websocketPort
+    SocketStatus
 } from "~/types";
 import {updateTicketsMetaData} from "~/helpers/frontEndHelpers";
 
@@ -206,6 +205,9 @@ export default defineNuxtPlugin(() => {
                         console.log('Server status received')
                         useWsServerStatus().value = SocketStatus.OPEN
                         break;
+                    case  SocketResponseType.TAGGED:
+                        console.log('Tagged response received', SocketResponse)
+                        break
                     default:
                         console.log('Socket Response From Server received', SocketResponse)
                         break;

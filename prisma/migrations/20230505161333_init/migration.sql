@@ -13,6 +13,17 @@ CREATE TABLE "EphemeralUser" (
 );
 
 -- CreateTable
+CREATE TABLE "Token" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "token" TEXT NOT NULL,
+    "is_valid" BOOLEAN NOT NULL DEFAULT true,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "is_active" BOOLEAN NOT NULL DEFAULT false,
+    "userId" INTEGER,
+    CONSTRAINT "Token_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "User" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "email" TEXT NOT NULL,
@@ -22,7 +33,6 @@ CREATE TABLE "User" (
     "is_active" BOOLEAN NOT NULL DEFAULT false,
     "user_id" TEXT,
     "password" TEXT,
-    "token" TEXT,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "User_companyId_fkey" FOREIGN KEY ("companyId") REFERENCES "Company" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
@@ -45,8 +55,7 @@ CREATE TABLE "Ticket" (
     "status" TEXT NOT NULL DEFAULT 'Open',
     "company" TEXT,
     "creator" TEXT,
-    "deleted" BOOLEAN NOT NULL DEFAULT false,
-    "user_id" TEXT
+    "deleted" BOOLEAN NOT NULL DEFAULT false
 );
 
 -- CreateTable
@@ -107,7 +116,13 @@ CREATE UNIQUE INDEX "Company_name_key" ON "Company"("name");
 CREATE UNIQUE INDEX "EphemeralUser_user_id_key" ON "EphemeralUser"("user_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Token_token_key" ON "Token"("token");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_name_key" ON "User"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_user_id_key" ON "User"("user_id");

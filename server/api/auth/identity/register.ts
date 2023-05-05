@@ -36,6 +36,9 @@ export default defineEventHandler(async (event) => {
                     },
                     {
                         email: details.email
+                    },
+                    {
+                        name: details.name
                     }
                 ]
             }

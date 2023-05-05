@@ -5,12 +5,12 @@ import {
     CannedResponseMessages,
     CommentAct,
     HttpResponseTemplate,
-    HttpResponseType,
+    HttpResponseType, NOTIFICATION_TYPE,
     Payload,
     SocketResponseTemplate,
     SocketResponseType
 } from "~/types";
-import {notifyAllConnectedClients} from "~/helpers/socketHelpers";
+import {getConnectedClientSocket, notifyAllConnectedClients, socketSendData} from "~/helpers/socketHelpers";
 
 export default defineEventHandler(async (event) => {
         const ticketId = event.context.params?.id as string | null;
@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
         }
 
         // get data from post body
-        const {comment, commentor, parentId} = await readBody(event)
+        const {comment, commentor, parentId, tagged} = await readBody(event)
 
         let newComment: any = null
 
@@ -102,6 +102,32 @@ export default defineEventHandler(async (event) => {
             } as SocketResponseTemplate
 
             notifyAllConnectedClients(response)
+
+            // send notification to tagged users
+            if (tagged) {
+                for (const user of tagged) {
+                    const notification = await prisma.notification.create({
+                        data: {
+                            message: `${commentor} tagged you in a comment`,
+                            for_user_id: user.user_id,
+                            type: NOTIFICATION_TYPE.T
+                        }
+                    })
+
+                    const response = {
+                        statusCode: 200,
+                        type: SocketResponseType.NOTIFICATION,
+                        body: {
+                            data: notification
+                        } as Payload
+                    } as SocketResponseTemplate
+
+                    const socket = getConnectedClientSocket(user.user_id)
+                    if (socket) {
+                        socketSendData(socket, JSON.stringify(response))
+                    }
+                }
+            }
 
             return {
                 statusCode: 200,

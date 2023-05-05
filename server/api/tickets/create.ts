@@ -44,36 +44,6 @@ export default defineEventHandler(async (event) => {
     ticket.paybill_no = ticket.paybill_no.toString()
     ticket.status = STATUS.O
 
-    // TODO: refactor for type safety
-    switch (ticket.urgency) {
-        case "urgent":
-            ticket.urgency = URGENCY.U;
-            break;
-        case "emergency":
-            ticket.urgency = URGENCY.E;
-            break;
-        default:
-            ticket.urgency = URGENCY.D;
-    }
-
-    switch (ticket.issue) {
-        case CHOICES.EA:
-            ticket.issue = CHOICES.EA;
-            break;
-        case CHOICES.BWN:
-            ticket.issue = CHOICES.BWN;
-            break;
-        case CHOICES.NC:
-            ticket.issue = CHOICES.NC;
-            break;
-        case CHOICES.O:
-            ticket.issue = CHOICES.O;
-            break;
-        default:
-            ticket.issue = CHOICES.D;
-            break;
-    }
-
     // create ticket in prisma database
     const createdTicket = await prisma.ticket.create({
         data: ticket

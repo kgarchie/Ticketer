@@ -7,16 +7,18 @@
             <br>
             <small>
                 <a @click.prevent="showReplyForm(comment)">Reply</a> · <a
-                    v-if="comment?.commentor.toString() === user.user_id" @click.prevent="deleteComment(comment)">Delete ·
+                    v-if="comment?.commentor.toString() === user.user_id" @click.prevent="deleteComment(comment)">Delete
+                ·
             </a>
                 {{ formatDate(comment?.createdAt) }}
             </small>
         </p>
-        <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm" />
+        <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm"
+                           :taggable="taggable_computed"/>
         <!-- display child comments in recursive nest -->
-        <div v-if="comment?.children.length > 0">
+        <div v-if="(comment.children && comment?.children.length > 0)">
             <TicketCommentList v-for="child in comment?.children" :key="child.id" :comment="child"
-                                   :ticket="props.ticket" />
+                               :ticket="ticket" :taggable="taggable_computed"/>
         </div>
     </div>
 </template>
@@ -33,9 +35,15 @@ const props = defineProps({
     ticket: {
         type: Object,
         required: true
+    },
+    taggable: {
+        type: Object as PropType<any>,
+        required: false
     }
 })
 
+// console.log(props.taggable)
+const taggable_computed = computed(() => props.taggable)
 
 if (props.comment) {
     props.comment.children = computed(() => {
@@ -55,9 +63,10 @@ function cancelReplyForm() {
     commentToReply.value = null
 }
 
-async function submitComment(comment: string) {
+async function submitComment(payload: any) {
+    let {comment, tagged} = payload
     if (comment === '') return alert('Please enter a comment before submitting')
-    const { data: db_user } = await useFetch(`/api/user/${user.value.user_id}`)
+    const {data: db_user} = await useFetch(`/api/user/${user.value.user_id}`)
 
     if (db_user?.value?.statusCode === 200) {
         // prepend name to comment
@@ -65,17 +74,18 @@ async function submitComment(comment: string) {
         comment = `${db_user.value.body?.data.name || db_user.value.body?.data.user_id} : ${comment}`
         // console.log(comment)
 
-        const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
+        const {data: response} = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
             method: 'POST',
             body: {
                 comment: comment,
                 commentor: user.value.user_id,
-                parentId: commentToReply?.value?.id || null
+                parentId: commentToReply?.value?.id || null,
+                tagged: tagged
             }
         })
 
         if (response?.value?.statusCode !== 200) {
-            console.log(response.value.body)
+            console.log(response.value?.body)
             alert('An error occurred')
         } else {
             let comment = response?.value?.body?.data
@@ -83,7 +93,7 @@ async function submitComment(comment: string) {
             // console.log(comment)
 
             // if comment doesn't exist in comments array, add it
-            if(useWsServerStatus().value !== SocketStatus.OPEN){
+            if (useWsServerStatus().value !== SocketStatus.OPEN) {
                 props.ticket.comments.push(comment)
             } else {
                 setTimeout(() => {
@@ -104,9 +114,9 @@ async function submitComment(comment: string) {
 }
 
 async function deleteComment(comment: any) {
-    const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment/delete`, {
+    const {data: response} = await useFetch(`/api/tickets/${props.ticket.id}/comment/delete`, {
         method: 'POST',
-        body: { commentId: comment.id }
+        body: {commentId: comment.id}
     })
 
     if (response?.value?.statusCode !== 200) {

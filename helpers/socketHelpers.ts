@@ -111,7 +111,7 @@ export async function notifyAllAndConnectedAdmins(response: SocketResponseTempla
 
     if (admins.length > 0) {
         for (const admin of admins) {
-            const adminSocket = global.clients.find((client) => client.user_id === admin.user_id)
+            const adminSocket = getConnectedClientSocket(admin.user_id as string)
 
             if (adminSocket) {
                 let notification = await prisma.notification.create({
@@ -130,8 +130,13 @@ export async function notifyAllAndConnectedAdmins(response: SocketResponseTempla
                     } as Payload
                 } as SocketResponseTemplate
 
-                socketSendData(adminSocket.Socket, JSON.stringify(response))
+                socketSendData(adminSocket, JSON.stringify(response))
             }
         }
     }
+}
+
+
+export function getConnectedClientSocket(user_id: string) {
+    return global.clients.find((client) => client.user_id === user_id)?.Socket ?? null
 }

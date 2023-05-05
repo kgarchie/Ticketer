@@ -194,10 +194,6 @@ function concealChat() {
     document.getElementById('chat')?.classList.remove('is-open')
 }
 
-// function message_isRevealed() {
-//     return chat_isRevealed.value && chat_id.value !== ''
-// }
-
 const message_isRevealed = computed(() => {
     return chat_isRevealed.value && chat_id.value !== ''
 })
@@ -252,7 +248,7 @@ async function getChats() {
                 to_user: admin,
                 created_at: new Date(),
                 ticketId: null,
-                chat_id: uuidv4()
+                chat_id: null
             })
         }
     })

@@ -10,7 +10,7 @@ import {socketSendMessage} from "~/helpers/socketHelpers";
 export default defineEventHandler(async (event) => {
     const message_object = await readBody(event) as MessageTemplate;
 
-    if (!message_object.message_to || !message_object.user_id || !message_object.message_body || !message_object.chat_id || message_object.chat_id === "") {
+    if (!message_object.message_to || !message_object.user_id || !message_object.message_body) {
         return {
             statusCode: 400,
             type: HttpResponseType.ERROR,

@@ -37,7 +37,8 @@ export enum SocketResponseType {
     HEARTBEAT = "heartbeat",
     ACTION = "action",
     ERROR = "error",
-    STATUS = "status"
+    STATUS = "status",
+    TAGGED = "tagged",
 }
 
 export type Action = {
@@ -89,7 +90,7 @@ export type ChatsResponseObject = {
     id: string,
     created_at: Date,
     ticketId: number | null,
-    chat_id: string,
+    chat_id: string | null,
     Message: Message[],
     to_user: {
         name: string | null,
@@ -205,7 +206,8 @@ export enum TicketAct {
 export enum CommentAct {
     DELETE = "DELETE",
     CREATE = "CREATE",
-    UPDATE = "UPDATE"
+    UPDATE = "UPDATE",
+    TAG = "TAG"
 }
 
 export enum Actor {

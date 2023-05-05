@@ -2,6 +2,7 @@ import {CannedResponseMessages, MessageTemplate, NOTIFICATION_TYPE, PASSWORD_RES
 import prisma from "~/helpers/script";
 import {EphemeralUser, User} from "@prisma/client";
 import nodemailer from "nodemailer";
+import {v4} from "uuid";
 
 
 export async function getUser(user_id: string) {
@@ -56,7 +57,7 @@ export async function getUser(user_id: string) {
 
 export async function getOrCreateChat(message_object: MessageTemplate) {
     let create = {
-        chat_id: message_object.chat_id
+        chat_id: message_object.chat_id || v4(),
     }
 
     // try to get chat from messages with from and to user that are the same as the message trying to be sent

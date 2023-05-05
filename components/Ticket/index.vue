@@ -79,11 +79,12 @@
             </article>
             <article class="comments">
                 <h3 class="is-5 raised">Comments</h3>
-                <div v-if="local_ticket?.comments.length > 0" v-for="comment in local_ticket.comments" :key="comment.id">
+                <div v-if="local_ticket?.comments.length > 0" v-for="comment in local_ticket.comments"
+                     :key="comment.id">
                     <div v-if="comment?.parentId === null">
                         <article class="media">
                             <div class="media-content">
-                                <TicketCommentList :comment="comment" :ticket="local_ticket"/>
+                                <TicketCommentList :comment="comment" :ticket="local_ticket" :taggable="taggable"/>
                             </div>
                         </article>
                     </div>
@@ -93,7 +94,7 @@
                     <p>No comments yet</p>
                 </div>
                 <div class="mt-3"></div>
-                <TicketCommentForm @comment="submitComment"/>
+                <TicketCommentForm @comment="submitComment" :taggable="taggable"/>
             </article>
         </div>
     </main>
@@ -114,6 +115,56 @@ const props = defineProps({
 })
 
 const local_ticket = ref(props.ticket)
+
+const admins = ref([])
+
+admins.value = await useFetch('/api/user/admins').data?.value?.body?.data
+
+// console.log(admins.value)
+
+// taggable is all people who have commented on this ticket and admins if they are not in the list
+// const taggable = computed(async () => {
+//     let taggable_user_ids = props.ticket.comments.map((comment: any) => comment.commentor)
+//     taggable_user_ids = [...new Set(taggable_user_ids)]
+//     // console.log(taggable_user_ids)
+//     const taggable: any = []
+//     // TODO: next time, fill this on retrieval of ticket
+//     for (const user_id of taggable_user_ids) {
+//         const name_or_user_id = await getUserName(user_id)
+//         taggable.push({name: name_or_user_id, user_id: user_id})
+//     }
+//
+//     // console.log(taggable)
+//
+//     admins?.value?.forEach((admin: any) => {
+//         if (!taggable_user_ids.includes(admin.user_id)) {
+//             taggable.push({name: admin.name, user_id: admin.user_id})
+//         }
+//     })
+//
+//     // console.log(taggable)
+//
+//     return taggable
+// })
+
+const taggable = [
+    {
+        "name": "9abd8841-b3ac-4b97-a3d7-b4ca70136661",
+        "user_id": "9abd8841-b3ac-4b97-a3d7-b4ca70136661"
+    },
+    {
+        "name": "52e12edf-8408-4341-a600-861d352e6935",
+        "user_id": "52e12edf-8408-4341-a600-861d352e6935"
+    },
+    {
+        "name": "Makena",
+        "user_id": "1"
+    },
+    {
+        "name": "Allan",
+        "user_id": "2"
+    }
+]
 
 async function submitComment(comment: string) {
     if (comment === '') return alert('Please enter a comment before submitting')
@@ -167,15 +218,16 @@ async function submitComment(comment: string) {
 async function getUserName(user_id: string) {
     const res = await $fetch(`/api/user/${user_id}`)
 
-    if (res?.statusCode === 200) {
-        // console.log(res.body.data)
-        userName.value = res.body?.data?.name || res.body?.data?.user_id
-    }
-
-    userName.value = user_id
+    // if (res?.statusCode === 200) {
+    //     // console.log(res.body.data)
+    //     userName.value = res.body?.data?.name || res.body?.data?.user_id
+    // }
+    //
+    // userName.value = user_id
+    return res.body?.data?.name || res.body?.data?.user_id
 }
 
-getUserName(props.ticket.user_id)
+userName.value = await getUserName(props.ticket.user_id)
 
 
 watch(useWsServerStatus(), value => {
@@ -202,7 +254,7 @@ watch(useNewTicketComment(), value => {
 watch(useCommentActions(), value => {
     if (value) {
         if (value.action === CommentAct.DELETE && value.ticket.id === props.ticket.id) {
-            local_ticket.value.comments = local_ticket.value.comments.filter((comment:Comment) => comment.id !== value.commentId)
+            local_ticket.value.comments = local_ticket.value.comments.filter((comment: Comment) => comment.id !== value.commentId)
         }
     }
 })

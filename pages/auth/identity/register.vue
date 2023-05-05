@@ -6,7 +6,7 @@
         <div class="hero-body is-justify-content-center is-align-items-center">
             <form class="is-flex is-flex-direction-column box" @submit.prevent="register">
                 <div class="column">
-                    <label for="name">Name</label>
+                    <label for="name">Username</label>
                     <input class="input is-primary" type="text" placeholder="Name" autocomplete="name"
                            id="name" v-model="name" required>
                 </div>
