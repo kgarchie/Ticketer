@@ -39,7 +39,6 @@
 </template>
 <script setup lang="ts">
 import { Message } from "@prisma/client";
-import { v4 as uuidv4 } from 'uuid'
 import { adminUser, ChatsResponseObject, SocketStatus } from "~/types";
 import { updateNewTickets, updateNotifications, updateTicketsMetaData } from "~/helpers/frontEndHelpers";
 
@@ -67,14 +66,24 @@ function show_all_unread_count() {
     if (process.client) {
         const indicator = document?.getElementById('new-message-indicator')
 
-        if (indicator) {
-            if (chats_with_unread_messages.length > 0) {
-                indicator.classList.remove('hidden')
-                indicator.innerHTML = chats_with_unread_messages.length.toString();
+        if(!chat_isRevealed){
+            if (indicator) {
+                if (chats_with_unread_messages.length > 0) {
+                    indicator.classList.remove('hidden')
+                    indicator.innerHTML = chats_with_unread_messages.length.toString();
+                } else {
+                    if (!indicator.classList.contains('hidden')) {
+                        indicator.classList.add('hidden')
+                    }
+                }
             } else {
-                if (!indicator.classList.contains('hidden')) {
+                if (indicator && !indicator.classList.contains('hidden')) {
                     indicator.classList.add('hidden')
                 }
+            }
+        } else {
+            if (indicator && !indicator.classList.contains('hidden')) {
+                indicator.classList.remove('hidden')
             }
         }
     }
@@ -186,6 +195,15 @@ function revealChat(event: any) {
 
     // add style to the chat button
     event.target.classList.add('is-open')
+
+    // remove the new message indicator
+    if (process.client) {
+        const indicator = document?.getElementById('new-message-indicator')
+
+        if (indicator && !indicator.classList.contains('hidden')) {
+            indicator.classList.add('hidden')
+        }
+    }
 }
 
 function concealChat() {
@@ -388,11 +406,17 @@ $accent: hsl(221, 73%, 63%);
     position: fixed;
     left: 20px;
     bottom: 20px;
+
+    @media screen and (max-width: 768px) {
+        left: 10px;
+        bottom: 10px;
+    }
 }
 
 #chat {
     left: 0;
     transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
+    bottom: 5px;
 }
 
 .is-open {
@@ -403,12 +427,8 @@ $accent: hsl(221, 73%, 63%);
 
     transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
 
-    //.new-message-indicator {
-    //  display: none;
-    //}
-
     @media screen and (max-width: 768px) {
-        left: 260px;
+        right: 0 !important;
     }
 }
 

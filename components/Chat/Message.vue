@@ -55,7 +55,7 @@ const props = defineProps({
     },
     chat_id: {
         type: String,
-        required: true
+        required: false
     }
 })
 

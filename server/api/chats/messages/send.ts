@@ -28,6 +28,14 @@ export default defineEventHandler(async (event) => {
     }
 
     const chat = await getOrCreateChat(message_object)
+    if(!chat) {
+        return {
+            statusCode: 400,
+            type: HttpResponseType.ERROR,
+            body: CannedResponseMessages.CANT_CREATE_CHAT
+        } as HttpResponseTemplate
+    }
+    message_object.chat_id = chat.chat_id
     const message = await createMessage(message_object)
 
     if (!chat || !message) {
