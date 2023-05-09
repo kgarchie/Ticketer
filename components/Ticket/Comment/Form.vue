@@ -19,7 +19,7 @@
             </div>
             <div class="field is-grouped">
                 <div class="control">
-                    <button class="button is-link" type="submit">Submit</button>
+                    <button class="button is-link" type="submit" id="submit-comment-button">Submit</button>
                 </div>
                 <div class="control">
                     <button class="button is-link is-light" type="reset">Cancel</button>
@@ -43,16 +43,19 @@ const tagged = reactive({
     value: [] as Array<any>
 })
 const editedComment = ref<any>('')
+const taggablePeople = ref<any>([])
+taggablePeople.value = await props.taggable
+// console.log(taggablePeople.value)
 
-const taggablePeople = computed(() => {
-    let tp = props.taggable as Array<any>
-    // take the comment value after the @ symbol, there can be multiple @ symbols, take the one after the last @ symbol
-    editedComment.value = comment.value
-    let commentValue = editedComment.value.split('@').pop()
-    // filter the taggable people by the comment value
-    return tp.filter((person: any) => person.name.toLowerCase().includes(commentValue.toLowerCase()))
-    // return props.taggable
-})
+// const taggablePeople = computed(() => {
+//     console.log(tp)
+//     // take the comment value after the @ symbol, there can be multiple @ symbols, take the one after the last @ symbol
+//     // editedComment.value = comment.value
+//     let commentValue = editedComment.value.split('@').pop()
+//     // // filter the taggable people by the comment value
+//     return tp.filter((person: any) => person.name.toLowerCase().includes(commentValue.toLowerCase()))
+//     // return props.taggable
+// })
 
 let displayTaggablePeople = false
 
@@ -64,25 +67,37 @@ const tagPerson = (user_id: any = null) => {
     }
     if (user_id) {
         let person: any = taggablePeople.value.find((person: any) => person.user_id === user_id)
-        tagged.value.push(person)
-        console.log(person)
+        if(!tagged.value.includes(person)) {
+            tagged.value.push(person)
+        }
+        // console.log(person)
         // replace the last @ symbol with the name of the person, there can be multiple @ symbols, take the one after the last @ symbol
-        let commentValue = editedComment.value.split('@').pop()
-        editedComment.value = editedComment.value.replace(`@${commentValue}`, `@${person.name} `)
-        comment.value = editedComment.value
+        let commentValue = comment.value.split('@').pop()
+        // console.log(commentValue)
+        // replace the last @ symbol with the name of the person
+        comment.value = comment.value.replace(`@${commentValue}`, `@${person.name} `)
+        // console.log(comment.value)
+        // hide the taggable people div
         displayTaggablePeople = false
     } else {
         // get the name of the person
         let person = taggablePeople.value[0]
-        let commentValue = editedComment.value.split('@').pop()
-        editedComment.value = editedComment.value.replace(`@${commentValue}`, `@${person.name} `)
-        comment.value = editedComment.value
+        // replace the last @ symbol with the name of the person, there can be multiple @ symbols, take the one after the last @ symbol
+        let commentValue = comment.value.split('@').pop()
+        // console.log(commentValue)
+        // replace the last @ symbol with the name of the person
+        comment.value = comment.value.replace(`@${commentValue}`, `@${person.name} `)
         // add the user_id to the tagged array
-        tagged.value.push(person)
+        if (!tagged.value.includes(person)) {
+            tagged.value.push(person)
+        }
     }
 
+    // remove the taggable person from the taggable people array
+    taggablePeople.value = taggablePeople.value.filter((person: any) => person.user_id !== user_id)
+
     // console.log(taggablePeople.value)
-    console.log(tagged.value)
+    // console.log(tagged.value)
 }
 
 // console.log(taggablePeople.value)
@@ -108,10 +123,18 @@ function recalculateHeight() {
 }
 
 // watch for changes in the comment and search taggable people
-watch(comment, value => {
+watch(comment, async value => {
     if (value.includes('@')) {
         displayTaggablePeople = true
         recalculateHeight()
+        // take the comment value after the @ symbol, there can be multiple @ symbols, take the one after the last @ symbol and filter the taggable people, display the taggable people like search
+        editedComment.value = comment.value
+        let commentValue = editedComment.value.split('@').pop()
+        // console.log(commentValue)
+        // filter the taggable people by the comment value
+        let teepee = await props.taggable
+        taggablePeople.value = teepee.filter((person: any) => person.name.toLowerCase().includes(commentValue.toLowerCase()))
+        // console.log(taggablePeople.value)
     } else {
         displayTaggablePeople = false
     }
@@ -130,7 +153,7 @@ onMounted(() => {
             displayTaggablePeople = false
         } else if (e.key === 'Enter' && e.ctrlKey) {
             // submit the comment
-            document.getElementById('commentForm')?.submit()
+            document.getElementById('submit-comment-button')?.click()
         }
 
         // if user presses backspace and starts to remove the word after the @ symbol, remove that person from the tagged array, even if they are not fully removed
@@ -144,6 +167,8 @@ onMounted(() => {
             if (person) {
                 // remove the person from the tagged array
                 tagged.value = tagged.value.filter((taggedPerson: any) => taggedPerson.user_id !== person.user_id)
+                // add the person back to the taggable people array
+                taggablePeople.value.push(person)
                 console.log(tagged.value)
             }
         }

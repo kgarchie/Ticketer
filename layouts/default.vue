@@ -82,33 +82,29 @@ const notifications = useNotifications()
 const is_authenticated = ref<boolean>(false)
 is_authenticated.value = !(user?.auth_key == '' || user?.auth_key == null)
 
-function logout() {
-    let cookie = useCookie<UserAuth | undefined>('auth').value = {
-        auth_key: null,
-        is_admin: false,
-        user_id: ''
-    } as UserAuth
-    console.log(cookie)
-    is_authenticated.value = false
+async function logout() {
+    const {data: response} = await useFetch('/api/auth/logout')
+    if (response?.value?.statusCode !== 200) {
+        let cookie = useCookie<UserAuth | undefined>('auth').value = {
+            auth_key: null,
+            is_admin: false,
+            user_id: ''
+        } as UserAuth
+        console.log(cookie)
+        is_authenticated.value = false
+    }
     window.location.href = '/auth/login'
 }
 
 async function markNotificationAsRead(id: any) {
-    const uuidRegex = new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')
+    const {data: response} = await useFetch(`/api/notifications/${id.toString()}/read`)
+    if (response?.value?.statusCode == 200) {
+        console.log('Notification marked as read')
 
-    if (!uuidRegex.test(id)) {
-        const {data: response} = await useFetch(`/api/notifications/${id.toString()}/read`)
-        if (response?.value?.statusCode == 200) {
-            console.log('Notification marked as read')
-
-            // Remove notification from the list
-            notifications.value = notifications.value.filter((notification) => notification.id != id.toString())
-        } else {
-            console.log(`Notification could not be marked as read | ${response?.value?.statusCode} | ${response?.value?.body}`)
-        }
-    } else {
         // Remove notification from the list
         notifications.value = notifications.value.filter((notification) => notification.id != id.toString())
+    } else {
+        console.log(`Notification could not be marked as read | ${response?.value?.statusCode} | ${response?.value?.body}`)
     }
 }
 

@@ -19,14 +19,14 @@ const ticket = ref({})
 const { data: response } = await useFetch(`/api/tickets/${id}`)
 
 if (response?.value?.statusCode === 200) {
-    ticket.value = response?.value?.body?.data
-    // console.log(ticket.value)
+    ticket.value = response?.value?.body
+    console.log(ticket.value)
 } else {
     console.log('No ticket found')
     if (process.client) {
         alert('Oops, That ticket doesn\'t exist')
 
-        await navigateTo('/tickets')
+        await navigateTo('/')
     }
 }
 

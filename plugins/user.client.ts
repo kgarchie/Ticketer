@@ -1,5 +1,5 @@
 import {UserAuth} from "~/types";
-import {updateNotifications} from "~/helpers/frontEndHelpers";
+import {updateNotifications} from "~/helpers/clientHelpers";
 // Note these files are ran in alphabetical order, it's imperative that this file is ran before websocket.client.ts
 
 export default defineNuxtPlugin(async () => {
@@ -15,7 +15,7 @@ export default defineNuxtPlugin(async () => {
         const {data: response} = await useFetch('/api/auth/identity')
 
         if (response?.value?.statusCode === 200) {
-            user = response.value.body.data as UserAuth
+            user = response.value.body as UserAuth
             _user_id = user.user_id
 
             // @ts-ignore
@@ -50,7 +50,7 @@ export default defineNuxtPlugin(async () => {
             // remove cookie and reload
             console.log('User is invalid | Removing cookie')
             useCookie('auth').value = null
-            window.location.reload()
+            alert('Your session has expired, please login again')
         }
     }
 

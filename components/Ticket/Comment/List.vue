@@ -71,7 +71,7 @@ async function submitComment(payload: any) {
     if (db_user?.value?.statusCode === 200) {
         // prepend name to comment
         // @ts-ignore
-        comment = `${db_user.value.body?.data.name || db_user.value.body?.data.user_id} : ${comment}`
+        comment = `${db_user.value.body?.name || db_user.value.body?.user_id} : ${comment}`
         // console.log(comment)
 
         const {data: response} = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
@@ -88,7 +88,7 @@ async function submitComment(payload: any) {
             console.log(response.value?.body)
             alert('An error occurred')
         } else {
-            let comment = response?.value?.body?.data
+            let comment = response?.value?.body
 
             // console.log(comment)
 
