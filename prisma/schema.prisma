@@ -30,8 +30,8 @@ model Token {
   is_valid   Boolean  @default(true)
   created_at DateTime @default(now())
   is_active  Boolean  @default(false)
-  User       User?    @relation(fields: [userId], references: [id])
-  userId     Int?
+  User       User     @relation(fields: [userId], references: [id])
+  userId     Int
 }
 
 model User {
@@ -42,7 +42,7 @@ model User {
   company    Company? @relation(fields: [companyId], references: [id])
   is_admin   Boolean  @default(false)
   is_active  Boolean  @default(false)
-  user_id    String?  @unique
+  user_id    String   @unique
   password   String?
   token      Token[]
   created_at DateTime @default(now())

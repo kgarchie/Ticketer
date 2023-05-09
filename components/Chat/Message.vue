@@ -55,7 +55,7 @@ const props = defineProps({
     },
     chat_id: {
         type: String,
-        required: false
+        required: true
     }
 })
 
@@ -73,9 +73,9 @@ async function sendMessage() {
     }
 
     let message = {
-        user_id: user.user_id,
-        message_to: props.to_user.user_id,
-        message_body: composed_message.value.trim(),
+        from_user_id: user.user_id,
+        to_user_id: props.to_user.user_id,
+        message: composed_message.value.trim(),
         chat_id: props.chat_id
     }
 
@@ -89,7 +89,7 @@ async function sendMessage() {
     // console.log(message)
 
     if (response.value?.statusCode === 200) {
-        let message = response.value.body?.data
+        let message = response.value.body
         // console.log(message)
 
         // if message does not exist in messages array

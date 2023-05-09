@@ -1,12 +1,6 @@
-import {
-    CannedResponseMessages,
-    Client,
-    ServerStatus,
-    SocketResponseTemplate,
-    SocketResponseType, websocketPort
-} from "~/types";
-import {WebSocketServer} from "ws"
-import {promptDetails, socketSendData} from "~/helpers/socketHelpers";
+import {Client, ServerStatus, TYPE, websocketPort, SocketTemplate, SocketStatus} from "~/types";
+import {WebSocket, WebSocketServer} from "ws"
+import {socketSendData} from "~/mvc/utils";
 
 // Declare the global WebSocket server
 declare global {
@@ -23,87 +17,55 @@ export default defineEventHandler((event) => {
     let server = event.node.res.socket?.server;
     if (!global.wss && server) {
         // Production
-        wss = new WebSocketServer({server: server});
+        // wss = new WebSocketServer({server: server});
 
         // Development
-        // wss = new WebSocketServer({ port: websocketPort, host: "localhost" });
+        wss = new WebSocketServer({port: websocketPort, host: "localhost"});
 
         wss.on("connection", (ws) => {
-            const client: Client = {
-                user_id: null,
-                Socket: ws
-            };
-
-            // add the client to the global clients array
-            clients.push(client);
-
-            // set the global clients array
-            global.clients = clients;
-
-            // Due to stability issues this may not always work. Need to introduce a retry mechanism or forced wait on the client side
-            setTimeout(() => {
-                promptDetails(client);
-            }, 500)
-
-
-            console.log(CannedResponseMessages.CLIENT_CONNECTED);
-
-            ws.on("close", () => {
-                clients = global.clients
-                if(clients?.length > 0) {
-                    clients = clients.filter((c) => c.Socket !== ws)
-                    console.log(CannedResponseMessages.CLIENT_DISCONNECTED, client.user_id)
-                    global.clients = clients;
-                }
-            });
-
             ws.on("message", (message: any) => {
-                // in need of a guard against DDOS attacks
-                let SocketResponse: SocketResponseTemplate | null = null;
+                // TODO: In need of a guard against DDOS attacks, need to implement a rate limiter
+                let SocketResponse: SocketTemplate | null = null;
 
                 try {
-                    SocketResponse = JSON.parse(message.toString()) as SocketResponseTemplate || null;
+                    SocketResponse = JSON.parse(message.toString()) as SocketTemplate || null;
                 } catch (e) {
-                    console.log(CannedResponseMessages.INVALID_JSON, message, "It needs to be of type SocketResponseTemplate")
-
                     const response = {
                         statusCode: 400,
-                        type: SocketResponseType.ERROR,
-                        body: CannedResponseMessages.INVALID_JSON
-                    } as SocketResponseTemplate
+                        type: TYPE.ERROR,
+                        body: "Invalid Json"
+                    } as SocketTemplate
 
                     socketSendData(ws, JSON.stringify(response))
+                    return
                 }
 
-
                 switch (SocketResponse?.type) {
-                    case SocketResponseType.DETAILS_RES:
+                    case TYPE.DETAILS_RES:
                         const user_id = SocketResponse?.body as string | null;
 
                         clients = global.clients;
 
-                        let client = clients.find((c) => c.Socket === ws) || null
-                        let message: string
-
                         if (!user_id) {
-                            // send a message to the client to confirm the connection
                             let response = JSON.stringify({
                                 statusCode: 200,
-                                type: SocketResponseType.ERROR,
-                                body: CannedResponseMessages.NO_ID_PROVIDED
-                            } as SocketResponseTemplate);
+                                type: TYPE.ERROR,
+                                body: "No User Id Sent To Socket Server"
+                            } as SocketTemplate);
 
                             socketSendData(ws, response)
                             break;
                         }
 
+                        let client = clients.find((c) => c.Socket === ws) || null
+
                         if (client) {
-                            client.user_id = user_id.toString();
-                            message = CannedResponseMessages.CLIENT_UPDATED
+                            client.user_id = user_id
+                            message = "Client Updated"
                             clients.push(client);
                         } else {
-                            clients.push({user_id: user_id.toString(), Socket: ws});
-                            message = CannedResponseMessages.CLIENT_ADDED
+                            clients.push({user_id: user_id, Socket: ws});
+                            message = "Client Added"
                         }
 
                         global.clients = clients;
@@ -113,19 +75,19 @@ export default defineEventHandler((event) => {
                         // send a message to the client to confirm the connection
                         let response = JSON.stringify({
                             statusCode: 200,
-                            type: SocketResponseType.DETAILS_RES,
+                            type: TYPE.DETAILS_RES,
                             body: message
-                        } as SocketResponseTemplate);
+                        } as SocketTemplate);
 
                         socketSendData(ws, response)
                         // removeDuplicates();
                         break;
-                    case SocketResponseType.STATUS:
+                    case TYPE.STATUS:
                         let res = JSON.stringify({
                             statusCode: 200,
-                            type: SocketResponseType.STATUS,
-                            body: ServerStatus.UP
-                        } as SocketResponseTemplate);
+                            type: TYPE.STATUS,
+                            body: SocketStatus.OPEN
+                        } as SocketTemplate);
 
                         socketSendData(ws, res)
                         break;
@@ -135,12 +97,48 @@ export default defineEventHandler((event) => {
                 }
 
             });
+
+            ws.on("close", () => {
+                console.log("Client disconnected")
+                // console.debug(ws)
+                global.clients = global.clients.filter((c) => c.Socket !== ws)
+            });
+
+            const client: Client = {
+                user_id: null,
+                Socket: ws
+            };
+
+            // add the client to the global clients array
+            clients.push(client)
+
+            // set the global clients array
+            global.clients = clients
+
+            // Due to stability issues this may not always work. Need to introduce a retry mechanism or forced wait on the client side
+            setTimeout(() => {
+                promptDetails(client)
+            }, 500)
+
+            console.log("Client connected")
         });
 
         // set the global WebSocket server
         global.wss = wss;
     }
 });
+
+export function promptDetails(client: Client) {
+    if (client.Socket) {
+        const response = JSON.stringify({
+            statusCode: 200,
+            type: TYPE.DETAILS_REQ
+        } as SocketTemplate)
+        socketSendData(client.Socket, response)
+    } else {
+        console.log("No client or socket provided")
+    }
+}
 
 function monitor() {
     const clients = global.clients;
@@ -152,14 +150,12 @@ function monitor() {
                 // console.log("Sending heartbeat to: " + client.user_id);
                 const response = JSON.stringify({
                     statusCode: 200,
-                    type: SocketResponseType.HEARTBEAT
-                } as SocketResponseTemplate)
+                    type: TYPE.HEARTBEAT
+                } as SocketTemplate)
 
                 socketSendData(client.Socket, response)
             }
         });
-
-        // removeDuplicates();
     } else {
         console.log("No clients connected");
     }
@@ -173,25 +169,6 @@ function monitorClientConnections() {
         monitor()
     }, 100000); // Send heartbeat every 100 seconds
 }
-
-function removeDuplicates() {
-    // if there are duplicate client_id with their sockets, close the former of the duplicate client and sockets and remove the duplicates
-    // note this also removes the previous client tab that was open if client opened a new tab/browser even if it's different user_id... bug
-    let local_clients = global.clients;
-    let client_ids = local_clients.map((c) => c.user_id);
-    let duplicate_client_ids = client_ids.filter((id, index) => client_ids.indexOf(id) != index);
-    let duplicate_clients = local_clients.filter((c) => duplicate_client_ids.includes(c.user_id));
-
-    let sockets = duplicate_clients.map((c) => c.Socket);
-    let duplicate_sockets = sockets.filter((s, index) => sockets.indexOf(s) != index);
-
-    duplicate_sockets.forEach((s) => {
-        s.close();
-    });
-
-    global.clients = local_clients.filter((c) => !duplicate_sockets.includes(c.Socket));
-}
-
 
 monitorClientConnections();
 

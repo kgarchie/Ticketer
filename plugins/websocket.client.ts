@@ -1,24 +1,15 @@
 import {Comment, Message, Notification, Ticket} from "@prisma/client";
-import {
-    Action,
-    Actor,
-    CommentAct,
-    NOTIFICATION_TYPE,
-    Payload,
-    SocketResponseTemplate,
-    SocketResponseType,
-    SocketStatus
-} from "~/types";
-import {updateTicketsMetaData} from "~/helpers/frontEndHelpers";
+import {CommentOperation, Initiator, SocketStatus, SocketTemplate, TYPE, websocketPort} from "~/types";
+import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
 const domain = window.location.hostname
-// const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
+const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
 
 // For Production
-const socket_url:string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -31,6 +22,7 @@ export default defineNuxtPlugin(() => {
 
     class ClientWebSocket {
         webSocket: WebSocket
+        detailsSent: boolean = false
 
         private async sendDetails() {
             const user = useUser().value
@@ -45,13 +37,14 @@ export default defineNuxtPlugin(() => {
             } else {
                 const response = JSON.stringify({
                     statusCode: 200,
-                    type: SocketResponseType.DETAILS_RES,
+                    type: TYPE.DETAILS_RES,
                     body: user.user_id
-                } as SocketResponseTemplate)
+                } as SocketTemplate)
 
                 await this.socketSendData(this.webSocket, response)
             }
 
+            this.detailsSent = true
             console.log('Details sent for user: ' + user.user_id)
         }
 
@@ -85,65 +78,69 @@ export default defineNuxtPlugin(() => {
                 if (WsServerStatusState.value !== SocketStatus.OPEN) {
                     WsServerStatusState.value = SocketStatus.OPEN
                 }
-                let payload: Payload
-                const SocketResponse = JSON.parse(event.data) as SocketResponseTemplate
+
+                const SocketResponse = JSON.parse(event.data) as SocketTemplate
                 // console.log("Received Message", SocketResponse)
                 switch (SocketResponse.type) {
-                    case SocketResponseType.HEARTBEAT:
+                    case TYPE.HEARTBEAT:
                         const response = JSON.stringify(
                             {
                                 statusCode: 200,
-                                type: SocketResponseType.HEARTBEAT
-                            } as SocketResponseTemplate
+                                type: TYPE.HEARTBEAT
+                            } as SocketTemplate
                         )
+
                         this.socketSendData(this.webSocket, response)
                         console.log('Heartbeat received and sent')
                         break;
-                    case SocketResponseType.DETAILS_REQ:
-                        this.sendDetails()
+                    case TYPE.DETAILS_REQ:
+                        if(!this.detailsSent) {
+                            this.sendDetails()
+                        }
+                        // flip back the switch
+                        this.detailsSent = false
                         break;
-                    case SocketResponseType.NOTIFICATION:
-                        payload = SocketResponse.body as Payload
-                        const notification = payload.data as Notification
-
+                    case TYPE.NOTIFICATION:
+                        const notification = SocketResponse.body as Notification
                         // if notification does not exist in notifications state, add it
                         if (!notificationsState.value.find((n: Notification) => n.id === notification.id)) {
                             notificationsState.value.unshift(notification)
                         }
-                        // console.log('Notification received', notification)
 
-                        if (notification.type === NOTIFICATION_TYPE.T) {
-                            if ('serviceWorker' in navigator) {
-                                if (Notification.permission === 'granted') {
-                                    navigator.serviceWorker.getRegistration().then(reg => {
-                                        reg?.showNotification(notification.message, {
-                                            body: notification.message,
-                                            icon: '/favicon.ico',
-                                        })
+                        if ('serviceWorker' in navigator) {
+                            if (Notification.permission === 'granted') {
+                                navigator.serviceWorker.getRegistration().then(reg => {
+                                    reg?.showNotification(notification.message, {
+                                        body: notification.message,
+                                        icon: '/favicon.ico',
                                     })
-                                } else {
-                                    alert(notification.message)
-                                }
+                                })
                             } else {
-                                alert("Browser does not support notifications")
+                                // make a sound
+                                const audio = new Audio('/notification.mp3')
+                                audio.play()
                             }
+                        } else {
+                            alert("Your browser doesn't support notifications. Please use a modern browser")
+                        }
+
+                        if (document.visibilityState !== 'visible') {
+                            const audio = new Audio('/notification.mp3')
+                            audio.play()
                         }
                         break;
-                    case SocketResponseType.MESSAGE:
-                        payload = SocketResponse.body as Payload
-                        const message = payload.data as Message
-
+                    case TYPE.MESSAGE:
+                        const message = SocketResponse.body.message as Message
+                        const fromUserName = SocketResponse.body.fromUserName as string
                         // console.log('User message received', message)
-
                         newMessageState.value = message
-
                         // console.log('New message state', useNewMessageState.value)
                         // check if tab is open
                         if (document.visibilityState !== 'visible') {
                             if (Notification.permission === 'granted') {
                                 navigator.serviceWorker.getRegistration().then(reg => {
-                                    reg?.showNotification(message.from_user_id?.toString().split('').splice(0, 6).join('') || 'New message', {
-                                        body: message.message || 'New message',
+                                    reg?.showNotification(fromUserName, {
+                                        body: message.message,
                                         icon: '/favicon.ico',
                                     })
                                 })
@@ -151,9 +148,8 @@ export default defineNuxtPlugin(() => {
                         }
                         // console.log(message)
                         break;
-                    case SocketResponseType.TICKET:
-                        payload = SocketResponse.body as Payload
-                        const new_ticket = payload.data as Ticket
+                    case TYPE.TICKET:
+                        const new_ticket = SocketResponse.body as Ticket
 
                         // if ticket is not in new tickets state, add it
                         if (!newTicketsState.value.find((t: Ticket) => t.id === new_ticket.id)) {
@@ -163,51 +159,38 @@ export default defineNuxtPlugin(() => {
                         updateTicketsMetaData(TicketsMetaDataState.value)
                         console.log('New ticket added')
                         break;
-                    case SocketResponseType.ACTION:
-                        const action = SocketResponse.body as Action
-                        const actor = action.actor
+                    case TYPE.UPDATE_TICKET:
+                        const ticket = SocketResponse.body as Ticket
 
-                        switch (actor) {
-                            case Actor.TICKET:
-                                const ticket = action.payload.data as Ticket
-                                // console.log(ticket)
-
-                                // find ticket in new tickets state, update it
-                                const ticketIndex = newTicketsState.value.findIndex((t: Ticket) => t.id === ticket.id)
-                                if (ticketIndex !== -1) {
-                                    newTicketsState.value[ticketIndex] = ticket
-                                } else {
-                                    console.log('Ticket found in new tickets state')
-                                }
-
-                                updateTicketsMetaData(TicketsMetaDataState.value)
-                                // console.log('Ticket action received', ticket, action)
-                                break;
-                            case Actor.COMMENT:
-                                const info = action.payload.data
-                                const act = info.action
-
-                                if (act === CommentAct.CREATE) {
-                                    // console.log('New comment received', comment)
-                                    newTicketCommentState.value = action.payload.data as Comment
-                                } else if (act === CommentAct.DELETE) {
-                                    console.log('Comment action received', info)
-                                    commentActionsState.value = ({
-                                        action: info.action,
-                                        ticket: info.ticket,
-                                        commentId: info.commentId
-                                    })
-                                }
-                                break;
+                        // find ticket in new tickets state, update it
+                        const ticketIndex = newTicketsState.value.findIndex((t: Ticket) => t.id === ticket.id)
+                        if (ticketIndex !== -1) {
+                            newTicketsState.value[ticketIndex] = ticket
+                        } else {
+                            console.log('Ticket found in new tickets state')
                         }
+
+                        updateTicketsMetaData(TicketsMetaDataState.value)
+                        // console.log('Ticket action received', ticket, action)
                         break;
-                    case SocketResponseType.STATUS:
+                    case TYPE.NEW_COMMENT:
+                        let newComment = SocketResponse.body as Comment
+                        // console.log('New comment received', newComment)
+                        newTicketCommentState.value = newComment
+                        break;
+                    case TYPE.DELETE_COMMENT:
+                        let comment = SocketResponse.body as Comment & { ticket: Ticket }
+                        // console.log('Comment action received', "Delete", comment)
+                        commentActionsState.value = ({
+                            action: CommentOperation.DELETE,
+                            ticket: comment.ticket,
+                            commentId: comment.id
+                        })
+                        break;
+                    case TYPE.STATUS:
                         console.log('Server status received')
                         useWsServerStatus().value = SocketStatus.OPEN
                         break;
-                    case  SocketResponseType.TAGGED:
-                        console.log('Tagged response received', SocketResponse)
-                        break
                     default:
                         console.log('Socket Response From Server received', SocketResponse)
                         break;
@@ -233,12 +216,12 @@ export default defineNuxtPlugin(() => {
         async pollWsStatus(maxRetries = 10) {
             console.log('Polling socket server status')
 
-            try{
+            try {
                 this.socketSendData(this.webSocket, JSON.stringify({
                     statusCode: 200,
-                    type: SocketResponseType.STATUS
-                } as SocketResponseTemplate))
-            } catch (e){
+                    type: TYPE.STATUS
+                } as SocketTemplate))
+            } catch (e) {
                 console.log(e)
 
                 if (WsServerStatusState.value !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
@@ -246,11 +229,11 @@ export default defineNuxtPlugin(() => {
                 } else if (WsServerStatusState.value !== SocketStatus.CLOSED && this.webSocket.readyState === WebSocket.CLOSED) {
                     WsServerStatusState.value = SocketStatus.CLOSED
                 } else if (this.webSocket.readyState === WebSocket.CLOSED) {
-                    try{
+                    try {
                         this.webSocket = new WebSocket(socket_url)
                         this.setUpSocket()
                         await new Promise(resolve => setTimeout(resolve, 3000))
-                    } catch (e){
+                    } catch (e) {
                         console.log(e)
                     }
                 }

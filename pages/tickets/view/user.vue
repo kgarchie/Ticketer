@@ -20,7 +20,7 @@ const tickets = ref<Ticket[]>([])
 if(user.user_id && user.user_id !== ''){
     const response = await $fetch(`/api/user/${user.user_id}/tickets`)
 
-    tickets.value = response?.body?.data
+    tickets.value = response?.body
 
     // console.log(tickets.value)
 

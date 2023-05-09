@@ -103,7 +103,8 @@ const user = useUser().value
 const props = defineProps({
     tickets: {
         type: Array as PropType<Ticket[]>,
-        required: true
+        required: false,
+        default: []
     }
 })
 

@@ -11,12 +11,13 @@
                 <div class="is-flex is-flex-direction-column message-list">
                     <ul class="people">
                         <li class="person" v-for="chat in  chats " :key="chat.id"
-                            @click="chat_id = chat.chat_id; to_user = getToUserAsProp(chat); markMessagesAsRead(chat); hideChatButton()">
+                            @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
                             <div class="message-preview">
                                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
-                                <span class="company-info" v-if=" user.is_admin ">{{ getCompanyName(chat) }}</span>
-                                <span class="email" v-if=" user.is_admin ">{{ getEmail(chat) }}</span>
-                                <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{ unread_count(chat.Message)
+                                <span class="company-info" v-if=" user.is_admin ">{{ chat.WithUser.company }}</span>
+                                <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
+                                <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
+                                    unread_count(chat.Message)
                                     }}</span>
                                 <span class="preview">{{ lastMessage(chat.Message) }}</span>
                                 <span class="time">{{ lastMessageTime(chat.Message) }}</span>
@@ -25,27 +26,28 @@
                         </li>
                     </ul>
                 </div>
-                <ChatMessage :messages=" messages " :to_user=" to_user " :chat_id=" chat_id " v-if=" message_isRevealed "
-                    @close=" closeChatBox " />
+                <ChatMessage :messages="messages" :to_user=" to_user " :chat_id="chat_id"
+                             v-if=" message_isRevealed "
+                             @close=" closeChatBox "/>
             </div>
         </div>
         <div>
             <span id="new-message-indicator" class="new-message-indicator hidden"></span>
-            <button class="button is-primary" id="chat" @click=" revealChat ">
+            <button class="button is-primary" id="chat" @click="revealChat">
                 Chat
             </button>
         </div>
     </div>
 </template>
 <script setup lang="ts">
-import { Message } from "@prisma/client";
-import { adminUser, ChatsResponseObject, SocketStatus } from "~/types";
-import { updateNewTickets, updateNotifications, updateTicketsMetaData } from "~/helpers/frontEndHelpers";
+import {Message} from "@prisma/client";
+import {UserChatObject, SocketStatus} from "~/types";
+import {updateNewTickets, updateNotifications, updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const user = useUser().value
 const WsServerStatusState = useWsServerStatus()
 
-const chats = ref<ChatsResponseObject[]>([])
+const chats = ref<UserChatObject[]>([])
 const chat_id = ref<string>('')
 const chat_isRevealed = ref<boolean>(false)
 let admins: any[] = []
@@ -60,32 +62,30 @@ function unread_count(eval_messages: Message[]) {
     return eval_messages.filter((message: Message) => !message.opened && message.from_user_id != user.user_id).length
 }
 
+
 function show_all_unread_count() {
     let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
+    // console.log(chats_with_unread_messages)
 
-    if (process.client) {
-        const indicator = document?.getElementById('new-message-indicator')
-
-        if(!chat_isRevealed){
-            if (indicator) {
-                if (chats_with_unread_messages.length > 0) {
-                    indicator.classList.remove('hidden')
-                    indicator.innerHTML = chats_with_unread_messages.length.toString();
-                } else {
-                    if (!indicator.classList.contains('hidden')) {
-                        indicator.classList.add('hidden')
-                    }
-                }
+    if (process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value) {
+        let new_message_indicator = document.getElementById('new-message-indicator')
+        if (new_message_indicator) {
+            if (chats_with_unread_messages.length > 0) {
+                new_message_indicator.classList.remove('hidden')
+                new_message_indicator.innerText = chats_with_unread_messages.length.toString()
             } else {
-                if (indicator && !indicator.classList.contains('hidden')) {
-                    indicator.classList.add('hidden')
-                }
-            }
-        } else {
-            if (indicator && !indicator.classList.contains('hidden')) {
-                indicator.classList.remove('hidden')
+                new_message_indicator.classList.add('hidden')
             }
         }
+    }
+}
+
+
+function getChatTitle(chat: any) {
+    if (chat.WithUser.name !== "Anonymous") {
+        return chat.WithUser.name
+    } else {
+        return chat.WithUser.user_id
     }
 }
 
@@ -124,49 +124,6 @@ function markMessagesAsRead(chat: any, force: boolean = false) {
     }
 }
 
-function getToUserAsProp(chat: any) {
-    function getProp(chat: any, propName: string, defaultValue: string): string {
-        return chat[propName] ? chat[propName] : chat.to_user?.[propName] ? chat.to_user[propName] : defaultValue;
-    }
-
-    let user = {
-        ...chat,
-        to_user: {
-            user_id: chat.to_user.user_id,
-            name: getProp(chat, "name", "Unregistered User"),
-            email: getProp(chat, "email", "No Email Info"),
-            company: getProp(chat, "company", "No Company Info"),
-            Message: chat.Message
-        }
-    }
-
-    return user.to_user
-}
-
-function getChatTitle(chat: any) {
-    if (chat.name) {
-        return chat.name;
-    } else {
-        return chat.to_user?.name || chat.to_user?.user_id || "Unregistered User"
-    }
-}
-
-function getCompanyName(chat: any) {
-    if (chat.company) {
-        return chat.company.name;
-    } else {
-        return chat.to_user?.company?.name || "No Company Info"
-    }
-}
-
-function getEmail(chat: any) {
-    if (chat.email) {
-        return chat.email;
-    } else {
-        return chat.to_user?.email || "No Email Info"
-    }
-}
-
 function lastMessage(Message: any[]) {
     try {
         let last = Message[Message.length - 1].message.split('').splice(0, 20).join('')
@@ -197,11 +154,10 @@ function revealChat(event: any) {
     event.target.classList.add('is-open')
 
     // remove the new message indicator
-    if (process.client) {
-        const indicator = document?.getElementById('new-message-indicator')
-
-        if (indicator && !indicator.classList.contains('hidden')) {
-            indicator.classList.add('hidden')
+    if(process.client){
+        let new_message_indicator = document.getElementById('new-message-indicator')
+        if (new_message_indicator) {
+            new_message_indicator.classList.add('hidden')
         }
     }
 }
@@ -210,6 +166,10 @@ function concealChat() {
     chat_isRevealed.value = false
 
     document.getElementById('chat')?.classList.remove('is-open')
+
+    setTimeout(() => {
+        show_all_unread_count()
+    }, 500)
 }
 
 const message_isRevealed = computed(() => {
@@ -217,13 +177,13 @@ const message_isRevealed = computed(() => {
 })
 
 async function getChats() {
-    let db_chats = await $fetch('/api/chats', {
+    chats.value = await $fetch('/api/chats', {
         method: 'POST',
         body: user.user_id.toString()
     }).then(
         (res: any) => {
             if (res.statusCode === 200) {
-                return res.body.data as ChatsResponseObject[]
+                return res.body as UserChatObject[]
             } else {
                 console.log(res.body)
                 return []
@@ -233,56 +193,8 @@ async function getChats() {
         console.log(e)
         return []
     })
-
-    // console.log(db_chats)
-
-    // filter out the normal chats
-    let admin_chats = db_chats.filter((chat: any) => chat.to_user?.is_admin).sort((a: any, b: any) => {
-        return new Date(b.Message[b.Message.length - 1]?.created_at).getTime() - new Date(a.Message[a.Message.length - 1]?.created_at).getTime()
-    })
-
-    admins = await $fetch('/api/user/admins').then(
-        (res: any) => {
-            if (res.statusCode === 200) {
-                return res.body.data as adminUser[]
-            } else {
-                console.log(res.body)
-                return []
-            }
-        }
-    ).catch((e: any) => {
-        console.log(e)
-        return []
-    })
-
-    // console.log(admins)
-
-    // if any admin is not in the chat list, add them
-    admins.forEach((admin: adminUser) => {
-        if (!admin_chats.find((chat: any) => chat.to_user.user_id === admin.user_id)) {
-            admin_chats.push({
-                id: (admin_chats.length + 1).toString(),
-                Message: [],
-                to_user: admin,
-                created_at: new Date(),
-                ticketId: null,
-                chat_id: null
-            })
-        }
-    })
-
-    // filter out the admins
-    db_chats = db_chats.filter((chat: any) => !chat.to_user?.is_admin).sort((a: any, b: any) => {
-        return new Date(b.Message[b.Message.length - 1]?.created_at).getTime() - new Date(a.Message[a.Message.length - 1]?.created_at).getTime()
-    })
-
-    // if user is admin, remove his own chat that was created before
-    admin_chats = admin_chats.filter((chat: any) => chat.to_user.user_id !== user.user_id)
-
-    chats.value = [...admin_chats, ...db_chats]
 
     show_all_unread_count()
-    // console.log(chats.value)
 }
 
 async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
@@ -403,48 +315,48 @@ watch(useNewMessage(), newMessage => {
 $accent: hsl(221, 73%, 63%);
 
 .Chat {
-    position: fixed;
-    left: 20px;
-    bottom: 20px;
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
 
-    @media screen and (max-width: 768px) {
-        left: 10px;
-        bottom: 10px;
-    }
+  @media screen and (max-width: 768px) {
+    left: 10px;
+    bottom: 10px;
+  }
 }
 
 #chat {
-    left: 0;
-    transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
-    bottom: 5px;
+  left: 0;
+  transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
+  bottom: 5px;
 }
 
 .is-open {
-    background: $accent;
-    color: white;
+  background: $accent;
+  color: white;
 
-    left: 310px !important;
+  left: 310px !important;
 
-    transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
+  transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
 
-    @media screen and (max-width: 768px) {
-        right: 0 !important;
-    }
+  @media screen and (max-width: 768px) {
+    right: 0 !important;
+  }
 }
 
 .new-message-indicator {
-    z-index: 100;
-    position: absolute;
-    background: $accent;
-    color: white;
-    border-radius: 50%;
-    padding: 0.1rem 0.6rem;
-    right: -23px;
-    top: -25px;
-    transition: all .3s ease-in-out;
+  z-index: 100;
+  position: absolute;
+  background: $accent;
+  color: white;
+  border-radius: 50%;
+  padding: 0.1rem 0.6rem;
+  right: -23px;
+  top: -25px;
+  transition: all .3s ease-in-out;
 
-    &.hidden {
-        display: none;
-    }
+  &.hidden {
+    display: none;
+  }
 }
 </style>

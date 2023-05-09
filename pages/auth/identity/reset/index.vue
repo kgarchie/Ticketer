@@ -12,6 +12,7 @@
                     <label for="email">Email</label>
                     <input class="input is-primary" type="email" placeholder="Email address" autocomplete="email"
                            id="email" v-model="email" required>
+                    <NuxtLink to="/auth/identity/login" class="has-text-primary">Login</NuxtLink>
                 </div>
                 <div class="column">
                     <button class="button is-primary is-fullwidth" type="submit" id="submit-btn">Reset
@@ -44,7 +45,10 @@ const reset = async () => {
 
         if (res?.statusCode === 200) {
             btn?.classList.remove('is-loading')
-            alert("Reset Email Sent Successfully")
+            setTimeout(() => {
+                alert('Please check your email for a reset link')
+            }, 1000)
+            await navigateTo('/')
         } else {
             console.log(res.body)
         }

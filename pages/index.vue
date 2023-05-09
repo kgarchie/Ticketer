@@ -183,7 +183,7 @@
 </template>
 <script setup lang="ts">
 import {SearchQuery, STATUS} from "~/types";
-import {updateNewTickets, updateTicketsMetaData} from "~/helpers/frontEndHelpers";
+import {updateNewTickets, updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const tickets = useNewTickets()
 const ticketsMetaDataState = useTicketsMetaData()
@@ -226,7 +226,7 @@ async function search(){
     const response = res.value
 
     if (response && response.statusCode === 200) {
-        // navigate to /tickets with response as props
+        //TODO: navigate to /tickets with response as props
         const tickets = response.data
         await navigateTo(`/tickets/search/${JSON.stringify({tickets})}`)
     } else {
