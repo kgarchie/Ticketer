@@ -34,9 +34,9 @@ const route = useRoute()
 // separate email and user id from user using split('&')
 const link_parameter = route.params.token
 const details_string = link_parameter.toString().split('&')
-const token = details_string[0]
-const user_id = details_string[1]
-const email = details_string[2]
+const user_id = details_string[0]
+const email = details_string[1]
+const token = link_parameter.slice(user_id.length + email.length + 2)
 const password1 = ref('')
 const password2 = ref('')
 

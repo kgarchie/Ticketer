@@ -195,9 +195,6 @@ export function PASSWORD_RESET_TEMPLATE(link:any) {
             height: 300px;
             background: #fff;
             border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         .email-header {

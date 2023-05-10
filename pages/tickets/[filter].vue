@@ -32,10 +32,10 @@ async function getData(){
     let uriEncoded = encodeURI(`/api/tickets/query/${JSON.stringify(query)}`)
     const {data: response} = await useFetch(uriEncoded)
 
-    // console.log(response.value.body.data)
+    // console.log(response?.value?.body)
 
     if (response.value !== null && response.value?.statusCode === 200){
-        tickets.value = response.value.body.data
+        tickets.value = response.value.body
     }
 }
 

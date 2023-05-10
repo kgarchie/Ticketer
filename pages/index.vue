@@ -198,7 +198,7 @@ const notifications = useNotifications()
 
 async function pendTicket(id: any) {
     if (user.is_admin) {
-        const { data: response } = await useFetch(`/api/tickets/${id}/open`)
+        const { data: response } = await useFetch(`/api/tickets/${id}/pend`)
 
         // update the ticket status
         // @ts-ignore

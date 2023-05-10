@@ -27,7 +27,7 @@ router.get('/:id', defineEventHandler(async event => {
     return await getTicket(event)
 }))
 
-router.post('/:id/pend', defineEventHandler(async event => {
+router.get('/:id/pend', defineEventHandler(async event => {
     return await pendTicket(event)
 }))
 

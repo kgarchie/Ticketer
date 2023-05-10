@@ -191,7 +191,7 @@ async function submitComment(payload: any) {
             }
         })
 
-        console.log(response.value)
+        // console.log(response.value)
 
         if (response?.value?.statusCode !== 200) {
             console.log(response.value?.body)
@@ -202,18 +202,18 @@ async function submitComment(payload: any) {
             // console.log(comment)
 
             // if comment doesn't exist in comments array, add it
-            if (useWsServerStatus().value !== SocketStatus.OPEN) {
-                props.ticket.comments.push(comment)
-            } else {
-                setTimeout(() => {
-                    if (!props.ticket.comments.find((c: any) => c.id === comment.id)) {
-                        props.ticket.comments.push(comment)
-                        console.log('comment added via post request')
-                    } else {
-                        console.log('comment added via websocket')
-                    }
-                }, 1000);
-            }
+            // if (useWsServerStatus().value !== SocketStatus.OPEN) {
+            //     props.ticket.comments.push(comment)
+            // } else {
+            //     setTimeout(() => {
+            //         if (!props.ticket.comments.find((c: any) => c.id === comment.id)) {
+            //             props.ticket.comments.push(comment)
+            //             console.log('comment added via post request')
+            //         } else {
+            //             console.log('comment added via websocket')
+            //         }
+            //     }, 1000);
+            // }
         }
     } else {
         alert('An error occurred; try refreshing the page')
@@ -247,16 +247,19 @@ watch(useWsServerStatus(), value => {
     }
 })
 
-watch(useNewTicketComment(), value => {
-    if (value) {
-        if (value.ticketId === props.ticket.id) {
-            local_ticket.value.comments.unshift(value.comment)
+watch(useNewTicketComment(), (newValue, oldValue) => {
+    if (newValue !== oldValue) {
+        // if there is a new ticket comment and it doesn't already exist in the comments array, add it
+        if (newValue?.ticketId === local_ticket.value.id && !local_ticket.value.comments.find((c: any) => c.id === newValue?.id)) {
+            local_ticket.value.comments.unshift(newValue?.comment)
+            console.log(newValue)
         }
     }
 })
 
 watch(useCommentActions(), value => {
     if (value) {
+        // console.log(value)
         if (value.action === CommentOperation.DELETE && value.ticket.id === props.ticket.id) {
             local_ticket.value.comments = local_ticket.value.comments.filter((comment: Comment) => comment.id !== value.commentId)
         }

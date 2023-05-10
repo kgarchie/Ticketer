@@ -1,5 +1,5 @@
-import notificationController from '~/mvc/notifications/controller'
+import notificationsController from '~/mvc/notifications/controller'
 
 export default defineEventHandler(async (event) => {
-    return notificationController(event)
+    return notificationsController(event)
 })

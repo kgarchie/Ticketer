@@ -14,7 +14,7 @@
                             @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
                             <div class="message-preview">
                                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
-                                <span class="company-info" v-if=" user.is_admin ">{{ chat.WithUser.company }}</span>
+                                <span class="company-info" v-if=" user.is_admin ">{{ chat.WithUser.company.name || chat.WithUser.company }}</span>
                                 <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
                                 <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
                                     unread_count(chat.Message)
@@ -289,14 +289,6 @@ watch(useNewMessage(), newMessage => {
 
     if (chat && newMessage) {
         if (!chat.Message.find((message: any) => message.id === newMessage.id)) {
-            // @ts-ignore
-            // if (to_user.value?.user_id === newMessage.from_user_id || to_user.value?.user_id === newMessage.to_user_id) {
-            //     newMessage.opened = true
-            //     messages.value.push(newMessage)
-            //     markMessagesAsRead(chat, true)
-            // } else {
-            //     chat.Message.push(newMessage)
-            // }
             chat.Message.push(newMessage)
         } else {
             console.log('message already exists')

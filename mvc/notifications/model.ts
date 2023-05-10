@@ -5,7 +5,7 @@ import {getAllUnreadNotifications, markNotificationAsRead} from "~/mvc/notificat
 
 export async function readNotification(event:H3Event){
     const id = event.context.params?.id
-    const {user_id} = getAuthCookie(event)
+    const {user_id} = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
 
     if(!id || !user_id){

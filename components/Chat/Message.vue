@@ -37,6 +37,8 @@
 </template>
 
 <script setup lang="ts">
+import {SocketStatus} from "~/types";
+
 const composed_message = ref('')
 const user = useUser().value
 
@@ -87,9 +89,16 @@ async function sendMessage() {
         body: message
     })
 
-    // console.log(message)
+    console.log(response.value.body)
 
     if (response.value?.statusCode === 200) {
+        setTimeout(() => {
+            if(!props.messages?.find((msg: any) => msg.id === response.value?.body?.id)) {
+                props.messages?.push(response.value?.body)
+                console.log("Message added via post request")
+                useWsServerStatus().value = SocketStatus.UNKNOWN
+            }
+        }, 500)
         positionMessages()
     } else {
         alert(response.value?.body)

@@ -25,7 +25,7 @@ export async function sendMail(mailDetails: any) {
 }
 
 export async function mailResetPasswordLink(email: string, origin: string, token: string, user_id: string) {
-    const link = `${origin}/auth/identity/reset/${user_id}&${email}/${token}`;
+    const link = `${origin}/auth/identity/reset/${user_id}&${email}&${token}`;
 
     const message = "Click the link below to reset your password\n\n" + link;
     const options = {

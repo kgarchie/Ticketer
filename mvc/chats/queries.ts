@@ -1,8 +1,9 @@
 import prisma from "~/db";
 import {v4} from "uuid";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
+import {getAuthCookie} from "~/mvc/auth/helpers";
 
-export async function getUserChats(user_id: string) {
+export async function getUserChats(user_id: string, is_admin=false) {
     const chatsFromMessages = await prisma.message.findMany({
         where: {
             OR: [
@@ -47,12 +48,17 @@ export async function getUserChats(user_id: string) {
 
     // if an admin is not in the chats, create a chat with them, and send an initial message, and then add it to the chats
     for (let admin of admins) {
-        let admin_in_chats = mapped_chats.find(chat => (chat.WithUser.user_id === admin.user_id || chat.user_id === admin.user_id))
+        let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id === admin.user_id.toString() || chat.Message[0].to_user_id === admin.user_id.toString())
 
-        if (!admin_in_chats) {
+        if (!chats_has_admin && admin.user_id !== user_id) {
             const new_chat = await createChat(user_id, admin.user_id)
+
             if (!new_chat) break
-            const initial_message = 'Hello, I am ' + admin.name + ' from ' + admin.company?.name + '. How can I help you?'
+            let initial_message = 'Hello, I am ' + admin.name + ' from ' + admin.company?.name + '. How can I help you?'
+
+            if (is_admin) {
+                initial_message = 'Hello, fellow admin! I am ' + admin.name + ' from ' + admin.company?.name
+            }
 
             const message = await createMessage(new_chat?.chat_id, admin.user_id, user_id, initial_message)
             if (!message) break
@@ -79,22 +85,22 @@ export async function getUserChats(user_id: string) {
 }
 
 export async function createChat(from_user_id: string, to_user_id: string) {
-    return await prisma.chat.findFirst({
+    let chat = await prisma.chat.findFirst({
             where: {
                 AND: [
                     {
                         Message: {
                             some: {
-                                from_user_id: from_user_id,
-                                to_user_id: to_user_id
+                                from_user_id: from_user_id.toString(),
+                                to_user_id: to_user_id.toString()
                             }
                         }
                     },
                     {
                         Message: {
                             some: {
-                                from_user_id: to_user_id,
-                                to_user_id: from_user_id
+                                from_user_id: to_user_id.toString(),
+                                to_user_id: from_user_id.toString()
                             }
                         }
                     }
@@ -112,7 +118,10 @@ export async function createChat(from_user_id: string, to_user_id: string) {
             console.log(err)
             return null;
         })  // if no chat exists, create one
-        || await prisma.chat.create({
+
+    if (chat) return chat
+
+    chat = await prisma.chat.create({
             data: {
                 chat_id: v4()
             }
@@ -122,6 +131,8 @@ export async function createChat(from_user_id: string, to_user_id: string) {
                 return null
             }
         )
+
+    return chat
 }
 
 export async function createMessage(chat_id: string, from_user_id: string, to_user_id: string, message: string) {
@@ -133,10 +144,15 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
                         chat_id: chat_id
                     }
                 },
-                from_user_id: from_user_id,
-                to_user_id: to_user_id,
+                from_user_id: from_user_id.toString(),
+                to_user_id: to_user_id.toString(),
                 message: message
             }
+        }
+    ).catch(
+        (error) => {
+            console.log(error)
+            return null
         }
     )
 }

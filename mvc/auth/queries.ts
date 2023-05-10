@@ -1,6 +1,6 @@
 import {UserAuth} from "~/types";
 import {H3Event} from "h3";
-import {generateRandomToken, getAuthCookie} from "~/mvc/auth/helpers";
+import {generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
 import prisma from "~/db";
 import {v4 as uuidv4} from "uuid";
 import {Token} from "@prisma/client";
@@ -42,11 +42,13 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
 
     // If the token is created, return the new user auth object
     if (token && token.is_valid === true) {
-        return {
+        const user = {
             user_id: token.User.user_id,
             auth_key: token.token,
             is_admin: token.User.is_admin
         } as UserAuth
+        setAuthCookie(event, user)
+        return user
     }
 
     // if all fails, return null

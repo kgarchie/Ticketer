@@ -20,9 +20,15 @@ import {Ticket} from "@prisma/client";
 import {getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 
 export async function deleteComment(event: H3Event) {
-    const commentId = await readBody(event)
+    const commentId = event.context.params?.id
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
+
+    if (!commentId) {
+        response.statusCode = 404
+        response.body = "Bad Request"
+        return response
+    }
 
     const deletedComment = await deleteUserComment(commentId)
 
@@ -63,9 +69,11 @@ export async function makeComment(event: H3Event) {
 
     const notificationMessage = `${comment.split(':')[0]} mentioned you in a comment | Ticket ref: ${newComment.ticket.reference}`
 
-    tagged_people.forEach((person) => {
-        createAndShuttleNotification(person.user_id, notificationMessage, TYPE.NOTIFICATION)
-    })
+    if(tagged_people.length > 0){
+        for (const person of tagged_people) {
+            createAndShuttleNotification(person.user_id, notificationMessage, TYPE.NOTIFICATION)
+        }
+    }
 
     socketResponse.statusCode = 200
     socketResponse.type = TYPE.NEW_COMMENT
