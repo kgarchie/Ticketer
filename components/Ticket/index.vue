@@ -77,6 +77,20 @@
                     </div>
                 </div>
             </article>
+            <!--                Buttons for close, resolve or delete-->
+            <article class="box pb-5" v-if="user.is_admin">
+                <div class="buttons mt-3 is-flex is-fullwidth">
+                    <button class="button is-success" @click="resolveTicket">
+                        Resolve
+                    </button>
+                    <button class="button is-warning" @click="closeTicket">
+                        Close
+                    </button>
+                    <button class="button is-danger ml-auto" @click="deleteTicket">
+                        Delete
+                    </button>
+                </div>
+            </article>
             <article class="comments">
                 <h3 class="is-5 raised">Comments</h3>
                 <div v-if="local_ticket?.comments.length > 0" v-for="comment in local_ticket.comments"
@@ -102,7 +116,7 @@
 
 <script lang="ts" setup>
 import {Comment} from "@prisma/client";
-import {CommentOperation, SocketStatus, TaggedPerson} from "~/types";
+import {CommentOperation, SocketStatus, STATUS, TaggedPerson} from "~/types";
 
 const user = useUser()
 const userName = ref('')
@@ -131,7 +145,7 @@ const taggable = computed(async () => {
     taggable_user_ids = [...new Set(taggable_user_ids)]
     // console.log(taggable_user_ids)
     const taggable: any = []
-    // TODO: next time, fill this on retrieval of ticket
+
     for (const user_id of taggable_user_ids) {
         const name_or_user_id = await getUserName(user_id)
         taggable.push({name: name_or_user_id, user_id: user_id})
@@ -150,24 +164,52 @@ const taggable = computed(async () => {
     return taggable
 })
 
-// const taggable = [
-//     {
-//         "name": "9abd8841-b3ac-4b97-a3d7-b4ca70136661",
-//         "user_id": "9abd8841-b3ac-4b97-a3d7-b4ca70136661"
-//     },
-//     {
-//         "name": "52e12edf-8408-4341-a600-861d352e6935",
-//         "user_id": "52e12edf-8408-4341-a600-861d352e6935"
-//     },
-//     {
-//         "name": "Makena",
-//         "user_id": "1"
-//     },
-//     {
-//         "name": "Allan",
-//         "user_id": "2"
-//     }
-// ]
+async function closeTicket() {
+    if (user.value.is_admin) {
+        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`)
+
+        // update the ticket status
+        if (response?.value?.statusCode === 200) {
+            local_ticket.value.status = STATUS.C
+        } else {
+            alert('Operation Failed')
+        }
+    } else {
+        alert('You are not authorized to perform this action')
+    }
+}
+
+async function resolveTicket() {
+    if (user.value.is_admin) {
+        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/resolve`)
+
+        // update the ticket status
+        if (response?.value?.statusCode === 200) {
+            local_ticket.value.status = STATUS.R
+        } else {
+            alert('Operation Failed')
+        }
+    } else {
+        alert('You are not authorized to perform this action')
+    }
+}
+
+async function deleteTicket() {
+    if (user.value.is_admin) {
+        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}`, {
+            method: 'DELETE'
+        })
+
+        // update the ticket status
+        if (response?.value?.statusCode === 200) {
+            await navigateTo('/')
+        } else {
+            alert('Operation Failed')
+        }
+    } else {
+        alert('You are not authorized to perform this action')
+    }
+}
 
 async function submitComment(payload: any) {
     let {comment, tagged} = payload
@@ -223,16 +265,15 @@ async function submitComment(payload: any) {
 
 async function getUserName(user_id: string) {
     const res = await useFetch(`/api/user/${user_id}`)
-
+    // console.log(res.data.value.body)
     if(res?.data?.value?.statusCode === 200) {
-        userName.value = res.data.value.body
-        return res.body
+        return res.data.value.body
     } else {
         return user_id
     }
 }
 
-await getUserName(props.ticket.user_id)
+userName.value = await getUserName(props.ticket.user_id)
 
 watch(useWsServerStatus(), value => {
     if (value !== SocketStatus.OPEN) {

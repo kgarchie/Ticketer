@@ -4,7 +4,7 @@ import {
     allSearchTickets,
     closeUserTicket,
     createTicket,
-    createTicketComment,
+    createTicketComment, deleteTicketById,
     deleteUserComment,
     filterTickets,
     getNewTickets,
@@ -69,7 +69,7 @@ export async function makeComment(event: H3Event) {
 
     const notificationMessage = `${comment.split(':')[0]} mentioned you in a comment | Ticket ref: ${newComment.ticket.reference}`
 
-    if(tagged_people.length > 0){
+    if (tagged_people.length > 0) {
         for (const person of tagged_people) {
             createAndShuttleNotification(person.user_id, notificationMessage, TYPE.NOTIFICATION)
         }
@@ -95,14 +95,14 @@ export async function closeTicket(event: H3Event) {
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
 
-    if(!is_admin || user.is_admin == false || !ticketId){
+    if (!is_admin || user.is_admin == false || !ticketId) {
         response.statusCode = 401
         response.body = "Operation Failed"
         return response
     }
 
     const update = await closeUserTicket(ticketId)
-    if(!update){
+    if (!update) {
         response.statusCode = 500
         response.body = "Internal Server Error"
     }
@@ -119,10 +119,10 @@ export async function closeTicket(event: H3Event) {
     return response
 }
 
-export async function getTicket(event:H3Event){
+export async function getTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string || null
     let response = {} as HttpResponseTemplate
-    if(!ticketId){
+    if (!ticketId) {
         response.statusCode = 401
         response.body = "Botched Post Request"
         return response
@@ -135,22 +135,22 @@ export async function getTicket(event:H3Event){
     return response
 }
 
-export async function pendTicket(event:H3Event){
+export async function pendTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string | null
     const {is_admin, user_id} = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
 
-    if(!is_admin || user.is_admin == false || !ticketId){
+    if (!is_admin || user.is_admin == false || !ticketId) {
         response.statusCode = 401
         response.body = "Operation Failed"
         return response
     }
 
-    const update =  markTicketAsPending(ticketId)
+    const update = markTicketAsPending(ticketId)
 
-    if(!update){
+    if (!update) {
         response.statusCode = 500
         response.body = "Internal Server Error"
         return response
@@ -168,14 +168,14 @@ export async function pendTicket(event:H3Event){
 }
 
 
-export async function resolveTicket(event:H3Event){
+export async function resolveTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string | null
     const {is_admin, user_id} = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
 
-    if(!is_admin || user.is_admin == false || !ticketId){
+    if (!is_admin || user.is_admin == false || !ticketId) {
         response.statusCode = 401
         response.body = "Operation Failed"
         return response
@@ -183,7 +183,7 @@ export async function resolveTicket(event:H3Event){
 
     const update = markTicketAsResolved(ticketId)
 
-    if(!update){
+    if (!update) {
         response.statusCode = 500
         response.body = "Internal Server Error"
         return response
@@ -200,11 +200,11 @@ export async function resolveTicket(event:H3Event){
     return response
 }
 
-export async function filteredTickets(event:H3Event){
-    let parameters:any = event.context.params?.parameters as string || null
+export async function filteredTickets(event: H3Event) {
+    let parameters: any = event.context.params?.parameters as string || null
     let response = {} as HttpResponseTemplate
 
-    if(!parameters){
+    if (!parameters) {
         response.statusCode = 404
         response.body = "Botched filter parameters"
         return response
@@ -224,7 +224,7 @@ export async function filteredTickets(event:H3Event){
     return response
 }
 
-export async function newTickets(){
+export async function newTickets() {
     let response = {} as HttpResponseTemplate
 
     response.statusCode = 200
@@ -233,7 +233,7 @@ export async function newTickets(){
     return response
 }
 
-export async function countTickets(){
+export async function countTickets() {
     let response = {} as HttpResponseTemplate
 
     response.statusCode = 200
@@ -243,7 +243,7 @@ export async function countTickets(){
 }
 
 
-export async function create(event:H3Event){
+export async function create(event: H3Event) {
     const ticket = await readBody(event) as Ticket
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
@@ -263,7 +263,7 @@ export async function create(event:H3Event){
 
     const newTicket = await createTicket(ticket)
 
-    if(!newTicket){
+    if (!newTicket) {
         response.statusCode = 500
         response.body = "Internal Server Error"
     }
@@ -280,7 +280,7 @@ export async function create(event:H3Event){
     return response
 }
 
-export async function search(event:H3Event){
+export async function search(event: H3Event) {
     const query = await readBody(event) as SearchQuery
     let response = {} as HttpResponseTemplate
 
@@ -288,6 +288,41 @@ export async function search(event:H3Event){
 
     response.statusCode = 200
     response.body = tickets
+
+    return response
+}
+
+
+export async function deleteTicket(event: H3Event) {
+    const ticketId = event.context.params?.id as string | null
+    const {is_admin, user_id} = await getAuthCookie(event)
+    let response = {} as HttpResponseTemplate
+    let socketResponse = {} as SocketTemplate
+
+    const user = await getUserOrEphemeralUser_Secure(user_id)
+
+    if (!is_admin || user.is_admin == false || !ticketId) {
+        response.statusCode = 401
+        response.body = "Operation Failed"
+        return response
+    }
+
+    const ticket = await deleteTicketById(ticketId)
+
+    if (!ticket) {
+        response.statusCode = 500
+        response.body = "Internal Server Error"
+        return response
+    }
+
+    socketResponse.statusCode = 200
+    socketResponse.type = TYPE.DELETE_TICKET
+    socketResponse.body = ticket.id
+
+    shuttleDataToAllClients(socketResponse)
+
+    response.statusCode = 200
+    response.body = "Ticket Deleted Successfully"
 
     return response
 }

@@ -96,7 +96,7 @@ export default defineNuxtPlugin(() => {
                         console.log('Heartbeat received and sent')
                         break;
                     case TYPE.DETAILS_REQ:
-                        if(!this.detailsSent) {
+                        if (!this.detailsSent) {
                             this.sendDetails()
                         }
                         // flip back the switch
@@ -165,9 +165,9 @@ export default defineNuxtPlugin(() => {
                         const ticket = SocketResponse.body as Ticket
 
                         // find ticket in new tickets state, update it
-                        const ticketIndex = newTicketsState.value.findIndex((t: Ticket) => t.id === ticket.id)
-                        if (ticketIndex !== -1) {
-                            newTicketsState.value[ticketIndex] = ticket
+                        const ticketIndexNew = newTicketsState.value.findIndex((t: Ticket) => t.id === ticket.id)
+                        if (ticketIndexNew !== -1) {
+                            newTicketsState.value[ticketIndexNew] = ticket
                         } else {
                             console.log('Ticket found in new tickets state')
                         }
@@ -175,6 +175,17 @@ export default defineNuxtPlugin(() => {
                         updateTicketsMetaData(TicketsMetaDataState.value)
                         // console.log('Ticket action received', ticket, action)
                         break;
+                    case TYPE.DELETE_TICKET:
+                        const ticketId = SocketResponse.body as string
+                        // console.log('Ticket action received', "Delete", ticketId)
+                        // find ticket in new tickets state, delete it
+                        const ticketIndexDel = newTicketsState.value.findIndex((t: Ticket) => t.id.toString() === ticketId.toString())
+                        if (ticketIndexDel !== -1) {
+                            newTicketsState.value.splice(ticketIndexDel, 1)
+                        }
+                        updateTicketsMetaData(TicketsMetaDataState.value)
+                        break;
+
                     case TYPE.NEW_COMMENT:
                         let newComment = SocketResponse.body as Comment
                         // console.log('New comment received', newComment)

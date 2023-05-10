@@ -177,7 +177,7 @@ const message_isRevealed = computed(() => {
 })
 
 async function getChats() {
-    chats.value = await $fetch('/api/chats', {
+    let db_chats = await $fetch('/api/chats', {
         method: 'POST',
         body: user.user_id.toString()
     }).then(
@@ -193,6 +193,8 @@ async function getChats() {
         console.log(e)
         return []
     })
+
+    chats.value = db_chats.filter((chat: any) => chat.WithUser.user_id !== user.user_id)
 
     show_all_unread_count()
 }

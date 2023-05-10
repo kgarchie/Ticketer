@@ -333,3 +333,29 @@ export async function allSearchTickets(query: SearchQuery) {
 
     return resultTickets
 }
+
+
+export async function deleteTicketById(id: string | number){
+    // delete all comments
+    await prisma.comment.deleteMany({
+        where: {
+            ticketId: Number(id)
+        }
+    }).catch(
+        error => {
+            console.log(error)
+            return null
+        }
+    )
+
+    return await prisma.ticket.delete({
+        where: {
+            id: Number(id)
+        }
+    }).catch(
+        error => {
+            console.log(error)
+            return null
+        }
+    )
+}

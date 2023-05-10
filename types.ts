@@ -140,6 +140,7 @@ export enum TYPE {
     NEW_COMMENT = "new comment",
     NEW_TICKET = "new ticket",
     UPDATE_TICKET = "update ticket",
+    DELETE_TICKET = "delete ticket",
 }
 
 export enum TicketOperation {

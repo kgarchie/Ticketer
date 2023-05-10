@@ -9,7 +9,7 @@
                     <div v-if="displayTaggablePeople" class="box taggable-people" id="popUpTagger">
                         <ul class="is-flex is-flex-direction-column-reverse">
                             <li v-for="(person, index) in taggablePeople" :key="index" @click="tagPerson(person.user_id)">
-                                {{ person.name }}
+                                {{ person.name || person.user_id }}
                             </li>
                         </ul>
                     </div>
@@ -39,53 +39,106 @@ const props = defineProps({
 })
 
 const comment = ref('')
+
 const tagged = reactive({
     value: [] as Array<any>
 })
 
-const tpStore = ref<any>([])
-tpStore.value = await props.taggable
-
+let placeholder = await props.taggable
+// filter out the people depending on the user input after the @
 const taggablePeople = computed(() => {
-    let tp = tpStore.value.filter((person: any) => !tagged.value.includes(person))
-    console.log(tp)
-    return tp
+    // console.log(placeholder)
+    if (comment.value) {
+        let lastAt = comment.value.lastIndexOf('@')
+        let input = comment.value.substring(lastAt + 1)
+        return placeholder.filter((person: any) => person.name.toLowerCase().includes(input.toLowerCase()))
+    } else {
+        return placeholder
+    }
 })
 
 let displayTaggablePeople = false
 
 const tagPerson = (user_id: any = null) => {
-    if (comment.value === '') {
-        comment.value = '@'
-        return
-    }
-
     if (user_id) {
-        let person: any = tpStore.value.find((person: any) => person.user_id === user_id)
-        if(person && !tagged.value.includes(person)) tagged.value.push(person)
+        // there can be more than one person tagged and thus more than one @
+        // so we need to replace the last @ with the person's name
+        let lastAt = comment.value.lastIndexOf('@')
+        let person = placeholder.find((person: any) => person.user_id === user_id)
+        comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
+        tagged.value.push(person)
+        placeholder = placeholder.filter((person: any) => person.user_id !== user_id)
 
-        let commentValue = comment.value.split('@').pop()
-        comment.value = comment.value.replace(`@${commentValue}`, `@${person.name} `)
-
+        if (process.client){
+            const input = document.getElementById('commentReplyTextArea')
+            input?.focus()
+        }
     } else {
-        let person = tpStore.value.at(0)
-
-        let commentValue = comment.value.split('@').pop()
-        comment.value = comment.value.replace(`@${commentValue}`, `@${person.name} `)
-
-        if (person && !tagged.value.includes(person)) tagged.value.push(person)
+        // if no user_id is passed, then we just want to take the closest match
+        // and replace the last @ with that person's name
+        let lastAt = comment.value.lastIndexOf('@')
+        // console.log(taggablePeople.value)
+        let person = taggablePeople.value[0]
+        comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
+        tagged.value.push(person)
+        // remove the person from the taggable people
+        placeholder = placeholder.filter((p: any) => p.user_id !== person.user_id)
+        // console.log(placeholder)
     }
 
     displayTaggablePeople = false
+    // console.log(tagged.value)
+    // console.log(placeholder)
 }
-
-watch(comment, value => {
-    displayTaggablePeople = !!value.includes('@');
-})
 
 onMounted(() => {
     const input = document.getElementById('commentReplyTextArea')
     input?.focus()
+
+    // When user clicks tab, tag the person if the taggable people are displayed
+    input?.addEventListener('keydown', (e: any) => {
+        if (e.key === 'Tab') {
+            if(comment.value === ''){
+                e.preventDefault()
+                comment.value = '@'
+            } else {
+                if(displayTaggablePeople) {
+                    e.preventDefault()
+                    tagPerson()
+                }
+            }
+        }
+
+        // if the letter entered is @, display the taggable people
+        if (e.key === '@') {
+            displayTaggablePeople = true
+            // console.log(placeholder)
+        }
+
+        // if a person presses ctrl + enter, submit the comment
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault()
+            document.getElementById('submit-comment-button')?.click()
+        }
+
+        // if a person starts deleting a tagged user, delete the whole word instead
+        // remove the user from the tagged array and add them back to the taggable array
+        // is user just began typing @ but hasn't tagged anyone yet and deleted the @, don't do anything
+        if (e.key === 'Backspace' && comment.value.length > 0) {
+            let lastAt = comment.value.lastIndexOf('@')
+            let lastSpace = comment.value.lastIndexOf(' ')
+            if (lastAt > lastSpace) {
+                const poper = tagged.value.pop() || null
+                if(poper){
+                    placeholder.push(poper)
+                }
+                displayTaggablePeople = false
+                comment.value = comment.value.substring(0, lastAt)
+                // console.log(tagged.value)
+                // console.log(placeholder)
+            }
+        }
+    })
 })
 </script>
 
@@ -93,7 +146,7 @@ onMounted(() => {
 .taggable-people {
     background-color: white;
     border-top: none;
-    position: absolute;
+    position: sticky;
     width: 100%;
     z-index: 10;
     top: -100px;

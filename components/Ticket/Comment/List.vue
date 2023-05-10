@@ -45,6 +45,7 @@ const props = defineProps({
 // console.log(props.taggable)
 const taggable_computed = computed(() => props.taggable)
 
+
 if (props.comment) {
     props.comment.children = computed(() => {
         // console.log(props.ticket.comments)

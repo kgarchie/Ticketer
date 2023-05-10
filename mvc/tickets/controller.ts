@@ -6,7 +6,9 @@ import {
     getTicket,
     makeComment, newTickets,
     pendTicket,
-    resolveTicket, search
+    resolveTicket,
+    search,
+    deleteTicket
 } from "~/mvc/tickets/model";
 
 const router = createRouter()
@@ -35,6 +37,10 @@ router.post('/:id/resolve', defineEventHandler(async event => {
     return await resolveTicket(event)
 }))
 
+router.delete('/:id', defineEventHandler(async event => {
+    return await deleteTicket(event)
+}))
+
 router.get('/query/count', defineEventHandler(async event => {
     return await countTickets()
 }))
@@ -43,7 +49,7 @@ router.get('/query/new', defineEventHandler(async event => {
     return await newTickets()
 }))
 
-router.get('/query/:parameters', defineEventHandler(async event=> {
+router.get('/query/:parameters', defineEventHandler(async event => {
     return await filteredTickets(event)
 }))
 
