@@ -37,7 +37,6 @@
 </template>
 
 <script setup lang="ts">
-import {SocketStatus} from "~/types";
 const composed_message = ref('')
 const user = useUser().value
 
@@ -66,6 +65,8 @@ function positionMessages() {
     })
 }
 
+positionMessages()
+
 async function sendMessage() {
     if (composed_message.value === '') {
         alert('Please enter a message')
@@ -89,17 +90,6 @@ async function sendMessage() {
     // console.log(message)
 
     if (response.value?.statusCode === 200) {
-        let message = response.value.body
-        // console.log(message)
-
-        // if message does not exist in messages array
-        setTimeout(() => {
-            if (!props.messages.find((msg: any) => msg.id === message.id)) {
-                props.messages.push(message)
-
-                useWsServerStatus().value = SocketStatus.UNKNOWN
-            }
-        }, 3000)
         positionMessages()
     } else {
         alert(response.value?.body)

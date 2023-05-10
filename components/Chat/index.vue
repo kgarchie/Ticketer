@@ -224,7 +224,7 @@ async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
 }
 
 watch(WsServerStatusState, async (newValue) => {
-    if (!(newValue === SocketStatus.CLOSED || newValue === SocketStatus.UNKNOWN)) {
+    if (!(newValue === SocketStatus.CLOSED)) {
         console.log('Socket Server is up')
         return
     } else {
@@ -284,7 +284,7 @@ function positionMessages() {
 getChats()
 
 watch(useNewMessage(), newMessage => {
-    console.log("new message", newMessage)
+    // console.log("new message", newMessage)
     let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
 
     if (chat && newMessage) {

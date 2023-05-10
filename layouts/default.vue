@@ -71,7 +71,7 @@
     </section>
 </template>
 <script setup lang="ts">
-import {SocketStatus, UserAuth} from "~/types";
+import {SocketStatus, TYPE, UserAuth} from "~/types";
 
 const isActive = ref<boolean>(false)
 const {$ClientWebSocket: ClientWebSocket} = useNuxtApp()
@@ -128,6 +128,13 @@ onMounted(() => {
             console.log('Socket is open')
         }, 3000)
 
+        const WsServerStatusState = useWsServerStatus()
+        watch(WsServerStatusState, async (newValue) => {
+            if (newValue === SocketStatus.UNKNOWN) {
+                opened_socket.sendHeartbeat()
+            }
+        })
+
         // register service worker
         if ('serviceWorker' in navigator) {
             if (Notification.permission !== "granted") {
@@ -159,6 +166,7 @@ onMounted(() => {
         })
     })
 })
+
 </script>
 <style scoped>
 

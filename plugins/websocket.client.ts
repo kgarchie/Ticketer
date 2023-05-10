@@ -5,11 +5,11 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-const domain = window.location.hostname
-const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
+// const domain = window.location.hostname
+// const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
 
 // For Production
-// const socket_url: string = `${wsProtocol}//${window.location.host}`
+const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -48,6 +48,15 @@ export default defineNuxtPlugin(() => {
             console.log('Details sent for user: ' + user.user_id)
         }
 
+        public sendHeartbeat() {
+            const response = JSON.stringify({
+                statusCode: 200,
+                type: TYPE.HEARTBEAT
+            } as SocketTemplate)
+
+            this.socketSendData(this.webSocket, response)
+        }
+
         private socketSendData(WebSocket: WebSocket, response: string, maxRetries = 5) {
             try {
                 WebSocket.send(response)
@@ -83,14 +92,7 @@ export default defineNuxtPlugin(() => {
                 // console.log("Received Message", SocketResponse)
                 switch (SocketResponse.type) {
                     case TYPE.HEARTBEAT:
-                        const response = JSON.stringify(
-                            {
-                                statusCode: 200,
-                                type: TYPE.HEARTBEAT
-                            } as SocketTemplate
-                        )
-
-                        this.socketSendData(this.webSocket, response)
+                        this.sendHeartbeat()
                         console.log('Heartbeat received and sent')
                         break;
                     case TYPE.DETAILS_REQ:
@@ -253,6 +255,7 @@ export default defineNuxtPlugin(() => {
             this.setUpSocket()
         }
     }
+
 
     return {
         provide: {
