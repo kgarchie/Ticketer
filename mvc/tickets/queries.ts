@@ -70,30 +70,44 @@ export async function createTicket(data: Ticket) {
 }
 
 export async function createTicketComment(comment: string, commentor: string, ticketId: string | number, parentId: number | null = null) {
-    return await prisma.comment.create({
-        data: {
-            comment: comment,
-            ticket: {
-                connect: {
-                    id: Number(ticketId)
+    let newComment = null
+
+    if(parentId){
+        newComment = await prisma.comment.create({
+            data: {
+                comment: comment,
+                ticket: {
+                    connect: {
+                        id: Number(ticketId)
+                    }
+                },
+                commentor: commentor,
+                parent: {
+                    connect: {
+                        id: parentId || undefined
+                    }
                 }
             },
-            commentor: commentor,
-            parent: {
-                connect: {
-                    id: parentId || undefined
-                }
+            include: {
+                ticket: true
             }
-        },
-        include: {
-            ticket: true
-        }
-    }).catch(
-        (error) => {
-            console.log(error)
-            return null
-        }
-    ) || await prisma.comment.create({
+        }).then(
+             (comment) => {
+                if(comment){
+                    return comment
+                } else {
+                    return null
+                }
+             }
+        ).catch(
+            (error) => {
+                console.log(error)
+                return null
+            }
+        )
+    }
+    
+    newComment = await prisma.comment.create({
         data: {
             comment: comment,
             ticket: {
@@ -112,6 +126,8 @@ export async function createTicketComment(comment: string, commentor: string, ti
             return null
         }
     )
+
+    return newComment
 }
 
 export async function closeUserTicket(id: string | number) {

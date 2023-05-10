@@ -53,7 +53,7 @@ export async function makeComment(event: H3Event) {
 
     const {comment, commentor, parentId, tagged} = await readBody(event)
     const tagged_people = tagged as TaggedPerson[]
-    const newComment = await createTicketComment(comment, commentor, ticketId, parentId)
+    const newComment = await createTicketComment(comment, commentor, ticketId, parentId) || null
 
     if (!newComment) {
         response.statusCode = 500
