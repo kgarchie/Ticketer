@@ -70,7 +70,7 @@ export async function createTicket(data: Ticket) {
 }
 
 export async function createTicketComment(comment: string, commentor: string, ticketId: string | number, parentId: number | null = null) {
-    let newComment = null
+    let newComment;
 
     if(parentId){
         newComment = await prisma.comment.create({
@@ -105,27 +105,27 @@ export async function createTicketComment(comment: string, commentor: string, ti
                 return null
             }
         )
-    }
-    
-    newComment = await prisma.comment.create({
-        data: {
-            comment: comment,
-            ticket: {
-                connect: {
-                    id: Number(ticketId)
-                }
+    } else {
+        newComment = await prisma.comment.create({
+            data: {
+                comment: comment,
+                ticket: {
+                    connect: {
+                        id: Number(ticketId)
+                    }
+                },
+                commentor: commentor,
             },
-            commentor: commentor,
-        },
-        include: {
-            ticket: true
-        }
-    }).catch(
-        (error) => {
-            console.log(error)
-            return null
-        }
-    )
+            include: {
+                ticket: true
+            }
+        }).catch(
+            (error) => {
+                console.log(error)
+                return null
+            }
+        )
+    }
 
     return newComment
 }
@@ -241,7 +241,10 @@ export async function filterTickets(filter: STATUS | null, page: number | string
             status: filter || undefined
         },
         skip: Number(page) * 10,
-        take: 10
+        take: 10,
+        orderBy: {
+            id: 'desc' // Sort by id in descending order i.e. latest first
+        }
     }).catch(
         error => {
             console.log(error)

@@ -82,7 +82,7 @@ async function sendMessage() {
         chat_id: props.chat_id
     }
 
-    // console.log(message.chat_id)
+    console.log(message)
 
     const {data: response} = await useFetch('/api/chats/messages/send', {
         method: 'POST',

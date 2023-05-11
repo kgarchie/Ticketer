@@ -33,12 +33,12 @@ export async function getUserChats(user_id: string, is_admin=false) {
     let mapped_chats = await Promise.all(
         chatsWithMessages.map(async (chat) => {
             // to_user_id is the other one that is not the user's id
-            let to_user_id = chat.Message[0].from_user_id === user_id.toString() ? chat.Message[0].to_user_id : chat.Message[0].from_user_id;
+            let to_user_id = chat.Message[0].from_user_id === user_id.toString() ? chat.Message[0].to_user_id : chat.Message[0].from_user_id?.toString()
             const to_user = await getUserOrEphemeralUser_Secure(to_user_id || undefined)
 
             return {
                 ...chat,
-                user_id: user_id,
+                user_id: user_id.toString(),
                 WithUser: to_user
             }
         })
@@ -48,9 +48,9 @@ export async function getUserChats(user_id: string, is_admin=false) {
 
     // if an admin is not in the chats, create a chat with them, and send an initial message, and then add it to the chats
     for (let admin of admins) {
-        let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id === admin.user_id.toString() || chat.Message[0].to_user_id === admin.user_id.toString())
+        let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id?.toString() === admin.user_id.toString() || chat.Message[0].to_user_id?.toString() === admin.user_id.toString())
 
-        if (!chats_has_admin && admin.user_id !== user_id) {
+        if (!chats_has_admin && admin.user_id.toString() !== user_id.toString()) {
             const new_chat = await createChat(user_id, admin.user_id)
 
             if (!new_chat) break
@@ -75,7 +75,7 @@ export async function getUserChats(user_id: string, is_admin=false) {
             // @ts-ignore
             mapped_chats.push({
                 ...chat_with_message,
-                user_id: user_id,
+                user_id: user_id.toString(),
                 WithUser: admin
             })
         }
@@ -161,7 +161,7 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
 export async function readUserMessage(user_id:string, chat_id:string){
     await prisma.message.updateMany({
         where: {
-            to_user_id: user_id,
+            to_user_id: user_id.toString(),
             chat: {
                 chat_id: chat_id
             },

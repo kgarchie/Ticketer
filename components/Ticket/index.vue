@@ -80,10 +80,11 @@
             <!--                Buttons for close, resolve or delete-->
             <article class="box pb-5" v-if="user.is_admin">
                 <div class="buttons mt-3 is-flex is-fullwidth">
-                    <button class="button is-success" @click="resolveTicket">
+                    <button class="button is-success" @click="resolveTicket"
+                            :disabled="local_ticket.status === STATUS.R">
                         Resolve
                     </button>
-                    <button class="button is-warning" @click="closeTicket">
+                    <button class="button is-warning" @click="closeTicket" :disabled="local_ticket.status === STATUS.C">
                         Close
                     </button>
                     <button class="button is-danger ml-auto" @click="deleteTicket">
@@ -93,7 +94,7 @@
             </article>
             <article class="comments">
                 <h3 class="is-5 raised">Comments</h3>
-                <div v-if="local_ticket?.comments.length > 0" v-for="comment in local_ticket.comments"
+                <div v-if="comments.length > 0" v-for="comment in comments"
                      :key="comment.id">
                     <div v-if="comment?.parentId === null">
                         <article class="media">
@@ -129,6 +130,7 @@ const props = defineProps({
 })
 
 const local_ticket = ref(props.ticket)
+const comments = ref(local_ticket.value.comments)
 
 const admins = ref([])
 const {data: admins_response} = await useFetch('/api/user/admins')
@@ -140,18 +142,18 @@ if (admins_response?.value?.statusCode === 200) {
 // console.log(admins.value)
 
 // taggable is all people who have commented on this ticket and admins if they are not in the list
-const taggable = computed(async () => {
+const taggable = computed(() => {
     let taggable_user_ids = props?.ticket?.comments.map((comment: any) => comment.commentor)
     taggable_user_ids = [...new Set(taggable_user_ids)]
     // console.log(taggable_user_ids)
     const taggable: any = []
 
     for (const user_id of taggable_user_ids) {
-        const name_or_user_id = await getUserName(user_id)
+        const name_or_user_id = getUserName(user_id)
         taggable.push({name: name_or_user_id, user_id: user_id})
     }
 
-    // console.log(taggable)
+    console.log(taggable)
 
     admins?.value?.forEach((admin: any) => {
         if (!taggable_user_ids.includes(admin.user_id)) {
@@ -166,7 +168,9 @@ const taggable = computed(async () => {
 
 async function closeTicket() {
     if (user.value.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`)
+        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`, {
+            method: 'POST'
+        })
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
@@ -181,7 +185,9 @@ async function closeTicket() {
 
 async function resolveTicket() {
     if (user.value.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/resolve`)
+        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/resolve`, {
+            method: 'POST'
+        })
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
@@ -202,7 +208,7 @@ async function deleteTicket() {
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
-            await navigateTo('/')
+            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
         } else {
             alert('Operation Failed')
         }
@@ -229,7 +235,7 @@ async function submitComment(payload: any) {
                 comment: comment,
                 commentor: user.value.user_id,
                 parentId: null,
-                tagged: tagged
+                tagged: tagged as TaggedPerson[]
             }
         })
 
@@ -244,18 +250,18 @@ async function submitComment(payload: any) {
             // console.log(comment)
 
             // if comment doesn't exist in comments array, add it
-            // if (useWsServerStatus().value !== SocketStatus.OPEN) {
-            //     props.ticket.comments.push(comment)
-            // } else {
-            //     setTimeout(() => {
-            //         if (!props.ticket.comments.find((c: any) => c.id === comment.id)) {
-            //             props.ticket.comments.push(comment)
-            //             console.log('comment added via post request')
-            //         } else {
-            //             console.log('comment added via websocket')
-            //         }
-            //     }, 1000);
-            // }
+            if (useWsServerStatus().value !== SocketStatus.OPEN) {
+                props.ticket.comments.push(comment)
+            } else {
+                setTimeout(() => {
+                    if (!props.ticket.comments.find((c: any) => c.id === comment.id)) {
+                        props.ticket.comments.push(comment)
+                        console.log('comment added via post request')
+                    } else {
+                        console.log('comment added via websocket')
+                    }
+                }, 1000);
+            }
         }
     } else {
         alert('An error occurred; try refreshing the page')
@@ -266,14 +272,14 @@ async function submitComment(payload: any) {
 async function getUserName(user_id: string) {
     const res = await useFetch(`/api/user/${user_id}`)
     // console.log(res.data.value.body)
-    if(res?.data?.value?.statusCode === 200) {
+    if (res?.data?.value?.statusCode === 200) {
         return res.data.value.body
     } else {
         return user_id
     }
 }
 
-userName.value = await getUserName(props.ticket.user_id)
+userName.value = await getUserName(props.ticket.creator)
 
 watch(useWsServerStatus(), value => {
     if (value !== SocketStatus.OPEN) {
@@ -284,7 +290,7 @@ watch(useWsServerStatus(), value => {
                 let new_ticket = await $fetch(`/api/tickets/${props.ticket.id}`)
                 local_ticket.value.comments = new_ticket.body?.comments
             }
-        }, 1000)
+        }, 2000)
     }
 })
 
@@ -292,7 +298,7 @@ watch(useNewTicketComment(), (newValue, oldValue) => {
     if (newValue !== oldValue) {
         // if there is a new ticket comment and it doesn't already exist in the comments array, add it
         if (newValue?.ticketId === local_ticket.value.id && !local_ticket.value.comments.find((c: any) => c.id === newValue?.id)) {
-            local_ticket.value.comments.unshift(newValue?.comment)
+            comments.value.push(newValue)
             console.log(newValue)
         }
     }
@@ -302,7 +308,7 @@ watch(useCommentActions(), value => {
     if (value) {
         // console.log(value)
         if (value.action === CommentOperation.DELETE && value.ticket.id === props.ticket.id) {
-            local_ticket.value.comments = local_ticket.value.comments.filter((comment: Comment) => comment.id !== value.commentId)
+            comments.value = comments.value.filter((comment: Comment) => comment.id !== value.commentId)
         }
     }
 })

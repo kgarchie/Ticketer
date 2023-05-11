@@ -37,7 +37,7 @@
                 </li>
                 <li>
                     <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`">
-                        <span>Exceptions</span>
+                        <span>Closed</span>
                     </NuxtLink>
                 </li>
             </ul>
@@ -63,13 +63,11 @@
                     <tr v-for="item in tickets" :key="item.id">
                         <td>
                             <button class="button is-success mr-1" @click="resolveTicket(item.id)"
-                                    v-if="item.status !== STATUS.R">✓
+                                    :disabled="item.status === STATUS.R">✓
                             </button>
-                            <button class="button is-success mr-1" disabled v-else>✓</button>
                             <button class="button is-warning mr-1" @click="closeTicket(item.id)"
-                                    v-if="item.status !== STATUS.C">𐌗
+                                    :disabled="item.status === STATUS.C">𐌗
                             </button>
-                            <button class="button is-warning mr-1" disabled v-else>𐌗</button>
                         </td>
                         <td>
                             <NuxtLink :to="`/tickets/view/${item.id}`">View</NuxtLink>
@@ -111,7 +109,9 @@ const props = defineProps({
 
 async function closeTicket(id: number) {
     if (user.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${id}/close`)
+        const {data: response} = await useFetch(`/api/tickets/${id}/close`, {
+            method: 'POST'
+        })
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
@@ -127,7 +127,9 @@ async function closeTicket(id: number) {
 
 async function resolveTicket(id: number) {
     if (user.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${id}/resolve`)
+        const {data: response} = await useFetch(`/api/tickets/${id}/resolve`, {
+            method: 'POST'
+        })
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {

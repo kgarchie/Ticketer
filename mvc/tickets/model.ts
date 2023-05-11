@@ -20,7 +20,7 @@ import {Ticket} from "@prisma/client";
 import {getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 
 export async function deleteComment(event: H3Event) {
-    const commentId = event.context.params?.id
+    const {commentId} = await readBody(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
 
@@ -58,6 +58,12 @@ export async function makeComment(event: H3Event) {
     }
 
     const {comment, commentor, parentId, tagged} = await readBody(event)
+    if (!comment || !commentor || !ticketId) {
+        response.statusCode = 404
+        response.body = "Bad Request"
+        return response
+    }
+
     const tagged_people = tagged as TaggedPerson[]
     const newComment = await createTicketComment(comment, commentor, ticketId, parentId) || null
 
@@ -65,6 +71,11 @@ export async function makeComment(event: H3Event) {
         response.statusCode = 500
         response.body = "Unable to create comment"
         return response
+    }
+
+    // @ts-ignore
+    if (newComment.ticket.status !== STATUS.P || newComment.ticket.status !== STATUS.O) {
+        await pendTicket(event, true)
     }
 
     const notificationMessage = `${comment.split(':')[0]} mentioned you in a comment | Ticket ref: ${newComment.ticket.reference}`
@@ -135,16 +146,22 @@ export async function getTicket(event: H3Event) {
     return response
 }
 
-export async function pendTicket(event: H3Event) {
+export async function pendTicket(event: H3Event, force = false) {
     const ticketId = event.context.params?.id as string | null
     const {is_admin, user_id} = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
 
-    if (!is_admin || user.is_admin == false || !ticketId) {
+    if ((!is_admin || user.is_admin == false) && !force) {
         response.statusCode = 401
         response.body = "Operation Failed"
+        return response
+    }
+
+    if (!ticketId) {
+        response.statusCode = 404
+        response.body = "Botched Post Request"
         return response
     }
 

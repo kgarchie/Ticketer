@@ -48,7 +48,7 @@
                                       :to="`${encodeURI(`tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`">
                                 <article class="tile is-child box">
                                     <p class="title">{{ ticketsMetaDataState.exceptions_count }}</p>
-                                    <p class="subtitle">Exceptions</p>
+                                    <p class="subtitle">Closed</p>
                                 </article>
                             </NuxtLink>
                         </div>

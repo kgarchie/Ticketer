@@ -44,8 +44,19 @@ const tagged = reactive({
     value: [] as Array<any>
 })
 
-let placeholder = await props.taggable
+const ph = props.taggable as Array<any>
 // filter out the people depending on the user input after the @
+
+// map over and await the names in the ph array
+let placeholder = await Promise.all(
+    ph.map(async (person: any) => {
+        return {
+            name: await person.name,
+            user_id: person.user_id
+        }
+    })
+)
+
 const taggablePeople = computed(() => {
     // console.log(placeholder)
     if (comment.value) {
@@ -146,17 +157,13 @@ onMounted(() => {
 .taggable-people {
     background-color: white;
     border-top: none;
-    position: sticky;
+    position: absolute;
     width: 100%;
     z-index: 10;
-    top: -100px;
     overflow-y: auto;
-    max-height: 100px;
-    ul{
-        padding: 0;
-        display: flex;
-        height: 20px;
-    }
+    --height: clamp(10px, fit-content, 100%);
+    height: var(--height);
+    top: calc(-100px);
 }
 
 .taggable-people li {

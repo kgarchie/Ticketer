@@ -173,7 +173,7 @@ function concealChat() {
 }
 
 const message_isRevealed = computed(() => {
-    return chat_isRevealed.value && chat_id.value !== ''
+    return chat_isRevealed.value && (chat_id.value !== '' && chat_id.value !== undefined && chat_id.value !== null)
 })
 
 async function getChats() {

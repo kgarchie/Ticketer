@@ -5,11 +5,11 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-// const domain = window.location.hostname
-// const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
+const domain = window.location.hostname
+const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
 
 // For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -169,17 +169,19 @@ export default defineNuxtPlugin(() => {
                         if (ticketIndexNew !== -1) {
                             newTicketsState.value[ticketIndexNew] = ticket
                         } else {
-                            console.log('Ticket found in new tickets state')
+                            console.log('Ticket found in new tickets state, adding it as a new ticket')
+                            newTicketsState.value.unshift(ticket)
                         }
 
                         updateTicketsMetaData(TicketsMetaDataState.value)
                         // console.log('Ticket action received', ticket, action)
                         break;
                     case TYPE.DELETE_TICKET:
-                        const ticketId = SocketResponse.body as string
+                        const ticketId = SocketResponse.body as number
                         // console.log('Ticket action received', "Delete", ticketId)
                         // find ticket in new tickets state, delete it
-                        const ticketIndexDel = newTicketsState.value.findIndex((t: Ticket) => t.id.toString() === ticketId.toString())
+                        const ticketIndexDel = newTicketsState.value.findIndex((t: Ticket) => t.id === ticketId)
+                        // console.log('Ticket index', ticketIndexDel)
                         if (ticketIndexDel !== -1) {
                             newTicketsState.value.splice(ticketIndexDel, 1)
                         }
