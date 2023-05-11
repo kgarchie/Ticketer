@@ -1,8 +1,7 @@
 import {H3Event} from "h3";
-import {HttpResponseTemplate, UserAuth} from "~/types";
+import {HttpResponseTemplate} from "~/types";
 import {
-    createEphemeralUser,
-    createUser, deleteEphemeralUser,
+    createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
     getUserOrEphemeralUser, invalidateToken,
     loginUser, loginWithEmailPassword,
@@ -99,11 +98,11 @@ export async function saveNewPassword(event: H3Event) {
 
 export async function register(event: H3Event) {
     let response = {} as HttpResponseTemplate;
-    const {email, password, name, companyId} = await readBody(event)
+    const {email, password, name, company} = await readBody(event)
 
     const {user_id} = await getAuthCookie(event)
 
-    const userExists = await getUserOrEphemeralUser(user_id)
+    const userExists = await getRegisteredUser(user_id, email)
 
     if (userExists) {
         response.statusCode = 401;
@@ -111,7 +110,7 @@ export async function register(event: H3Event) {
         return response;
     }
 
-    const user = await createUser(email, password, false, user_id, name, companyId)
+    const user = await createUser(email, password, false, user_id, name, company.id)
     // We log in the user after registration
     const token = await loginWithEmailPassword(email, password, null)
 
@@ -152,7 +151,7 @@ export async function reset(event: H3Event) {
         return response;
     }
 
-    await mailResetPasswordLink(email, token.token, origin, user.user_id)
+    await mailResetPasswordLink(email, origin, token.token, user.user_id)
 
     clearAuthCookie(event)
 

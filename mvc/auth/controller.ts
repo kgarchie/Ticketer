@@ -28,7 +28,7 @@ router.post('/identity/register', defineEventHandler(async (event) => {
     }
 ));
 
-router.post('identity/reset', defineEventHandler(async (event) => {
+router.post('/identity/reset', defineEventHandler(async (event) => {
         return await reset(event)
     }
 ));

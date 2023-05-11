@@ -5,11 +5,11 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-// const domain = window.location.hostname
-// const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
+const domain = window.location.hostname
+const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
 
 // For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -139,7 +139,7 @@ export default defineNuxtPlugin(() => {
                         // console.log('New message state', useNewMessageState.value)
                         // check if tab is open
                         if (document.visibilityState !== 'visible') {
-                            if (Notification.permission === 'granted') {
+                            if (window.Notification.permission === 'granted') {
                                 navigator.serviceWorker.getRegistration().then(reg => {
                                     reg?.showNotification(fromUserName, {
                                         body: message.message,

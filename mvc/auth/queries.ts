@@ -7,7 +7,7 @@ import {Token} from "@prisma/client";
 import {validateLoginBody} from "~/mvc/auth/validations";
 
 export async function loginUser(event: H3Event): Promise<UserAuth | null> {
-    const authCookie =  await getAuthCookie(event)
+    const authCookie = await getAuthCookie(event)
     if (!authCookie) return null
 
     // Try to authenticate with the cookie token
@@ -139,7 +139,7 @@ export async function createUser(email: string, password: string, is_admin: bool
             is_admin: is_admin,
             user_id: user_id,
             name: name,
-            companyId: Number(companyId)
+            companyId: Number(companyId) || undefined
         }
     }).then(
         (data: any) => {
@@ -217,7 +217,19 @@ export async function getUserFromEmail(email: string) {
     })
 }
 
-export function updatePassword(user_id: string, password: string) {
+export async function updatePassword(user_id: string, password: string) {
+    await prisma.token.updateMany({
+        where: {
+            User:{
+                user_id: user_id
+            }
+        },
+        data: {
+            is_valid: false
+        }
+    })
+
+
     return prisma.user.update({
         where: {
             user_id: user_id
@@ -240,8 +252,6 @@ export function updatePassword(user_id: string, password: string) {
 }
 
 export async function saveNewToken(token: string, email: string) {
-    await invalidateToken(await getToken(email, token) as Token)
-
     return await prisma.token.create({
         data: {
             token: token,
@@ -264,6 +274,29 @@ export async function deleteEphemeralUser(user_id: string) {
     return await prisma.ephemeralUser.delete({
         where: {
             user_id: user_id
+        }
+    }).catch((err) => {
+        console.log(err)
+        return null;
+    })
+}
+
+export async function getRegisteredUser(user_id: string, email:string) {
+    return await prisma.user.findFirst({
+        where: {
+            OR: [
+                {
+                    user_id: user_id
+                },
+                {
+                    email: email
+                }
+            ]
+        },
+        select: {
+            password: false,
+            token: false,
+            user_id: true,
         }
     }).catch((err) => {
         console.log(err)

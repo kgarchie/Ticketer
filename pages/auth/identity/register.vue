@@ -61,7 +61,7 @@ import {RegisterCredentials, UserAuth} from "~/types";
 let companies = null
 const {data:companies_data} = await useFetch('/api/company')
 if(companies_data.value){
-    companies = companies_data
+    companies = companies_data.value.body
 } else {
     console.log(companies_data)
 }
@@ -90,6 +90,7 @@ const register = async () => {
             console.log(response.value)
             window.location.href = '/'
         } else {
+            alert(response.value.body)
             await navigateTo({path: '/auth/identity/register'})
         }
     }

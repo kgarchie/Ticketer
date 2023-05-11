@@ -14,7 +14,9 @@
                             @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
                             <div class="message-preview">
                                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
-                                <span class="company-info" v-if=" user.is_admin ">{{ chat.WithUser.company.name || chat.WithUser.company }}</span>
+                                <span class="company-info" v-if=" user.is_admin ">{{
+                                    chat.WithUser.company.name || chat.WithUser.company
+                                    }}</span>
                                 <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
                                 <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
                                     unread_count(chat.Message)
@@ -50,7 +52,6 @@ const WsServerStatusState = useWsServerStatus()
 const chats = ref<UserChatObject[]>([])
 const chat_id = ref<string>('')
 const chat_isRevealed = ref<boolean>(false)
-let admins: any[] = []
 
 const messages = computed(() => {
     return chats.value.find((chat: any) => chat.chat_id === chat_id.value)?.Message
@@ -155,7 +156,7 @@ function revealChat(event: any) {
     event.target.classList.add('is-open')
 
     // remove the new message indicator
-    if(process.client){
+    if (process.client) {
         let new_message_indicator = document.getElementById('new-message-indicator')
         if (new_message_indicator) {
             new_message_indicator.classList.add('hidden')
@@ -196,8 +197,23 @@ async function getChats() {
     })
 
     chats.value = db_chats.filter((chat: any) => chat.WithUser.user_id !== user.user_id)
+    sortChats()
 
     show_all_unread_count()
+}
+
+function sortChats() {
+    // sort chats except
+    chats.value = chats.value.sort((a: any, b: any) => {
+        let a_last_message = a.Message[a.Message.length - 1] || null
+        let b_last_message = b.Message[b.Message.length - 1] || null
+
+        if (a_last_message && b_last_message) {
+            return new Date(b_last_message.created_at).getTime() - new Date(a_last_message.created_at).getTime()
+        } else {
+            return 0
+        }
+    })
 }
 
 async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
@@ -240,6 +256,7 @@ watch(WsServerStatusState, async (newValue) => {
                 try {
                     console.log('Polling for new messages, tickets and notifications...');
                     getChats();
+                    sortChats()
                     updateTicketsMetaData(useTicketsMetaData().value)
                     updateNewTickets(useNewTickets())
                     updateNotifications(useNotifications(), user.user_id)
@@ -279,8 +296,7 @@ function showChatButton() {
 
 function positionMessages() {
     nextTick(() => {
-        // @ts-ignore
-        document.getElementById("messages_container").scrollTop = document.getElementById("messages_container").scrollHeight;
+        document.getElementById("messages_container").scrollTop = document.getElementById("messages_container")?.scrollHeight;
     })
 }
 
@@ -288,21 +304,30 @@ getChats()
 
 watch(useNewMessage(), newMessage => {
     // console.log("new message", newMessage)
-    let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
+    if (newMessage) {
+        try{
+            let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
 
-    if (chat && newMessage) {
-        if (!chat.Message.find((message: any) => message.id === newMessage.id)) {
-            chat.Message.push(newMessage)
-        } else {
-            console.log('message already exists')
+            if (chat && newMessage) {
+                if (!chat.Message.find((message: any) => message.id === newMessage.id)) {
+                    chat.Message.push(newMessage)
+                } else {
+                    console.log('message already exists')
+                }
+            } else {
+                getChats()
+            }
+
+            if(chat?.chat_id === chat_id.value){
+                markMessagesAsRead(chat, true)
+            }
+            positionMessages()
+            sortChats()
+            show_all_unread_count()
+        } catch (e) {
+            console.warn(e)
         }
-    } else {
-        getChats()
     }
-
-
-    positionMessages()
-    show_all_unread_count()
 })
 
 </script>

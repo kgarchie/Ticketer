@@ -82,14 +82,14 @@ async function sendMessage() {
         chat_id: props.chat_id
     }
 
-    console.log(message)
+    // console.log(message)
 
     const {data: response} = await useFetch('/api/chats/messages/send', {
         method: 'POST',
         body: message
     })
 
-    console.log(response.value.body)
+    // console.log(response.value.body)
 
     if (response.value?.statusCode === 200) {
         setTimeout(() => {
@@ -97,9 +97,9 @@ async function sendMessage() {
                 props.messages?.push(response.value?.body)
                 console.log("Message added via post request")
                 useWsServerStatus().value = SocketStatus.UNKNOWN
+                positionMessages()
             }
         }, 500)
-        positionMessages()
     } else {
         alert(response.value?.body)
     }

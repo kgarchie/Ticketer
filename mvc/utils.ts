@@ -68,7 +68,7 @@ export async function notifyAllAndConnectedAdmins(response: SocketTemplate, send
     const admins = await getAdmins()
 
     for (const admin of admins) {
-        createAndShuttleNotification(admin.user_id, `New ticket created by ${await getUserName(sender_id)}`, TYPE.TICKET)
+        createAndShuttleNotification(admin.user_id, `New ticket created by ${await getUserName(sender_id)}`, TYPE.NEW_TICKET)
     }
 }
 
