@@ -150,7 +150,7 @@ export default defineNuxtPlugin(() => {
                         }
                         // console.log(message)
                         break;
-                    case TYPE.TICKET:
+                    case TYPE.NEW_TICKET:
                         const new_ticket = SocketResponse.body as Ticket
 
                         // if ticket is not in new tickets state, add it

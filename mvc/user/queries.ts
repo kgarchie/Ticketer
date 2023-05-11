@@ -44,7 +44,8 @@ export async function getUserOrEphemeralUser_Secure(user_id: string | undefined)
                 name: 'Anonymous',
                 email: 'Anonymous',
                 company: 'Anonymous',
-                is_admin: false
+                is_admin: false,
+                user_id: user_id
             }
         }
     ) || null

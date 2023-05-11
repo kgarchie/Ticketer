@@ -82,6 +82,7 @@ function show_all_unread_count() {
 
 
 function getChatTitle(chat: any) {
+    // console.log(chat.WithUser)
     if (chat.WithUser.name !== "Anonymous") {
         return chat.WithUser.name
     } else {
