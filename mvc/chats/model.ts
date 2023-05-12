@@ -33,7 +33,7 @@ export async function sendMessage(event: H3Event) {
     }
 
     const createdMessage = await createMessage(chat_id, from_user_id, to_user_id, message)
-    createAndShuttleNotification(to_user_id, `You have a new message from ${from_user_id}`, TYPE.MESSAGE)
+    createAndShuttleNotification(to_user_id, `You have a new message from ${from_user_id}`, TYPE.NOTIFICATION)
 
     let socketResponse = {} as SocketTemplate
     socketResponse.statusCode = 200

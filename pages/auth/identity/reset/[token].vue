@@ -55,7 +55,7 @@ async function submitNewPassword() {
         if (res.value?.statusCode === 200) {
             window.location.href = '/'
         } else {
-            alert('Something went wrong, please try again')
+            alert(res.value.body)
         }
     } else {
         alert('Please fill in all fields')

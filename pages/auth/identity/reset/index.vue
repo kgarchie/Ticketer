@@ -12,7 +12,7 @@
                     <label for="email">Email</label>
                     <input class="input is-primary" type="email" placeholder="Email address" autocomplete="email"
                            id="email" v-model="email" required>
-                    <NuxtLink to="/auth/identity/login" class="has-text-primary">Login</NuxtLink>
+                    <small><NuxtLink to="/auth/login" class="has-text-primary">Did you remember it?</NuxtLink></small>
                 </div>
                 <div class="column">
                     <button class="button is-primary is-fullwidth" type="submit" id="submit-btn">Reset

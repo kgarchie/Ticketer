@@ -110,7 +110,7 @@ export default defineNuxtPlugin(() => {
                         }
 
                         if ('serviceWorker' in navigator) {
-                            if (Notification.permission === 'granted') {
+                            if (window.Notification.permission === 'granted') {
                                 navigator.serviceWorker.getRegistration().then(reg => {
                                     reg?.showNotification(notification.message, {
                                         body: notification.message,
@@ -169,8 +169,7 @@ export default defineNuxtPlugin(() => {
                         if (ticketIndexNew !== -1) {
                             newTicketsState.value[ticketIndexNew] = ticket
                         } else {
-                            console.log('Ticket found in new tickets state, adding it as a new ticket')
-                            newTicketsState.value.unshift(ticket)
+                            console.log('Ticket not found in new tickets state, ticket is not new')
                         }
 
                         updateTicketsMetaData(TicketsMetaDataState.value)
@@ -228,38 +227,28 @@ export default defineNuxtPlugin(() => {
         }
 
         // long poll server status
-        async pollWsStatus(maxRetries = 10) {
+        public async pollWsStatus(maxRetries = 10) {
             console.log('Polling socket server status')
-
-            try {
-                this.socketSendData(this.webSocket, JSON.stringify({
-                    statusCode: 200,
-                    type: TYPE.STATUS
-                } as SocketTemplate))
-            } catch (e) {
-                console.log(e)
-
-                if (WsServerStatusState.value !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
-                    WsServerStatusState.value = SocketStatus.OPEN
-                } else if (WsServerStatusState.value !== SocketStatus.CLOSED && this.webSocket.readyState === WebSocket.CLOSED) {
-                    WsServerStatusState.value = SocketStatus.CLOSED
-                } else if (this.webSocket.readyState === WebSocket.CLOSED) {
-                    try {
-                        this.webSocket = new WebSocket(socket_url)
-                        this.setUpSocket()
-                        await new Promise(resolve => setTimeout(resolve, 3000))
-                    } catch (e) {
-                        console.log(e)
-                    }
+            if (WsServerStatusState.value !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
+                WsServerStatusState.value = SocketStatus.OPEN
+            } else if (WsServerStatusState.value !== SocketStatus.CLOSED && this.webSocket.readyState === WebSocket.CLOSED) {
+                WsServerStatusState.value = SocketStatus.CLOSED
+            } else if (this.webSocket.readyState === WebSocket.CLOSED) {
+                try {
+                    this.webSocket = new WebSocket(socket_url)
+                    this.setUpSocket()
+                    await new Promise(resolve => setTimeout(resolve, 3000))
+                } catch (e) {
+                    console.log(e)
                 }
+            }
 
-                if (WsServerStatusState.value === SocketStatus.CLOSED && maxRetries-- > 0) {
-                    setTimeout(() => {
-                        this.pollWsStatus()
-                    }, 3000)
+            if (WsServerStatusState.value === SocketStatus.CLOSED && maxRetries-- > 0) {
+                setTimeout(() => {
+                    this.pollWsStatus()
+                }, 3000)
 
-                    await new Promise(resolve => setTimeout(resolve, 5000))
-                }
+                await new Promise(resolve => setTimeout(resolve, 5000))
             }
         }
 
@@ -272,7 +261,7 @@ export default defineNuxtPlugin(() => {
 
     return {
         provide: {
-            ClientWebSocket
+            ClientWebSocket: ClientWebSocket
         }
     }
 })

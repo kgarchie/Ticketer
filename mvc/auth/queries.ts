@@ -303,3 +303,20 @@ export async function getRegisteredUser(user_id: string, email:string) {
         return null;
     })
 }
+
+
+export async function invalidateAllUserTokens(user_id:string){
+    return await prisma.token.updateMany({
+        where: {
+            User:{
+                user_id: user_id
+            }
+        },
+        data: {
+            is_valid: false
+        }
+    }).catch((err) => {
+        console.log(err)
+        return null;
+    })
+}

@@ -188,6 +188,7 @@ export async function markTicketAsResolved(ticketId: string | number) {
     }).catch(
         error => {
             console.log(error)
+            return null
         }
     )
 }

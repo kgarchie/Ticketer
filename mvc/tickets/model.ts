@@ -64,7 +64,7 @@ export async function makeComment(event: H3Event) {
         return response
     }
 
-    const tagged_people = tagged as TaggedPerson[]
+    const tagged_people = tagged as TaggedPerson[] || []
     const newComment = await createTicketComment(comment, commentor, ticketId, parentId) || null
 
     if (!newComment) {
@@ -165,7 +165,7 @@ export async function pendTicket(event: H3Event, force = false) {
         return response
     }
 
-    const update = markTicketAsPending(ticketId)
+    const update = await markTicketAsPending(ticketId)
 
     if (!update) {
         response.statusCode = 500
@@ -198,7 +198,7 @@ export async function resolveTicket(event: H3Event) {
         return response
     }
 
-    const update = markTicketAsResolved(ticketId)
+    const update = await markTicketAsResolved(ticketId)
 
     if (!update) {
         response.statusCode = 500

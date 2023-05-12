@@ -1,6 +1,6 @@
 <template>
     <form class="media box is-fullwidth"
-          @submit.prevent="$emit('comment', {comment: comment, tagged: tagged}); comment=''; tagged=[]"
+          @submit.prevent="$emit('comment', {comment: comment, tagged: tagged}); comment=''; tagged=[]; resetPlaceholder"
           @reset.prevent="$emit('cancel')" id="commentForm">
         <div class="media-content">
             <div class="field">
@@ -8,7 +8,8 @@
                     <!-- display taggable people -->
                     <div v-if="displayTaggablePeople" class="box taggable-people" id="popUpTagger">
                         <ul class="is-flex is-flex-direction-column-reverse">
-                            <li v-for="(person, index) in taggablePeople" :key="index" @click="tagPerson(person.user_id)">
+                            <li v-for="(person, index) in taggablePeople" :key="index"
+                                @click="tagPerson(person.user_id)">
                                 {{ person.name || person.user_id }}
                             </li>
                         </ul>
@@ -44,43 +45,54 @@ const tagged = reactive({
     value: [] as Array<any>
 })
 
-const ph = props.taggable as Array<any>
+const ph = ref(await props.taggable)
 // filter out the people depending on the user input after the @
 
 // map over and await the names in the ph array
-let placeholder = await Promise.all(
-    ph.map(async (person: any) => {
+const placeholder = ref(await Promise.all(
+    ph.value.map(async (person: any) => {
         return {
             name: await person.name,
             user_id: person.user_id
         }
     })
-)
+))
 
 const taggablePeople = computed(() => {
     // console.log(placeholder)
     if (comment.value) {
         let lastAt = comment.value.lastIndexOf('@')
         let input = comment.value.substring(lastAt + 1)
-        return placeholder.filter((person: any) => person.name.toLowerCase().includes(input.toLowerCase()))
+        return placeholder.value.filter((person: any) => person.name.toLowerCase().includes(input.toLowerCase()))
     } else {
-        return placeholder
+        return placeholder.value
     }
 })
 
 let displayTaggablePeople = false
+
+async function resetPlaceholder() {
+    placeholder.value = await Promise.all(
+        ph.value.map(async (person: any) => {
+            return {
+                name: await person.name,
+                user_id: person.user_id
+            }
+        })
+    )
+}
 
 const tagPerson = (user_id: any = null) => {
     if (user_id) {
         // there can be more than one person tagged and thus more than one @
         // so we need to replace the last @ with the person's name
         let lastAt = comment.value.lastIndexOf('@')
-        let person = placeholder.find((person: any) => person.user_id === user_id)
+        let person = placeholder.value.find((person: any) => person.user_id === user_id)
         comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
         tagged.value.push(person)
-        placeholder = placeholder.filter((person: any) => person.user_id !== user_id)
+        placeholder.value = placeholder.value.filter((person: any) => person.user_id !== user_id)
 
-        if (process.client){
+        if (process.client) {
             const input = document.getElementById('commentReplyTextArea')
             input?.focus()
         }
@@ -93,13 +105,13 @@ const tagPerson = (user_id: any = null) => {
         comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
         tagged.value.push(person)
         // remove the person from the taggable people
-        placeholder = placeholder.filter((p: any) => p.user_id !== person.user_id)
+            placeholder.value = placeholder.value.filter((p: any) => p.user_id !== person.user_id)
         // console.log(placeholder)
     }
 
     displayTaggablePeople = false
-    // console.log(tagged.value)
-    // console.log(placeholder)
+    console.log(tagged.value)
+    console.log(placeholder.value)
 }
 
 onMounted(() => {
@@ -109,26 +121,24 @@ onMounted(() => {
     // When user clicks tab, tag the person if the taggable people are displayed
     input?.addEventListener('keydown', (e: any) => {
         if (e.key === 'Tab') {
-            if(comment.value === ''){
-                e.preventDefault()
+            e.preventDefault()
+            if (comment.value === '') {
                 comment.value = '@'
-            } else {
-                if(displayTaggablePeople) {
-                    e.preventDefault()
-                    tagPerson()
-                }
+            } else if (displayTaggablePeople) {
+                tagPerson()
             }
         }
 
         // if the letter entered is @, display the taggable people
         if (e.key === '@') {
             displayTaggablePeople = true
-            // console.log(placeholder)
+            console.log(placeholder.value)
         }
 
         // if a person presses ctrl + enter, submit the comment
         if (e.key === 'Enter' && e.ctrlKey) {
             e.preventDefault()
+            resetPlaceholder()
             document.getElementById('submit-comment-button')?.click()
         }
 
@@ -140,8 +150,8 @@ onMounted(() => {
             let lastSpace = comment.value.lastIndexOf(' ')
             if (lastAt > lastSpace) {
                 const poper = tagged.value.pop() || null
-                if(poper){
-                    placeholder.push(poper)
+                if (poper && placeholder.value.find((p: any) => p.user_id === poper.user_id) === undefined) {
+                    placeholder.value.push(poper)
                 }
                 displayTaggablePeople = false
                 comment.value = comment.value.substring(0, lastAt)

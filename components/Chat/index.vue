@@ -15,7 +15,7 @@
                             <div class="message-preview">
                                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
                                 <span class="company-info" v-if=" user.is_admin ">{{
-                                    chat.WithUser.company.name || chat.WithUser.company
+                                    chat.WithUser?.company?.name || chat?.WithUser?.company
                                     }}</span>
                                 <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
                                 <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
@@ -261,7 +261,6 @@ watch(WsServerStatusState, async (newValue) => {
                     updateNewTickets(useNewTickets())
                     updateNotifications(useNotifications(), user.user_id)
 
-
                     if (WsServerStatusState.value === SocketStatus.OPEN) {
                         console.log('Socket has opened removing poll...');
                         clearInterval(pollM);
@@ -296,6 +295,7 @@ function showChatButton() {
 
 function positionMessages() {
     nextTick(() => {
+        // @ts-ignore
         document.getElementById("messages_container").scrollTop = document.getElementById("messages_container")?.scrollHeight;
     })
 }

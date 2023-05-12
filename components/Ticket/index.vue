@@ -235,7 +235,7 @@ async function submitComment(payload: any) {
                 comment: comment,
                 commentor: user.value.user_id,
                 parentId: null,
-                tagged: tagged as TaggedPerson[]
+                tagged: tagged.value as TaggedPerson[]
             }
         })
 

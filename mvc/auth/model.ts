@@ -3,7 +3,7 @@ import {HttpResponseTemplate} from "~/types";
 import {
     createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
-    getUserOrEphemeralUser, invalidateToken,
+    getUserOrEphemeralUser, invalidateAllUserTokens, invalidateToken,
     loginUser, loginWithEmailPassword,
     saveNewToken,
     updatePassword
@@ -76,8 +76,19 @@ export async function saveNewPassword(event: H3Event) {
     let response = {} as HttpResponseTemplate;
     const {user_id, token, password, email} = await readBody(event)
 
+    // check if token is valid
+    const tokenOrNull = await getToken(user_id, token)
+
+    if (!tokenOrNull || tokenOrNull.is_valid === false) {
+        response.statusCode = 401;
+        response.body = "Unauthorized | Token Invalid/Expired! Try Again"
+        return response;
+    }
+
+    await invalidateToken(tokenOrNull)
+
     const updatedUserOrNull = await updatePassword(user_id, password)
-    const newToken = await saveNewToken(token, email)
+    const newToken = await saveNewToken(generateRandomToken(), email)
 
     if (updatedUserOrNull && newToken) {
         setAuthCookie(event, {
@@ -145,6 +156,7 @@ export async function reset(event: H3Event) {
     }
 
     const token = await saveNewToken(generateRandomToken(), email)
+
     if (!token) {
         response.statusCode = 500;
         response.body = "Internal Server Error"

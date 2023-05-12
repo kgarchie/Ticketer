@@ -71,10 +71,10 @@
     </section>
 </template>
 <script setup lang="ts">
-import {SocketStatus, TYPE, UserAuth} from "~/types";
+import {SocketStatus, UserAuth} from "~/types"
+const {$ClientWebSocket: ClientWebSocket} = useNuxtApp()
 
 const isActive = ref<boolean>(false)
-const {$ClientWebSocket: ClientWebSocket} = useNuxtApp()
 
 const user = useUser().value
 const notifications = useNotifications()
@@ -112,20 +112,23 @@ let opened_socket: any | undefined = undefined
 
 onMounted(() => {
     if (user?.user_id != '') {
-        opened_socket = new ClientWebSocket()
+        const opened_socket = new ClientWebSocket()
 
-        // console.log(opened_socket.webSocket.readyState)
-        // wait for 5 seconds and check if the socket is open
         setTimeout(() => {
-            // console.log(opened_socket.webSocket.readyState)
-            if (opened_socket.webSocket.readyState !== WebSocket.OPEN && opened_socket.webSocket.readyState !== WebSocket.CONNECTING) {
-                useWsServerStatus().value = SocketStatus.CLOSED
+            if (opened_socket.webSocket.readyState !== 1) {
+                setTimeout(() => {
+                    if(opened_socket.webSocket.readyState !== 1){
+                        useWsServerStatus().value = SocketStatus.CLOSED
+                        opened_socket.pollWsStatus()
+                    } else {
+                        console.log('Socket seemed to have opened eventually')
+                    }
+                }, 3000)
                 console.log('Socket flagged as closed')
-            } else if (opened_socket.WebSocket === WebSocket.CONNECTING) {
+            } else if (Number(opened_socket.webSocket.readyState) === 0) {
                 useWsServerStatus().value = SocketStatus.UNKNOWN
                 console.log('Socket flagged as unknown')
             }
-            console.log('Socket is open')
         }, 3000)
 
         const WsServerStatusState = useWsServerStatus()

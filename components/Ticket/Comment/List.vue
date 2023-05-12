@@ -23,7 +23,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import {SocketStatus} from "~/types";
+import {SocketStatus, TaggedPerson} from "~/types";
 
 const user = useUser()
 
@@ -81,7 +81,7 @@ async function submitComment(payload: any) {
                 comment: comment,
                 commentor: user.value.user_id,
                 parentId: commentToReply?.value?.id || null,
-                tagged: tagged
+                tagged: tagged.value as TaggedPerson[]
             }
         })
 
