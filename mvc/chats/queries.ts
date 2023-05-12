@@ -44,17 +44,20 @@ export async function getUserChats(user_id: string) {
     )
 
     let admins = await getAdmins()
+    let chat_length = mapped_chats.length
 
     // if an admin is not in the chats, create a chat with them, and send an initial message, and then add it to the chats
     for (let admin of admins) {
         let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id?.toString() === admin.user_id.toString() || chat.Message[0].to_user_id?.toString() === admin.user_id.toString())
 
         if (!chats_has_admin && admin.user_id.toString() !== user_id.toString()) {
-            const new_chat = await createChat(admin.user_id, user_id.toString())
 
-            // @ts-ignore
             mapped_chats.push({
-                ...new_chat,
+                id: ++chat_length,
+                Message: [],
+                chat_id: obtainChat_id(user_id.toString(), admin.user_id.toString()).toString(),
+                created_at: new Date(),
+                ticketId: null,
                 user_id: user_id.toString(),
                 WithUser: admin
             })
