@@ -3,7 +3,6 @@ import {HttpResponseTemplate, SocketTemplate, TYPE} from "~/types";
 import {createMessage, getUserChats, readUserMessage} from "~/mvc/chats/queries";
 import {createAndShuttleNotification, shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
-import {getAuthCookie} from "~/mvc/auth/helpers";
 
 export async function getChats(event: H3Event) {
     const user_id = await readBody(event) || null;
@@ -15,9 +14,8 @@ export async function getChats(event: H3Event) {
         return response
     }
 
-    const user = await getAuthCookie(event)
     response.statusCode = 200
-    response.body = await getUserChats(user_id, user.is_admin)
+    response.body = await getUserChats(user_id)
 
     return response
 }

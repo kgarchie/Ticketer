@@ -1,9 +1,8 @@
 import prisma from "~/db";
-import {v4} from "uuid";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
-import {getAuthCookie} from "~/mvc/auth/helpers";
+import {obtainChat_id} from "~/mvc/chats/helpers";
 
-export async function getUserChats(user_id: string, is_admin=false) {
+export async function getUserChats(user_id: string) {
     const chatsFromMessages = await prisma.message.findMany({
         where: {
             OR: [
@@ -51,30 +50,11 @@ export async function getUserChats(user_id: string, is_admin=false) {
         let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id?.toString() === admin.user_id.toString() || chat.Message[0].to_user_id?.toString() === admin.user_id.toString())
 
         if (!chats_has_admin && admin.user_id.toString() !== user_id.toString()) {
-            const new_chat = await createChat(user_id, admin.user_id)
-
-            if (!new_chat) break
-            let initial_message = 'Hello, I am ' + admin.name + ' from ' + admin.company?.name + '. How can I help you?'
-
-            if (is_admin) {
-                initial_message = 'Hello, fellow admin! I am ' + admin.name + ' from ' + admin.company?.name
-            }
-
-            const message = await createMessage(new_chat?.chat_id, admin.user_id, user_id, initial_message)
-            if (!message) break
-
-            const chat_with_message = await prisma.chat.findUnique({
-                where: {
-                    id: new_chat?.id
-                },
-                include: {
-                    Message: true
-                }
-            })
+            const new_chat = await createChat(admin.user_id, user_id.toString())
 
             // @ts-ignore
             mapped_chats.push({
-                ...chat_with_message,
+                ...new_chat,
                 user_id: user_id.toString(),
                 WithUser: admin
             })
@@ -87,24 +67,10 @@ export async function getUserChats(user_id: string, is_admin=false) {
 export async function createChat(from_user_id: string, to_user_id: string) {
     let chat = await prisma.chat.findFirst({
             where: {
-                AND: [
-                    {
-                        Message: {
-                            some: {
-                                from_user_id: from_user_id.toString(),
-                                to_user_id: to_user_id.toString()
-                            }
-                        }
-                    },
-                    {
-                        Message: {
-                            some: {
-                                from_user_id: to_user_id.toString(),
-                                to_user_id: from_user_id.toString()
-                            }
-                        }
-                    }
-                ]
+                chat_id: obtainChat_id(from_user_id, to_user_id).toString()
+            },
+            include: {
+                Message: true
             }
         }).then(
             (data) => {
@@ -123,7 +89,10 @@ export async function createChat(from_user_id: string, to_user_id: string) {
 
     chat = await prisma.chat.create({
             data: {
-                chat_id: v4()
+                chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
+            },
+            include: {
+                Message: true
             }
         }).catch(
             (error) => {

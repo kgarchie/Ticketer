@@ -5,11 +5,10 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-// const domain = window.location.hostname
-// const socket_url = `${wsProtocol}//${domain}:${websocketPort}`
+const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
 
 // For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
