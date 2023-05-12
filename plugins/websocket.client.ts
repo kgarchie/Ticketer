@@ -5,10 +5,10 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-// const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
+const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
 
 // For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -226,29 +226,36 @@ export default defineNuxtPlugin(() => {
         }
 
         // long poll server status
-        public async pollWsStatus(maxRetries = 10) {
-            console.log('Polling socket server status')
-            if (WsServerStatusState.value !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
-                WsServerStatusState.value = SocketStatus.OPEN
-            } else if (WsServerStatusState.value !== SocketStatus.CLOSED && this.webSocket.readyState === WebSocket.CLOSED) {
-                WsServerStatusState.value = SocketStatus.CLOSED
-            } else if (this.webSocket.readyState === WebSocket.CLOSED) {
-                try {
-                    this.webSocket = new WebSocket(socket_url)
-                    this.setUpSocket()
-                    await new Promise(resolve => setTimeout(resolve, 3000))
-                } catch (e) {
-                    console.log(e)
+        private maxRetries = 10
+
+        public async pollWsStatus() {
+            if(this.maxRetries-- > 0) {
+                console.log('Polling socket server status')
+                if (WsServerStatusState.value !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
+                    WsServerStatusState.value = SocketStatus.OPEN
+                } else if (WsServerStatusState.value !== SocketStatus.CLOSED && this.webSocket.readyState === WebSocket.CLOSED) {
+                    WsServerStatusState.value = SocketStatus.CLOSED
+                } else if (this.webSocket.readyState === WebSocket.CLOSED) {
+                    try {
+                        this.webSocket = new WebSocket(socket_url)
+                        this.setUpSocket()
+                        await new Promise(resolve => setTimeout(resolve, 3000))
+                    } catch (e) {
+                        console.log(e)
+                    }
                 }
-            }
 
-            if (WsServerStatusState.value === SocketStatus.CLOSED && maxRetries-- > 0) {
-                setTimeout(() => {
-                    this.pollWsStatus()
-                }, 3000)
+                if (WsServerStatusState.value !== SocketStatus.OPEN) {
+                    setTimeout(() => {
+                        this.pollWsStatus()
+                    }, 3000)
 
-                await new Promise(resolve => setTimeout(resolve, 5000))
+                    await new Promise(resolve => setTimeout(resolve, 5000))
+                }
+
+                this.maxRetries -= 1
             }
+            return
         }
 
         constructor() {

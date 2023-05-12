@@ -14,13 +14,13 @@
             </div>
         </div>
         <div class="middle" id="messages_container">
-            <div class="messages" id="chat_box" v-for="message in messages" :key="message.id">
-                <div class="bubble incoming" v-if="message.to_user_id === user.user_id">
-                    <p>{{ message.message }}</p>
+            <div class="messages" id="chat_box" v-for="message in messages" :key="message?.id">
+                <div class="bubble incoming" v-if="message?.to_user_id === user?.user_id">
+                    <p>{{ message?.message }}</p>
                     <small class="time">{{ new Date(message?.created_at).toLocaleString() || '' }}</small>
                 </div>
                 <div class="bubble outgoing" v-else>
-                    <p>{{ message.message }}</p>
+                    <p>{{ message?.message }}</p>
                     <small class="time">{{ new Date(message?.created_at).toLocaleString() || '' }} </small>
                 </div>
             </div>
@@ -38,13 +38,13 @@
 
 <script setup lang="ts">
 import {SocketStatus} from "~/types";
-
+import {Message} from "@prisma/client";
 const composed_message = ref('')
 const user = useUser().value
 
 const props = defineProps({
     messages: {
-        type: Array,
+        type: Array as PropType<Message[]>,
         required: false,
         default: () => []
     },

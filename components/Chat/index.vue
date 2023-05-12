@@ -60,7 +60,7 @@ const messages = computed(() => {
 const to_user = ref<any>({})
 
 function unread_count(eval_messages: Message[]) {
-    return eval_messages.filter((message: Message) => !message.opened && message.from_user_id != user.user_id).length
+    return eval_messages.filter((message: Message) => !message?.opened && message?.from_user_id != user.user_id).length
 }
 
 

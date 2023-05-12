@@ -67,7 +67,7 @@ export async function getUserChats(user_id: string) {
     return mapped_chats
 }
 
-export async function createChat(from_user_id: string, to_user_id: string) {
+export async function getOrCreateChat(from_user_id: string, to_user_id: string) {
     let chat = await prisma.chat.findFirst({
             where: {
                 chat_id: obtainChat_id(from_user_id, to_user_id).toString()
@@ -108,7 +108,7 @@ export async function createChat(from_user_id: string, to_user_id: string) {
 }
 
 export async function createMessage(chat_id: string, from_user_id: string, to_user_id: string, message: string) {
-    return prisma.message.create(
+    const createdMessage = await prisma.message.create(
         {
             data: {
                 chat: {
@@ -127,6 +127,8 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
             return null
         }
     )
+
+    return createdMessage
 }
 
 

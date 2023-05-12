@@ -1,6 +1,6 @@
 import {H3Event} from "h3";
 import {HttpResponseTemplate, SocketTemplate, TYPE} from "~/types";
-import {createMessage, getUserChats, readUserMessage} from "~/mvc/chats/queries";
+import {createMessage, getOrCreateChat, getUserChats, readUserMessage} from "~/mvc/chats/queries";
 import {createAndShuttleNotification, shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
 
@@ -30,7 +30,20 @@ export async function sendMessage(event: H3Event) {
         return response
     }
 
-    const createdMessage = await createMessage(chat_id, from_user_id, to_user_id, message)
+    const chat = await getOrCreateChat(from_user_id, to_user_id)
+    if (!chat) {
+        response.statusCode = 500
+        response.body = "Error creating chat"
+        return response
+    }
+
+    const createdMessage = await createMessage(chat?.chat_id, from_user_id, to_user_id, message)
+    if (!createdMessage) {
+        response.statusCode = 500
+        response.body = "Error creating message"
+        return response
+    }
+
     createAndShuttleNotification(to_user_id, `You have a new message from ${from_user_id}`, TYPE.NOTIFICATION)
 
     let socketResponse = {} as SocketTemplate
