@@ -70,7 +70,7 @@
                                     <div class="content">
                                         <table class="table is-fullwidth is-striped">
                                             <tbody>
-                                            <tr v-for="(item, index) in tickets" :key="index" v-if="item.status === STATUS.O">
+                                            <tr v-for="(item, index) in tickets" :key="index" v-if="item?.status === STATUS.O">
                                                 <td width="5%"><i class="fa fa-bell-o"></i></td>
                                                 <td>{{ item.issue }}</td>
                                                 <td>{{ item.safaricom_no }}</td>
