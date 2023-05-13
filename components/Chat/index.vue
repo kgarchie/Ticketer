@@ -305,7 +305,7 @@ getChats()
 watch(useNewMessage(), newMessage => {
     // console.log("new message", newMessage)
     if (newMessage) {
-        try{
+        try {
             let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
 
             if (chat && newMessage) {
@@ -318,7 +318,7 @@ watch(useNewMessage(), newMessage => {
                 getChats()
             }
 
-            if(chat?.chat_id === chat_id.value){
+            if (chat?.chat_id === chat_id.value) {
                 markMessagesAsRead(chat, true)
             }
             positionMessages()
@@ -355,12 +355,13 @@ $accent: hsl(221, 73%, 63%);
   background: $accent;
   color: white;
 
-  left: 310px !important;
+  left: 325px !important;
 
   transition: left .3s cubic-bezier(0.27, 0.5, 0.8, 1.25);
 
   @media screen and (max-width: 768px) {
-    right: 0 !important;
+    left: 290px !important;
+    left: 290px !important;
   }
 }
 
