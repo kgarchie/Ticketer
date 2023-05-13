@@ -4,11 +4,10 @@ function openSocket() {
     socket = new WebSocket(`wss://ticketer.up.railway.app`);
 
     socket.onmessage = (message) => {
-        let { type, body } = JSON.parse(message.toString());
+        let { type, body } = JSON.parse(message.data);
 
         if (type === "MESSAGE") {
-            console.log(body);
-            if (Notification.permission === "granted") {
+            if (Notification.permission === "granted" && navigator.onLine) {
                 self.registration
                     .showNotification(body.fromUserName, {
                         body: body.message,

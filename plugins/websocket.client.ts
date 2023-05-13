@@ -1,5 +1,5 @@
 import {Comment, Message, Notification, Ticket} from "@prisma/client";
-import {CommentOperation, Initiator, SocketStatus, SocketTemplate, TYPE, websocketPort} from "~/types";
+import {CommentOperation, Initiator, SocketStatus, SocketTemplate, STATUS, TYPE, websocketPort} from "~/types";
 import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
@@ -165,7 +165,11 @@ export default defineNuxtPlugin(() => {
                         // find ticket in new tickets state, update it
                         const ticketIndexNew = newTicketsState.value.findIndex((t: Ticket) => t.id === ticket.id)
                         if (ticketIndexNew !== -1) {
-                            newTicketsState.value[ticketIndexNew] = ticket
+                            if(ticket.status !== STATUS.O) {
+                                newTicketsState.value.splice(ticketIndexNew, 1)
+                            } else {
+                                newTicketsState.value[ticketIndexNew] = ticket
+                            }
                         } else {
                             console.log('Ticket not found in new tickets state, ticket is not new')
                         }
