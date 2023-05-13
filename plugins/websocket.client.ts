@@ -5,10 +5,10 @@ import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
 // For Development
-// const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
+const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
 
 // For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+// const socket_url: string = `${wsProtocol}//${window.location.host}`
 
 export default defineNuxtPlugin(() => {
     const newMessageState = useNewMessage()
@@ -126,31 +126,6 @@ export default defineNuxtPlugin(() => {
                         }
 
                         break;
-                    case TYPE.NEW_MESSAGE_NOTIFICATION:
-                        const newMessageNotification = SocketResponse.body as Notification
-
-                        if ('serviceWorker' in navigator) {
-                            if (window.Notification.permission === 'granted') {
-                                navigator.serviceWorker.getRegistration().then(reg => {
-                                    reg?.showNotification("Message", {
-                                        body: newMessageNotification.message,
-                                        icon: '/favicon.ico',
-                                    })
-                                })
-                            } else {
-                                // make a sound
-                                const audio = new Audio('/notification.mp3')
-                                audio.play()
-                            }
-                        } else {
-                            alert("Your browser doesn't support notifications. Please use a modern browser")
-                        }
-
-                        if (document.visibilityState !== 'visible') {
-                            const audio = new Audio('/notification.mp3')
-                            audio.play()
-                        }
-                        break;
                     case TYPE.MESSAGE:
                         const message = SocketResponse.body.message as Message
                         const fromUserName = SocketResponse.body.fromUserName as string
@@ -167,6 +142,9 @@ export default defineNuxtPlugin(() => {
                                     })
                                 })
                             }
+
+                            const audio = new Audio('/notification.mp3')
+                            audio.play()
                         }
                         // console.log(message)
                         break;

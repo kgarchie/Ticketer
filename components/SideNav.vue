@@ -17,7 +17,7 @@
                     <NuxtLink to="/tickets/view/user">My Tickets</NuxtLink>
                 </li>
 
-                <li>
+                <li v-if="user.is_admin">
                     <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`">All Site Tickets</NuxtLink>
                 </li>
 
@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+const user = useUser()
 </script>
 
 <style scoped>

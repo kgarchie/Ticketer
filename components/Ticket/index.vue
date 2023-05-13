@@ -118,6 +118,7 @@
 <script lang="ts" setup>
 import {Comment} from "@prisma/client";
 import {CommentOperation, SocketStatus, STATUS, TaggedPerson} from "~/types";
+import {$fetch} from "ofetch";
 
 const user = useUser()
 const userName = ref('')
@@ -131,31 +132,24 @@ const props = defineProps({
 
 const local_ticket = ref(props.ticket)
 const comments = ref(local_ticket.value.comments)
+const taggable = ref<TaggedPerson[]>([])
 
-const admins = ref([])
-const {data: admins_response} = await useFetch('/api/user/admins')
+// using native fetch due to lifecycle issues
+const response = await fetch('/api/user/admins').then(res => res.json()).catch(err => console.log(err))
+let admins = response?.body
 
-if (admins_response?.value?.statusCode === 200) {
-    admins.value = admins_response?.value?.body
-}
-
-// console.log(admins.value)
-
-// taggable is all people who have commented on this ticket and admins if they are not in the list
-const taggable = computed(() => {
+async function getTaggablePeople() {
     let taggable_user_ids = props?.ticket?.comments.map((comment: any) => comment.commentor)
     taggable_user_ids = [...new Set(taggable_user_ids)]
-    // console.log(taggable_user_ids)
-    const taggable: any = []
+
+    let taggable: any = []
 
     for (const user_id of taggable_user_ids) {
-        const name_or_user_id = getUserName(user_id)
+        const name_or_user_id = await getUserName(user_id)
         taggable.push({name: name_or_user_id, user_id: user_id})
     }
 
-    // console.log(taggable)
-
-    admins?.value?.forEach((admin: any) => {
+    admins?.forEach((admin: any) => {
         if (!taggable_user_ids.includes(admin.user_id)) {
             taggable.push({name: admin.name, user_id: admin.user_id})
         }
@@ -164,8 +158,9 @@ const taggable = computed(() => {
     // console.log(taggable)
 
     return taggable
-})
+}
 
+taggable.value = await getTaggablePeople()
 async function closeTicket() {
     if (user.value.is_admin) {
         const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`, {
@@ -208,7 +203,7 @@ async function deleteTicket() {
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
-            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
+            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
         } else {
             alert('Operation Failed')
         }

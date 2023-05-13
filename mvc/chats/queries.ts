@@ -108,7 +108,7 @@ export async function getOrCreateChat(from_user_id: string, to_user_id: string) 
 }
 
 export async function createMessage(chat_id: string, from_user_id: string, to_user_id: string, message: string) {
-    const createdMessage = await prisma.message.create(
+    return await prisma.message.create(
         {
             data: {
                 chat: {
@@ -127,8 +127,6 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
             return null
         }
     )
-
-    return createdMessage
 }
 
 

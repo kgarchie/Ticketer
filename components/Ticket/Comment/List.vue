@@ -37,7 +37,7 @@ const props = defineProps({
         required: true
     },
     taggable: {
-        type: Object as PropType<any>,
+        type: Array as PropType<TaggedPerson[]>,
         required: false
     }
 })

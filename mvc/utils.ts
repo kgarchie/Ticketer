@@ -101,7 +101,14 @@ export async function socketSendData(ws: WebSocket, message: string, maxRetries 
 }
 
 export function shuttleData(user_id: string, data: SocketTemplate) {
-    const sockets = getConnectedClientSockets(user_id)
+    let sockets = getConnectedClientSockets(user_id)
+
+    // remove duplicate sockets
+    sockets = sockets.filter((socket, index, self) =>
+        index === self.findIndex((s) => (
+            s.Socket === socket.Socket
+        ))
+    )
 
     for (const socket of sockets) {
         socketSendData(socket.Socket, JSON.stringify(data))

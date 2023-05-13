@@ -1,14 +1,13 @@
 <template>
     <form class="media box is-fullwidth"
-          @submit.prevent="$emit('comment', {comment: comment, tagged: tagged}); comment=''; tagged=[]; resetPlaceholder"
-          @reset.prevent="$emit('cancel')" id="commentForm">
+          @submit.prevent="$emit('comment', {comment: comment, tagged: tagged}); comment=''; tagged=[];"
+          @reset.prevent="$emit('cancel')" id="commentForm" autocomplete="off">
         <div class="media-content">
             <div class="field">
                 <div class="control is-relative">
-                    <!-- display taggable people -->
                     <div v-if="displayTaggablePeople" class="box taggable-people" id="popUpTagger">
                         <ul class="is-flex is-flex-direction-column-reverse">
-                            <li v-for="(person, index) in taggablePeople" :key="index"
+                            <li v-for="(person, index) in filteredTagged" :key="index" class="tag-list-item"
                                 @click="tagPerson(person.user_id)">
                                 {{ person.name || person.user_id }}
                             </li>
@@ -31,134 +30,168 @@
 </template>
 
 <script setup lang="ts">
+import {TaggedPerson} from "~/types";
+
 const props = defineProps({
     taggable: {
-        type: Object as PropType<any>,
+        type: Array as PropType<TaggedPerson[]>,
         required: false,
         default: () => []
     }
 })
 
 const comment = ref('')
-
-const tagged = reactive({
-    value: [] as Array<any>
-})
-
-const ph = ref(await props.taggable)
-// filter out the people depending on the user input after the @
-
-// map over and await the names in the ph array
-const placeholder = ref(await Promise.all(
-    ph.value.map(async (person: any) => {
-        return {
-            name: await person.name,
-            user_id: person.user_id
-        }
-    })
-))
+const tagged = ref<TaggedPerson[]>([])
+const displayTaggablePeople = ref(false)
 
 const taggablePeople = computed(() => {
-    // console.log(placeholder)
-    if (comment.value) {
-        let lastAt = comment.value.lastIndexOf('@')
-        let input = comment.value.substring(lastAt + 1)
-        return placeholder.value.filter((person: any) => person.name.toLowerCase().includes(input.toLowerCase()))
+    let taggedPeople = tagged.value
+
+    return props.taggable.filter((person: TaggedPerson) => {
+        return !taggedPeople.some((taggedPerson: TaggedPerson) => {
+            return taggedPerson.user_id === person.user_id
+        })
+    })
+})
+
+const filteredTagged = ref<TaggedPerson[]>(taggablePeople.value)
+
+function tagPerson(user_id: string) {
+    let person = props.taggable.find((person: TaggedPerson) => person.user_id === user_id)
+    if (person) {
+        tagged.value.push(person)
+    }
+    let lastAt = comment.value.lastIndexOf('@')
+    let input = comment.value.substring(0, lastAt)
+
+    comment.value = input + '@' + person?.name + ' '
+    displayTaggablePeople.value = false
+    resetTaggableFiltered()
+}
+
+function closestMatches(input: string) {
+    let localPeople = taggablePeople.value
+    // return localPeople.filter((person: TaggedPerson) => {
+    //     return person.name?.toLowerCase().startsWith(input.toLowerCase()) || person.name?.toLowerCase().includes(input.toLowerCase())
+    // })
+    // priority to startsWith
+    let startsWith = localPeople.filter((person: TaggedPerson) => {
+        return person.name?.toLowerCase().startsWith(input.toLowerCase())
+    })
+
+    if (startsWith.length > 0) {
+        return startsWith
     } else {
-        return placeholder.value
+        return localPeople.filter((person: TaggedPerson) => {
+            return person.name?.toLowerCase().includes(input.toLowerCase())
+        })
+    }
+}
+
+function resetTaggableFiltered() {
+    filteredTagged.value = taggablePeople.value
+}
+
+watch(comment, (newComment) => {
+    if (newComment === '') {
+        displayTaggablePeople.value = false
+        tagged.value = []
+    }
+
+    let lastAt = newComment.lastIndexOf('@')
+    let lastSpace = newComment.lastIndexOf(' ')
+
+    if (lastAt <= lastSpace) {
+        displayTaggablePeople.value = false
+        resetTaggableFiltered()
+        // console.log(tagged.value)
+        // console.log(taggablePeople.value)
+    } else {
+        displayTaggablePeople.value = true
+        let input = newComment.substring(lastAt + 1)
+        filteredTagged.value = closestMatches(input)
     }
 })
 
-let displayTaggablePeople = false
-
-async function resetPlaceholder() {
-    placeholder.value = await Promise.all(
-        ph.value.map(async (person: any) => {
-            return {
-                name: await person.name,
-                user_id: person.user_id
-            }
-        })
-    )
-}
-
-const tagPerson = (user_id: any = null) => {
-    if (user_id) {
-        // there can be more than one person tagged and thus more than one @
-        // so we need to replace the last @ with the person's name
-        let lastAt = comment.value.lastIndexOf('@')
-        let person = placeholder.value.find((person: any) => person.user_id === user_id)
-        comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
-        tagged.value.push(person)
-        placeholder.value = placeholder.value.filter((person: any) => person.user_id !== user_id)
-
-        if (process.client) {
-            const input = document.getElementById('commentReplyTextArea')
-            input?.focus()
-        }
-    } else {
-        // if no user_id is passed, then we just want to take the closest match
-        // and replace the last @ with that person's name
-        let lastAt = comment.value.lastIndexOf('@')
-        // console.log(taggablePeople.value)
-        let person = taggablePeople.value[0]
-        comment.value = comment.value.substring(0, lastAt) + '@' + person.name + ' '
-        tagged.value.push(person)
-        // remove the person from the taggable people
-            placeholder.value = placeholder.value.filter((p: any) => p.user_id !== person.user_id)
-        // console.log(placeholder)
-    }
-
-    displayTaggablePeople = false
-    console.log(tagged.value)
-    console.log(placeholder.value)
-}
-
 onMounted(() => {
-    const input = document.getElementById('commentReplyTextArea')
-    input?.focus()
+    const commentReplyTextArea = document.getElementById('commentReplyTextArea')
+    commentReplyTextArea?.focus()
 
-    // When user clicks tab, tag the person if the taggable people are displayed
-    input?.addEventListener('keydown', (e: any) => {
-        if (e.key === 'Tab') {
+    document.addEventListener('keyup', (e) => {
+        if (e.key === 'Tab' && displayTaggablePeople.value) {
             e.preventDefault()
-            if (comment.value === '') {
-                comment.value = '@'
-            } else if (displayTaggablePeople) {
-                tagPerson()
+            // tagPerson(filteredTagged.value[0].user_id)
+            // console.log(filteredTagged.value[0].user_id)
+            let startsWith = closestMatches(comment.value.substring(comment.value.lastIndexOf('@') + 1))
+            if (startsWith.length > 0) {
+                tagPerson(startsWith[0].user_id)
+            }
+            // console.log(tagged.value)
+            commentReplyTextArea?.focus()
+        } else if (e.key === 'Tab' && !displayTaggablePeople.value) {
+            e.preventDefault()
+            commentReplyTextArea?.focus()
+            comment.value = '@'
+        }
+    })
+
+    commentReplyTextArea?.addEventListener('keyup', (e) => {
+        if (e.key === 'Backspace') {
+            if (comment.value === '@' || comment.value === '') {
+                displayTaggablePeople.value = false
+                // resetTaggableFiltered()
+            } else if (comment.value.length > 0) {
+                let lastAt = comment.value.lastIndexOf('@')
+                let lastSpace = comment.value.lastIndexOf(' ')
+
+                if (lastAt > lastSpace) {
+                    let popped = tagged.value.pop() || null
+                    if (popped) {
+                        comment.value = comment.value.slice(0, comment.value.length - popped.name!.length - 1)
+                        displayTaggablePeople.value = false
+                    }
+                    // resetTaggableFiltered()
+                    // console.log(tagged.value)
+                }
             }
         }
 
-        // if the letter entered is @, display the taggable people
-        if (e.key === '@') {
-            displayTaggablePeople = true
-            console.log(placeholder.value)
+        if (e.key === 'Escape') {
+            displayTaggablePeople.value = false
+            // resetTaggableFiltered()
         }
 
-        // if a person presses ctrl + enter, submit the comment
         if (e.key === 'Enter' && e.ctrlKey) {
-            e.preventDefault()
-            resetPlaceholder()
             document.getElementById('submit-comment-button')?.click()
         }
 
-        // if a person starts deleting a tagged user, delete the whole word instead
-        // remove the user from the tagged array and add them back to the taggable array
-        // is user just began typing @ but hasn't tagged anyone yet and deleted the @, don't do anything
-        if (e.key === 'Backspace' && comment.value.length > 0) {
-            let lastAt = comment.value.lastIndexOf('@')
-            let lastSpace = comment.value.lastIndexOf(' ')
-            if (lastAt > lastSpace) {
-                const poper = tagged.value.pop() || null
-                if (poper && placeholder.value.find((p: any) => p.user_id === poper.user_id) === undefined) {
-                    placeholder.value.push(poper)
-                }
-                displayTaggablePeople = false
-                comment.value = comment.value.substring(0, lastAt)
-                // console.log(tagged.value)
-                // console.log(placeholder)
+        if(e.key === '@') {
+            displayTaggablePeople.value = true
+        }
+
+        // highlight the closest match
+        let startsWith = filteredTagged.value[0].name?.toLowerCase()
+        if (!startsWith) return
+
+        let nameList = document.getElementsByClassName('tag-list-item')
+        if (!nameList) return
+
+        let length = nameList.length
+        for (let i = 0; i < length; i++) {
+            let name = nameList[i].innerHTML.toLowerCase()
+            if (name.trim().startsWith(startsWith.trim())) {
+                console.log(nameList[i])
+                nameList[i].classList.add('highlight')
+            } else {
+                nameList[i].classList.remove('highlight')
             }
         }
+    })
+})
+
+onUnmounted(() => {
+    const commentReplyTextArea = document.getElementById('commentReplyTextArea')
+    commentReplyTextArea?.removeEventListener('keyup', () => {
     })
 })
 </script>
@@ -181,8 +214,16 @@ onMounted(() => {
     list-style: none;
 
     &:hover {
+        background-color: #111111;
+        color: white;
+    }
+
+    &.highlight {
         background-color: #dcdcdc;
     }
 }
 
+.tag-list-item {
+    padding: 0.25rem;
+}
 </style>

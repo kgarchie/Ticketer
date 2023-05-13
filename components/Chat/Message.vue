@@ -39,6 +39,7 @@
 <script setup lang="ts">
 import {SocketStatus} from "~/types";
 import {Message} from "@prisma/client";
+
 const composed_message = ref('')
 const user = useUser().value
 
@@ -93,7 +94,7 @@ async function sendMessage() {
 
     if (response.value?.statusCode === 200) {
         setTimeout(() => {
-            if(!props.messages?.find((msg: any) => msg.id === response.value?.body?.id)) {
+            if (!props.messages?.find((msg: any) => msg.id === response.value?.body?.id)) {
                 props.messages?.push(response.value?.body)
                 console.log("Message added via post request")
                 useWsServerStatus().value = SocketStatus.UNKNOWN
@@ -111,7 +112,9 @@ function getUserInitial(name: string) {
 }
 
 onMounted(() => {
-    document.getElementById('chat_input')?.addEventListener('keydown', (e) => {
+    const chat_input = document.getElementById('chat_input')
+    chat_input?.focus()
+    chat_input?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             sendMessage()
