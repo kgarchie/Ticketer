@@ -44,8 +44,6 @@ export async function sendMessage(event: H3Event) {
         return response
     }
 
-    createAndShuttleNotification(to_user_id, `You have a new message from ${from_user_id}`, TYPE.NOTIFICATION)
-
     let socketResponse = {} as SocketTemplate
     socketResponse.statusCode = 200
     socketResponse.type = TYPE.MESSAGE
@@ -56,6 +54,8 @@ export async function sendMessage(event: H3Event) {
 
     shuttleData(to_user_id, socketResponse)
     shuttleData(from_user_id, socketResponse)
+
+    createAndShuttleNotification(to_user_id, `You have a new message from ${socketResponse.body.fromUserName}`, TYPE.NEW_MESSAGE_NOTIFICATION)
 
     response.statusCode = 200
     response.body = createdMessage

@@ -129,6 +129,7 @@ export enum URGENCY {
 export enum TYPE {
     MESSAGE = "MESSAGE",
     NOTIFICATION = "NOTIFICATION",
+    NEW_MESSAGE_NOTIFICATION = "NEW_MESSAGE_NOTIFICATION",
     DETAILS_REQ = "details request",
     DETAILS_RES = "details response",
     HEARTBEAT = "heartbeat",

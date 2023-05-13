@@ -4,17 +4,17 @@ function openSocket() {
     socket = new WebSocket(`wss://ticketer.up.railway.app`);
 
     socket.onmessage = (message) => {
-        let { type, body } = JSON.parse(message.data);
+        let { type, body } = JSON.parse(message.toString());
 
         if (type === "MESSAGE") {
-            // console.log(body);
+            console.log(body);
             if (Notification.permission === "granted") {
                 self.registration
-                    .showNotification(body.data.message.from_user_id, {
-                        body: body.data.message.message,
+                    .showNotification(body.fromUserName, {
+                        body: body.message,
                         icon: "/favicon.ico",
                         badge: "/favicon.ico",
-                        click_action: "ticketer-production.up.railway.app",
+                        click_action: "ticketer.up.railway.app",
                     })
                     .then((r) => console.log(r));
             }
@@ -71,7 +71,7 @@ function openSocket() {
                     body: "Socket is offline, but server is online | Please visit the site to reconnect for real time updates",
                     icon: "/favicon.ico",
                     badge: "/favicon.ico",
-                    click_action: "ticketer-production.up.railway.app",
+                    click_action: "ticketer.up.railway.app",
                 }).then((r) => console.log(r));
             }
         } else if (serverStatus === 'offline') {
@@ -80,7 +80,7 @@ function openSocket() {
                     body: "Can't reach Server | Please visit the site to reconnect for real time updates | Contact support if this issue persists",
                     icon: "/favicon.ico",
                     badge: "/favicon.ico",
-                    click_action: "ticketer-production.up.railway.app",
+                    click_action: "ticketer.up.railway.app",
                 }).then((r) => console.log(r));
             }
         }

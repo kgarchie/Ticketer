@@ -46,7 +46,8 @@ export async function createAndShuttleNotification(user_id: string, message: str
         data: {
             for_user_id: user_id,
             message: message,
-            type: type
+            type: type,
+            opened: type === TYPE.NEW_MESSAGE_NOTIFICATION
         }
     })
 

@@ -51,13 +51,13 @@ export async function getUserOrEphemeralUser_Secure(user_id: string | undefined)
     ) || null
 }
 
-export async function getUserName(user_id: string | null) {
-    const user = await getUserOrEphemeralUser_Secure(user_id!)
+export async function getUserName(user_id: string) {
+    const user = await getUserOrEphemeralUser_Secure(user_id)
 
     if (user) {
         return user.name
     } else {
-        return "Anonymous"
+        return user_id
     }
 }
 

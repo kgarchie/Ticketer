@@ -111,8 +111,29 @@ export default defineNuxtPlugin(() => {
                         if ('serviceWorker' in navigator) {
                             if (window.Notification.permission === 'granted') {
                                 navigator.serviceWorker.getRegistration().then(reg => {
-                                    reg?.showNotification(notification.message, {
+                                    reg?.showNotification("Notification", {
                                         body: notification.message,
+                                        icon: '/favicon.ico',
+                                    })
+                                })
+                            } else {
+                                // make a sound
+                                const audio = new Audio('/notification.mp3')
+                                audio.play()
+                            }
+                        } else {
+                            alert("Your browser doesn't support notifications. Please use a modern browser")
+                        }
+
+                        break;
+                    case TYPE.NEW_MESSAGE_NOTIFICATION:
+                        const newMessageNotification = SocketResponse.body as Notification
+
+                        if ('serviceWorker' in navigator) {
+                            if (window.Notification.permission === 'granted') {
+                                navigator.serviceWorker.getRegistration().then(reg => {
+                                    reg?.showNotification("Message", {
+                                        body: newMessageNotification.message,
                                         icon: '/favicon.ico',
                                     })
                                 })
