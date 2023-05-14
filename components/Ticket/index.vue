@@ -7,28 +7,28 @@
                     <div class="field">
                         <label class="label">Reference</label>
                         <div class="control">
-                            <p>{{ local_ticket.reference }}</p>
+                            <p>{{ local_ticket?.reference }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Safaricom Number</label>
                         <div class="control">
-                            <p>{{ local_ticket.safaricom_no }}</p>
+                            <p>{{ local_ticket?.safaricom_no }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Airtel Number</label>
                         <div class="control">
-                            <p>{{ local_ticket.airtel_no }}</p>
+                            <p>{{ local_ticket?.airtel_no }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Transaction Amount</label>
                         <div class="control">
-                            <p>{{ local_ticket.amount }}</p>
+                            <p>{{ local_ticket?.amount }}</p>
                         </div>
                     </div>
 
@@ -44,35 +44,35 @@
                     <div class="field">
                         <label class="label">Issue</label>
                         <div class="control">
-                            <p>{{ local_ticket.issue }}</p>
+                            <p>{{ local_ticket?.issue }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Company</label>
                         <div class="control">
-                            <p>{{ local_ticket.company || 'No Company Info' }}</p>
+                            <p>{{ local_ticket?.company || 'No Company Info' }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Paybill</label>
                         <div class="control">
-                            <p>{{ local_ticket.paybill_no }}</p>
+                            <p>{{ local_ticket?.paybill_no }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Additional Info</label>
                         <div class="control">
-                            <p>{{ local_ticket.a_info || 'No Additional Info' }}</p>
+                            <p>{{ local_ticket?.a_info || 'No Additional Info' }}</p>
                         </div>
                     </div>
 
                     <div class="field">
                         <label class="label">Urgency</label>
                         <div class="control">
-                            <p>{{ local_ticket.urgency }}</p>
+                            <p>{{ local_ticket?.urgency }}</p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +94,7 @@
             </article>
             <article class="comments">
                 <h3 class="is-5 raised">Comments</h3>
-                <div v-if="comments.length > 0" v-for="comment in comments"
+                <div v-if="comments?.length > 0" v-for="comment in comments"
                      :key="comment.id">
                     <div v-if="comment?.parentId === null">
                         <article class="media">
@@ -117,7 +117,7 @@
 
 <script lang="ts" setup>
 import {Comment} from "@prisma/client";
-import {CommentOperation, SocketStatus, STATUS, TaggedPerson} from "~/types";
+import {CommentOperation, SocketStatus, STATUS, TaggedPerson, TicketOperation} from "~/types";
 import {$fetch} from "ofetch";
 
 const user = useUser()
@@ -131,7 +131,7 @@ const props = defineProps({
 })
 
 const local_ticket = ref(props.ticket)
-const comments = ref(local_ticket.value.comments)
+const comments = ref(local_ticket.value?.comments)
 const taggable = ref<TaggedPerson[]>([])
 
 // using native fetch due to lifecycle issues
@@ -161,6 +161,7 @@ async function getTaggablePeople() {
 }
 
 taggable.value = await getTaggablePeople()
+
 async function closeTicket() {
     if (user.value.is_admin) {
         const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`, {
@@ -177,6 +178,12 @@ async function closeTicket() {
         alert('You are not authorized to perform this action')
     }
 }
+
+onBeforeMount(async () => {
+    if (!props.ticket) {
+        await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
+    }
+})
 
 async function resolveTicket() {
     if (user.value.is_admin) {
@@ -212,17 +219,20 @@ async function deleteTicket() {
     }
 }
 
+let oldComment = ''
+
 async function submitComment(payload: any) {
     let {comment, tagged} = payload
     if (comment === '') return alert('Please enter a comment before submitting')
     const {data: db_user} = await useFetch(`/api/user/${user.value.user_id}`)
     // console.log(db_user.value)
 
-    if (db_user?.value?.statusCode === 200) {
+    if (db_user?.value?.statusCode === 200 && oldComment !== comment) {
         // prepend name to comment
         // @ts-ignore
         comment = `${db_user.value.body} : ${comment}`
         // console.log(comment)
+        oldComment = comment
 
         const {data: response} = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
             method: 'POST',
@@ -258,6 +268,8 @@ async function submitComment(payload: any) {
                 }, 1000);
             }
         }
+    } else if (oldComment === comment) {
+        console.log('Duplicate comment')
     } else {
         alert('An error occurred; try refreshing the page')
     }
@@ -274,7 +286,7 @@ async function getUserName(user_id: string) {
     }
 }
 
-userName.value = await getUserName(props.ticket.creator)
+userName.value = await getUserName(props.ticket?.creator)
 
 watch(useWsServerStatus(), value => {
     if (value !== SocketStatus.OPEN) {
@@ -304,6 +316,16 @@ watch(useCommentActions(), value => {
         // console.log(value)
         if (value.action === CommentOperation.DELETE && value.ticket.id === props.ticket.id) {
             comments.value = comments.value.filter((comment: Comment) => comment.id !== value.commentId)
+        }
+    }
+})
+
+
+watch(useTicketActions(), async value => {
+    if (value) {
+        // console.log(value)
+        if (value.action === TicketOperation.DELETE && value.ticketId === props.ticket.id) {
+            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
         }
     }
 })

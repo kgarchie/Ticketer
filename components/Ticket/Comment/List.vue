@@ -64,12 +64,14 @@ function cancelReplyForm() {
     commentToReply.value = null
 }
 
+let oldComment = ''
+
 async function submitComment(payload: any) {
     let {comment, tagged} = payload
     if (comment === '') return alert('Please enter a comment before submitting')
     const {data: db_user} = await useFetch(`/api/user/${user.value.user_id}`)
 
-    if (db_user?.value?.statusCode === 200) {
+    if (db_user?.value?.statusCode === 200 && oldComment !== comment) {
         // prepend name to comment
         // @ts-ignore
         comment = `${db_user.value.body} : ${comment}`
@@ -107,6 +109,8 @@ async function submitComment(payload: any) {
                 }, 1000);
             }
         }
+    } else if (oldComment === comment) {
+        console.log('Double submission')
     } else {
         alert('An error occurred; try refreshing the page')
     }

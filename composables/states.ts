@@ -25,4 +25,9 @@ export const useCommentActions = () => useState<{}>('CommentActions', () => ({
     commentId: null
 }));
 
+export const useTicketActions = () => useState<{}>('TicketActions', () => ({
+    action: '',
+    ticketId: null
+}));
+
 

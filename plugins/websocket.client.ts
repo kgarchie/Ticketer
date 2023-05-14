@@ -1,5 +1,13 @@
 import {Comment, Message, Notification, Ticket} from "@prisma/client";
-import {CommentOperation, Initiator, SocketStatus, SocketTemplate, STATUS, TYPE, websocketPort} from "~/types";
+import {
+    CommentOperation,
+    SocketStatus,
+    SocketTemplate,
+    STATUS,
+    TicketOperation,
+    TYPE,
+    websocketPort
+} from "~/types";
 import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
@@ -186,6 +194,10 @@ export default defineNuxtPlugin(() => {
                         if (ticketIndexDel !== -1) {
                             newTicketsState.value.splice(ticketIndexDel, 1)
                         }
+                        useTicketActions().value = ({
+                            action: TicketOperation.DELETE,
+                            ticketId: ticketId
+                        })
                         updateTicketsMetaData(TicketsMetaDataState.value)
                         break;
 

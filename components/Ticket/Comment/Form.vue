@@ -165,7 +165,7 @@ onMounted(() => {
             document.getElementById('submit-comment-button')?.click()
         }
 
-        if(e.key === '@') {
+        if (e.key === '@') {
             displayTaggablePeople.value = true
         }
 

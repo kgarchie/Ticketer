@@ -147,7 +147,8 @@ export enum TicketOperation {
     PEND = "PENDING",
     RESOLVE = "RESOLVED",
     CLOSE = "CLOSED",
-    OPEN = "OPENED"
+    OPEN = "OPENED",
+    DELETE = "DELETE",
 }
 
 export enum CommentOperation {
