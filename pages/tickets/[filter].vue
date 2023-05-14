@@ -6,7 +6,7 @@
         <div class="columns">
             <SideNav/>
             <div class="column">
-                <Tickets :tickets="tickets"/>
+                <Tickets :tickets="tickets" :onSearch="searchFilter"/>
             </div>
         </div>
     </main>
@@ -61,6 +61,21 @@ onMounted(() => {
         })
     }
 })
+
+
+async function searchFilter(value: string) {
+    if(value !== '') {
+        const {data: response} = await useLazyFetch(`/api/tickets/search/${value}`)
+        if (response?.value?.statusCode === 200) {
+            // console.log(response.value.body)
+            response.value.body.forEach((ticket: Ticket) => {
+                if (!tickets.value.find((item: Ticket) => item.id === ticket.id)) {
+                    tickets.value.push(ticket)
+                }
+            })
+        }
+    }
+}
 </script>
 
 <style scoped>

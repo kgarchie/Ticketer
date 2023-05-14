@@ -105,12 +105,12 @@
                                         </span>
                                     </a>
                                 </header>
-                                <form class="card-content" action="/search/reference" method="get">
+                                <form class="card-content" @submit.prevent="search">
                                     <div class="content">
                                         <div class="control has-icons-left has-icons-right">
                                             <input class="input" type="text"
                                                    placeholder="Enter Transaction Code or Reference"
-                                                   name="search_transaction_code_or_reference">
+                                                    v-model="search_transaction_code_or_reference">
                                             <span class="icon is-medium is-left">
                                                 <i class="fa fa-search"></i>
                                             </span>
@@ -132,11 +132,11 @@
                                         </span>
                                     </a>
                                 </header>
-                                <form class="card-content" method="get">
+                                <form class="card-content" @submit.prevent="search">
                                     <div class="content">
                                         <div class="control has-icons-left has-icons-right">
                                             <input class="input" type="text" placeholder="Enter Email or Name(s)"
-                                                   name="name_of_email">
+                                                   v-model="email_or_name">
                                             <span class="icon is-medium is-left">
                                                 <i class="fa fa-search"></i>
                                             </span>
@@ -158,18 +158,18 @@
                                         </span>
                                     </a>
                                 </header>
-                                <form class="card-content" action="/search/date/" method="get">
-                                    <div class="content is-flex is-justify-content-space-around">
-                                        <div class="control">
+                                <form class="card-content" @submit.prevent="search">
+                                    <div class="content">
+                                        <div class="control lighten">
                                             From:
-                                            <input class="input" type="date" name="date_search_from">
+                                            <input class="input lighten" type="date" v-model="search_date_from">
                                         </div>
-                                        <div class="control">
+                                        <div class="control lighten">
                                             To:
-                                            <input type="date" name="date_search_to" class="input">
+                                            <input type="date" class="input lighten" v-model="search_date_to">
                                         </div>
                                     </div>
-                                    <button class="button">
+                                    <button class="button lighten">
                                         Search
                                     </button>
                                 </form>
@@ -218,20 +218,9 @@ async function search(){
         date_to: search_date_to.value
     } as SearchQuery
 
-    const {data: res} = await useFetch('/api/tickets/search', {
-        method: 'POST',
-        body: query
-    })
+    console.log(query)
 
-    const response = res.value
-
-    if (response && response.statusCode === 200) {
-        //TODO: navigate to /tickets with response as props
-        const tickets = response.data
-        await navigateTo(`/tickets/search/${JSON.stringify({tickets})}`)
-    } else {
-        alert('Error searching tickets')
-    }
+    await navigateTo(`/tickets/search/${encodeURI(JSON.stringify(query))}`)
 }
 
 updateTicketsMetaData(ticketsMetaDataState.value)
@@ -240,5 +229,9 @@ updateNewTickets(tickets)
 <style scoped>
 body {
     overflow-y: hidden;
+}
+
+.lighten{
+    color: #8F99A3;
 }
 </style>

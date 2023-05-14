@@ -72,7 +72,7 @@ export async function createTicket(data: Ticket) {
 export async function createTicketComment(comment: string, commentor: string, ticketId: string | number, parentId: number | null = null) {
     let newComment;
 
-    if(parentId){
+    if (parentId) {
         newComment = await prisma.comment.create({
             data: {
                 comment: comment,
@@ -92,13 +92,13 @@ export async function createTicketComment(comment: string, commentor: string, ti
                 ticket: true
             }
         }).then(
-             (comment) => {
-                if(comment){
+            (comment) => {
+                if (comment) {
                     return comment
                 } else {
                     return null
                 }
-             }
+            }
         ).catch(
             (error) => {
                 console.log(error)
@@ -273,12 +273,12 @@ export async function allSearchTickets(query: SearchQuery) {
             OR: [
                 {
                     name: {
-                        contains: query.userNameOrEmail || ''
+                        contains: query.userNameOrEmail?.trim() === '' ? undefined : query.userNameOrEmail
                     }
                 },
                 {
                     email: {
-                        contains: query.userNameOrEmail || ''
+                        contains: query.userNameOrEmail?.trim() === '' ? undefined : query.userNameOrEmail
                     }
                 }
             ]
@@ -286,33 +286,33 @@ export async function allSearchTickets(query: SearchQuery) {
     }).catch(
         (err) => {
             console.log(err)
-            return null
+            return []
         }
     )
 
     const user_ids = users?.map(user => user.user_id)
 
-    let userPossessingTickets = [] // NOTE: This is a 2D array
-    for (const user_id of user_ids!) {
+    let userPossessingTickets = [] // NOTE: This will be a 2D array
+    for (const user_id of user_ids) {
         userPossessingTickets.push(await getTicketsCreatedByUser(user_id))
     }
 
     const otherTickets = await prisma.ticket.findMany({
         where: {
             transaction_date: {
-                gte: query.date_from,
-                lte: query.date_to
+                gte: query.date_from || undefined,
+                lte: query.date_to || undefined
             },
             OR: [
                 {
-                    reference: query.reference_number
+                    reference: query.reference_number?.trim() === '' ? undefined : query.reference_number
                 }
             ]
         }
     }).catch(
         (err) => {
             console.log(err)
-            return null
+            return []
         })
 
     // extract the tickets from the 2D array
@@ -324,7 +324,7 @@ export async function allSearchTickets(query: SearchQuery) {
     }
 
     // add the other tickets
-    for (const ticket of otherTickets!) {
+    for (const ticket of otherTickets) {
         resultTickets.push(ticket)
     }
 
@@ -335,11 +335,26 @@ export async function allSearchTickets(query: SearchQuery) {
             ))
     )
 
+    // if count is 0, adjust strictness for reference number if it is not empty
+    if (resultTickets.length === 0 && query.reference_number?.trim() !== '') {
+        resultTickets = await prisma.ticket.findMany({
+            where: {
+                reference: {
+                    contains: query.reference_number?.trim() === '' ? undefined : query.reference_number
+                }
+            }
+        }).catch(
+            (err) => {
+                console.log(err)
+                return []
+            })
+    }
+
     return resultTickets
 }
 
 
-export async function deleteTicketById(id: string | number){
+export async function deleteTicketById(id: string | number) {
     // delete all comments
     await prisma.comment.deleteMany({
         where: {
@@ -360,6 +375,45 @@ export async function deleteTicketById(id: string | number){
         error => {
             console.log(error)
             return null
+        }
+    )
+}
+
+export async function randomRapidSearch(keyword: string) {
+    return await prisma.ticket.findMany({
+        where: {
+            OR: [
+                {
+                    reference: {
+                        contains: keyword
+                    }
+                },
+                {
+                    issue: {
+                        contains: keyword
+                    }
+                },
+                {
+                    safaricom_no: {
+                        contains: keyword
+                    }
+                },
+                {
+                    airtel_no: {
+                        contains: keyword
+                    }
+                },
+                {
+                    paybill_no: {
+                        contains: keyword
+                    }
+                }
+            ]
+        }
+    }).catch(
+        error => {
+            console.log(error)
+            return []
         }
     )
 }

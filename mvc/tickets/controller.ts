@@ -8,7 +8,7 @@ import {
     pendTicket,
     resolveTicket,
     search,
-    deleteTicket
+    deleteTicket, searchFilter
 } from "~/mvc/tickets/model";
 
 const router = createRouter()
@@ -59,6 +59,10 @@ router.post('/create', defineEventHandler(async event => {
 
 router.post('/search', defineEventHandler(async event => {
     return await search(event)
+}))
+
+router.get('/search/:query', defineEventHandler(async event => {
+    return await searchFilter(event)
 }))
 
 export default useBase('/api/tickets', router.handler)

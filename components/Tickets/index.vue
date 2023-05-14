@@ -5,7 +5,7 @@
         </div>
         <div class="panel-block">
             <p class="control has-icons-left">
-                <input class="input" type="text" placeholder="Search">
+                <input class="input" type="text" placeholder="Search" v-model="search">
             </p>
         </div>
         <div class="panel-block tabs is-centered is-boxed">
@@ -18,25 +18,29 @@
 
                 <li>
                     <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`">
+                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`"
+                            class="filter">
                         <span>New</span>
                     </NuxtLink>
                 </li>
 
                 <li>
                     <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`">
+                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`"
+                            class="filter">
                         <span>Pending</span>
                     </NuxtLink>
                 </li>
                 <li>
                     <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.R })}`)}`">
+                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.R })}`)}`"
+                            class="filter">
                         <span>Resolved</span>
                     </NuxtLink>
                 </li>
                 <li>
-                    <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`">
+                    <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`"
+                              class="filter">
                         <span>Closed</span>
                     </NuxtLink>
                 </li>
@@ -97,6 +101,7 @@ import {STATUS} from "~/types";
 import {Ticket} from "@prisma/client";
 
 const user = useUser().value
+const search = ref('')
 
 const props = defineProps({
     tickets: {
@@ -105,7 +110,6 @@ const props = defineProps({
         default: []
     }
 })
-
 
 async function closeTicket(id: number) {
     if (user.is_admin) {
@@ -142,6 +146,14 @@ async function resolveTicket(id: number) {
         alert('You are not authorized to perform this action')
     }
 }
+
+const emit = defineEmits(['search'])
+
+
+watch(() => search.value, (value) => {
+    emit('search', value)
+})
+
 </script>
 <style scoped>
 .router-link-active {

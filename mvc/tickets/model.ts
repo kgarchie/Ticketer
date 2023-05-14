@@ -11,7 +11,7 @@ import {
     getTicketByReference,
     getUserTicket,
     markTicketAsPending,
-    markTicketAsResolved,
+    markTicketAsResolved, randomRapidSearch,
     ticketMetrics
 } from "~/mvc/tickets/queries";
 import {createAndShuttleNotification, shuttleDataToAllClients} from "~/mvc/utils";
@@ -302,6 +302,25 @@ export async function search(event: H3Event) {
     let response = {} as HttpResponseTemplate
 
     const tickets = await allSearchTickets(query)
+
+    response.statusCode = 200
+    response.body = tickets
+
+    return response
+}
+
+
+export async function searchFilter(event: H3Event) {
+    const query = event.context.params?.query as string || null
+    let response = {} as HttpResponseTemplate
+
+    if (!query) {
+        response.statusCode = 404
+        response.body = "Botched filter search parameters"
+        return response
+    }
+
+    const tickets = await randomRapidSearch(query)
 
     response.statusCode = 200
     response.body = tickets
