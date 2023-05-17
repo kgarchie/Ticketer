@@ -92,6 +92,17 @@ CREATE TABLE "Message" (
 );
 
 -- CreateTable
+CREATE TABLE "Attachment" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "url" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "deleted" BOOLEAN NOT NULL DEFAULT false,
+    "messageId" INTEGER,
+    CONSTRAINT "Attachment_messageId_fkey" FOREIGN KEY ("messageId") REFERENCES "Message" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
 CREATE TABLE "Paybill" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "number" INTEGER NOT NULL,

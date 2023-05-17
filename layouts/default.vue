@@ -1,5 +1,6 @@
 <template>
     <Html lang="en"/>
+    <Link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
     <section>
         <nav class="navbar nav is-white">
             <div class="container">
@@ -72,6 +73,7 @@
 </template>
 <script setup lang="ts">
 import {SocketStatus, UserAuth} from "~/types"
+
 const {$ClientWebSocket: ClientWebSocket} = useNuxtApp()
 
 const isActive = ref<boolean>(false)
@@ -117,7 +119,7 @@ onMounted(() => {
         setTimeout(() => {
             if (opened_socket.webSocket.readyState !== 1) {
                 setTimeout(() => {
-                    if(opened_socket.webSocket.readyState !== 1){
+                    if (opened_socket.webSocket.readyState !== 1) {
                         useWsServerStatus().value = SocketStatus.CLOSED
                         opened_socket.pollWsStatus()
                     } else {

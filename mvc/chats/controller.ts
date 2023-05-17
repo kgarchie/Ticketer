@@ -1,5 +1,6 @@
 import {createRouter, defineEventHandler} from "h3";
 import {getChats, readMessage, sendMessage} from "~/mvc/chats/model";
+import multer from "multer";
 
 const router = createRouter();
 

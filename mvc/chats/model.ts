@@ -1,7 +1,15 @@
 import {H3Event} from "h3";
+import { readFiles } from 'h3-formidable'
 import {HttpResponseTemplate, SocketTemplate, TYPE} from "~/types";
-import {createMessage, getOrCreateChat, getUserChats, readUserMessage} from "~/mvc/chats/queries";
-import {createAndShuttleNotification, shuttleData} from "~/mvc/utils";
+import {
+    createMessage, deleteMessage,
+    getMessageById,
+    getOrCreateChat,
+    getUserChats,
+    readUserMessage,
+    storeFiles
+} from "~/mvc/chats/queries";
+import {shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
 
 export async function getChats(event: H3Event) {
@@ -21,10 +29,18 @@ export async function getChats(event: H3Event) {
 }
 
 export async function sendMessage(event: H3Event) {
-    const {chat_id, from_user_id, to_user_id, message} = await readBody(event)
+    const { fields, files } = await readFiles(event, {
+        includeFields: true
+    })
+
+    const chat_id = fields?.chat_id[0] || null
+    const from_user_id = fields?.from_user_id[0] || null
+    const to_user_id = fields?.to_user_id[0] || null
+    const message = fields?.message[0] || null
+
     let response = {} as HttpResponseTemplate
 
-    if (!chat_id || !from_user_id || !to_user_id || !message) {
+    if (!chat_id || !from_user_id || !to_user_id || (!message && (!files || files.length === 0))) {
         response.statusCode = 400
         response.body = "Missing parameters"
         return response
@@ -44,11 +60,24 @@ export async function sendMessage(event: H3Event) {
         return response
     }
 
+    if (files.files && files.files.length > 0) {
+        try {
+            await storeFiles(files.files, createdMessage.id, chat.chat_id, from_user_id)
+        } catch (e) {
+            await deleteMessage(createdMessage.id)
+            response.statusCode = 500
+            // @ts-ignore
+            response.body = e?.message || "Error storing files"
+            return response
+        }
+    }
+
+
     let socketResponse = {} as SocketTemplate
     socketResponse.statusCode = 200
     socketResponse.type = TYPE.MESSAGE
     socketResponse.body = {
-        message: createdMessage,
+        message: await getMessageById(createdMessage.id),
         fromUserName: await getUserName(from_user_id)
     }
 
@@ -62,11 +91,11 @@ export async function sendMessage(event: H3Event) {
     return response
 }
 
-export async function readMessage(event: H3Event){
+export async function readMessage(event: H3Event) {
     const {chat_id, user_id} = await readBody(event)
     let response = {} as HttpResponseTemplate
 
-    if(!chat_id || !user_id){
+    if (!chat_id || !user_id) {
         response.statusCode = 401
         response.body = "Missing Parameters"
         return response

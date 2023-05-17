@@ -1,5 +1,5 @@
 import {createRouter, defineEventHandler} from "h3";
-import {identify, login, register, reset, saveNewPassword, logout} from "~/mvc/auth/model";
+import {identify, login, register, reset, saveNewPassword, logout, getUserToken} from "~/mvc/auth/model";
 
 const router = createRouter();
 
@@ -32,5 +32,9 @@ router.post('/identity/reset', defineEventHandler(async (event) => {
         return await reset(event)
     }
 ));
+
+router.get('/identity/:user_id/:token', defineEventHandler(async (event) => {
+        return await getUserToken(event)
+}));
 
 export default useBase('/api/auth', router.handler)

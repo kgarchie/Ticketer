@@ -92,14 +92,25 @@ model Chat {
 }
 
 model Message {
-  id           Int      @id @default(autoincrement())
+  id           Int          @id @default(autoincrement())
   message      String
-  created_at   DateTime @default(now())
-  opened       Boolean  @default(false)
+  created_at   DateTime     @default(now())
+  opened       Boolean      @default(false)
   chatId       Int
-  chat         Chat     @relation(fields: [chatId], references: [id])
+  chat         Chat         @relation(fields: [chatId], references: [id])
   from_user_id String?
   to_user_id   String?
+  attachments  Attachment[]
+}
+
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  url        String
+  name       String
+  created_at DateTime @default(now())
+  deleted    Boolean  @default(false)
+  Message    Message? @relation(fields: [messageId], references: [id])
+  messageId  Int?
 }
 
 model Paybill {

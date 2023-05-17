@@ -60,9 +60,9 @@ export async function createAndShuttleNotification(user_id: string, message: str
 }
 
 export function getConnectedClientSockets(user_id: string) {
-    return global.clients.filter((client) => {
+    return global.clients?.filter((client) => {
         return client.user_id === user_id
-    })
+    }) || []
 }
 
 export async function notifyAllAndConnectedAdmins(response: SocketTemplate, sender_id: string) {

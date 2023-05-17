@@ -300,7 +300,7 @@ $primary: #5a86e4;
   position: relative;
   padding: 20px 20px 20px 10px;
   height: fit-content;
-  max-width: 80%;
+  max-width: 90%;
   min-width: 40%;
   overflow: hidden;
 
@@ -340,23 +340,20 @@ $primary: #5a86e4;
   border-radius: 0 0 10px 10px;
 
   .text {
-    padding: 0.5em 1em;
+    padding: 0.5em;
     font-size: 0.8rem;
-    position: relative;
     cursor: pointer;
+    height: 55px;
 
     .chat_button {
       color: #689cdf;
       border: 1px solid #689cdf;
       cursor: pointer;
+      height: 25px;
       padding: 0.3rem 0.8rem;
       border-radius: 5px;
       display: block;
       background-color: unset;
-      position: absolute;
-      top: 50%;
-      right: 5%;
-      transform: translateY(-50%);
 
       &:hover {
         color: white;

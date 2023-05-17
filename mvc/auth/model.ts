@@ -10,6 +10,7 @@ import {
 } from "~/mvc/auth/queries";
 import {clearAuthCookie, generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
 import {mailResetPasswordLink} from "~/mvc/utils";
+import auth from "~/server/api/auth";
 
 export async function login(event: H3Event): Promise<HttpResponseTemplate> {
     let response = {} as HttpResponseTemplate;
@@ -69,6 +70,39 @@ export async function identify(event: H3Event) {
     response.statusCode = 200;
     response.body = user;
     return response;
+}
+
+
+export async function getUserToken(event:H3Event){
+    let response = {} as HttpResponseTemplate;
+
+    const {user_id, auth_key} = await getAuthCookie(event)
+    if(!auth_key || auth_key.trim() === ""){
+        response.statusCode = 200;
+        response.body = "Not Logged In";
+        return response;
+    }
+
+    let token = await getToken(user_id, auth_key)
+
+    if (token && token.is_valid === true) {
+        response.statusCode = 200;
+        response.body = token;
+        return response;
+    } else if (token && token.is_valid === false) {
+        clearAuthCookie(event)
+        response.statusCode = 401;
+        response.body = "Unauthorized"
+        return response;
+    } else if(!token){
+        response.statusCode = 404;
+        response.body = "Forbidden"
+        return response;
+    } else {
+        response.statusCode = 500;
+        response.body = "Server Error"
+        return response;
+    }
 }
 
 

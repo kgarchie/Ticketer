@@ -1,6 +1,8 @@
 import prisma from "~/db";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
-import {obtainChat_id} from "~/mvc/chats/helpers";
+import {writeFileToStorage, obtainChat_id} from "~/mvc/chats/helpers";
+import multer from "multer";
+import {H3Event} from "h3";
 
 export async function getUserChats(user_id: string) {
     const chatsFromMessages = await prisma.message.findMany({
@@ -25,7 +27,11 @@ export async function getUserChats(user_id: string) {
             }
         },
         include: {
-            Message: true
+            Message: {
+                include: {
+                    attachments: true
+                }
+            }
         }
     });
 
@@ -69,40 +75,40 @@ export async function getUserChats(user_id: string) {
 
 export async function getOrCreateChat(from_user_id: string, to_user_id: string) {
     let chat = await prisma.chat.findFirst({
-            where: {
-                chat_id: obtainChat_id(from_user_id, to_user_id).toString()
-            },
-            include: {
-                Message: true
+        where: {
+            chat_id: obtainChat_id(from_user_id, to_user_id).toString()
+        },
+        include: {
+            Message: true
+        }
+    }).then(
+        (data) => {
+            if (data) {
+                return data
+            } else {
+                return null
             }
-        }).then(
-            (data) => {
-                if (data) {
-                    return data
-                } else {
-                    return null
-                }
-            }
-        ).catch((err) => {
-            console.log(err)
-            return null;
-        })  // if no chat exists, create one
+        }
+    ).catch((err) => {
+        console.log(err)
+        return null;
+    })  // if no chat exists, create one
 
     if (chat) return chat
 
     chat = await prisma.chat.create({
-            data: {
-                chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
-            },
-            include: {
-                Message: true
-            }
-        }).catch(
-            (error) => {
-                console.log(error)
-                return null
-            }
-        )
+        data: {
+            chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
+        },
+        include: {
+            Message: true
+        }
+    }).catch(
+        (error) => {
+            console.log(error)
+            return null
+        }
+    )
 
     return chat
 }
@@ -118,7 +124,7 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
                 },
                 from_user_id: from_user_id.toString(),
                 to_user_id: to_user_id.toString(),
-                message: message
+                message: message || ''
             }
         }
     ).catch(
@@ -130,7 +136,7 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
 }
 
 
-export async function readUserMessage(user_id:string, chat_id:string){
+export async function readUserMessage(user_id: string, chat_id: string) {
     await prisma.message.updateMany({
         where: {
             to_user_id: user_id.toString(),
@@ -145,3 +151,59 @@ export async function readUserMessage(user_id:string, chat_id:string){
     })
 }
 
+export async function storeFiles(files: any[], messageId: number, chat_id: string, user_id: string) {
+    let filePath = `${user_id}/${chat_id}`
+    let locationsOnDisk: string[] = []
+
+    for (const file of files) {
+        await writeFileToStorage(filePath, locationsOnDisk, file)
+    }
+
+    for(let location of locationsOnDisk) {
+        await prisma.attachment.create({
+            data: {
+                Message: {
+                    connect: {
+                        id: messageId
+                    }
+                },
+                url: location,
+                name: location.split('/').pop() || 'unknown'
+            }
+        })
+    }
+}
+
+
+export async function getMessageById(messageId: number) {
+    return prisma.message.findFirst({
+        where: {
+            id: messageId
+        },
+        include: {
+            attachments: true
+        }
+    })
+}
+
+
+export async function deleteMessage(messageId: number) {
+    const message = await getMessageById(messageId)
+    if (!message) return true
+
+    for (let attachment of message.attachments) {
+        await prisma.attachment.delete({
+            where: {
+                id: attachment.id
+            }
+        })
+    }
+
+    await prisma.message.delete({
+        where: {
+            id: messageId
+        }
+    })
+
+    return true
+}
