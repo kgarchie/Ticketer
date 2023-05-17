@@ -17,7 +17,7 @@
             <div class="messages" id="chat_box" v-for="message in messages" :key="message?.id">
                 <div class="bubble incoming" v-if="message?.to_user_id === user?.user_id">
                     <p>{{ message?.message }}</p>
-                    <div v-if="message.attachments.length > 0" class="attachments">
+                    <div v-if="message?.attachments?.length > 0" class="attachments">
                         <div v-for="file in message.attachments" :key="file.name" class="attachment">
                             <span
                                class="is-flex is-align-items-center is-justify-content-space-between">
@@ -32,7 +32,7 @@
                 </div>
                 <div class="bubble outgoing" v-else>
                     <p>{{ message?.message }}</p>
-                    <div v-if="message.attachments.length > 0" class="attachments">
+                    <div v-if="message?.attachments?.length > 0" class="attachments">
                         <div v-for="file in message.attachments" :key="file.id" class="attachment">
                             <span
                                class="is-flex is-align-items-center is-justify-content-space-between">
