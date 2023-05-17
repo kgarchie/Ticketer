@@ -12,6 +12,11 @@ RUN yarn install
 # copy the rest of the files
 COPY . .
 
+# grant permission to the /public directory
+RUN mkdir -p /nuxt/public/uploads && \
+    chown -R node:node /nuxt/public && \
+    chmod -R 777 /nuxt/public
+
 RUN yarn build
 
 # set environment variables
