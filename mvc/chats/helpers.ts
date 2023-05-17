@@ -7,8 +7,8 @@ export function obtainChat_id(from_user_id: string, to_user_id: string) {
 
 export function writeFileToStorage(path: string, locationsOnDisk: string[], file:any) {
     // TODO: Find a better way of serving static files in nuxt3 instead of using public folder
-    let root = `public/uploads/${path}`
-    let dir = `uploads/${path}`
+    let root = `/public/uploads/${path}`
+    let dir = `/uploads/${path}`
 
     if (!fs.existsSync(root)) {
         fs.mkdirSync(root, {recursive: true})
