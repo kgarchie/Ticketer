@@ -10,7 +10,7 @@ export const useUser = () => useState<UserAuth>('user', () => {
 });
 
 export const useNotifications = () => useState<Notification[]>('Notifications', () => []);
-export const useNewMessage = () => useState<Message | null>('NewMessage', () => null);
+export const useNewMessage = () => useState<any>('NewMessage', () => null);
 export const useWsServerStatus = () => useState<SocketStatus>('wsServerStatus', () => SocketStatus.OPEN);
 export const useNewTickets = () => useState<Ticket[]>('NewTickets', () => []);
 export const useTicketsMetaData = () => useState<{ [key: string]: number }>('TicketsMetaData', () => ({

@@ -335,7 +335,6 @@ $accent: hsl(221, 73%, 63%);
 
   @media screen and (max-width: 768px) {
     left: 290px !important;
-    left: 290px !important;
   }
 }
 
