@@ -9,29 +9,15 @@ export function obtainChat_id(from_user_id: string, to_user_id: string) {
 
 export function writeFileToStorage(given_path: string, locationsOnDisk: string[], file:any) {
     // TODO: Find a better way of serving static files in nuxt3 instead of using public folder
-    // let root = `/public/uploads/${path}`
-    let dirName = path.resolve(path.dirname(''))
-    let cwd = process.cwd()
-    // console.log("cwd: ", cwd)
-
-    while (!dirName.endsWith("public")) {
-        dirName = dirName.substring(0, dirName.lastIndexOf("\\"))
-
-        if (dirName.length === 0) {
-            dirName = cwd
-            dirName += "/public"
-            break
-        }
-    }
-
-    let root = `${dirName}/uploads/${given_path}`
-    let dir = `uploads/${given_path}`
+    // let root = `${path.join(process.cwd(), "public")}/uploads/${given_path}`
+    let root = `${path.join(process.cwd(), "public", "uploads", given_path)}`
+    let loc_url = `api/download/${given_path}`
 
     if (!fs.existsSync(root)) {
         fs.mkdirSync(root, {recursive: true})
     }
 
-    let fullyQualifiedUrl = `${dir}/${file.originalFilename.replace(/ /g, "_")}`
+    let fullyQualifiedUrl = `${loc_url}/${file.originalFilename.replace(/ /g, "_")}`
     let fullyQualifiedPath = `${root}/${file.originalFilename.replace(/ /g, "_")}`
 
     // TODO: Find a better way of handling file name collisions, like fs.promises.access
@@ -45,7 +31,7 @@ export function writeFileToStorage(given_path: string, locationsOnDisk: string[]
             counter++
         }
 
-        fullyQualifiedUrl = `${dir}/${fileNameWithoutExtension}_${counter}.${fileExtension}`
+        fullyQualifiedUrl = `${loc_url}/${fileNameWithoutExtension}_${counter}.${fileExtension}`
         fullyQualifiedPath = `${root}/${fileNameWithoutExtension}_${counter}.${fileExtension}`
     }
 

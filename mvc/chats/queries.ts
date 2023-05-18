@@ -1,8 +1,7 @@
 import prisma from "~/db";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 import {writeFileToStorage, obtainChat_id} from "~/mvc/chats/helpers";
-import multer from "multer";
-import {H3Event} from "h3";
+import path from "path";
 
 export async function getUserChats(user_id: string) {
     const chatsFromMessages = await prisma.message.findMany({
@@ -152,7 +151,7 @@ export async function readUserMessage(user_id: string, chat_id: string) {
 }
 
 export async function storeFiles(files: any[], messageId: number, chat_id: string, user_id: string) {
-    let filePath = `${user_id}/${chat_id}`
+    let filePath = path.join(user_id, chat_id)
     let locationsOnDisk: string[] = []
 
     for (const file of files) {
