@@ -42,7 +42,6 @@
     </div>
 </template>
 <script setup lang="ts">
-import {Message} from "@prisma/client";
 import {UserChatObject, SocketStatus} from "~/types";
 import {updateNewTickets, updateNotifications, updateTicketsMetaData, pollServerStatus} from "~/helpers/clientHelpers";
 
@@ -59,8 +58,8 @@ const messages = computed(() => {
 
 const to_user = ref<any>({})
 
-function unread_count(eval_messages: Message[]) {
-    return eval_messages.filter((message: Message) => !message?.opened && message?.from_user_id != user.user_id).length
+function unread_count(eval_messages: any[]) {
+    return eval_messages.filter((message: any) => !message?.opened && message?.from_user_id != user.user_id).length
 }
 
 
