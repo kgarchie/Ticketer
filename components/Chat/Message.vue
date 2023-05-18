@@ -20,11 +20,12 @@
                     <div v-if="message?.attachments?.length > 0" class="attachments">
                         <div v-for="file in message.attachments" :key="file.name" class="attachment">
                             <span
-                               class="is-flex is-align-items-center is-justify-content-space-between">
+                                    class="is-flex is-align-items-center is-justify-content-space-between">
                                 <small class="is-small cursor-pointer" @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
                                     }}..{{ file?.name?.split('.').pop() || '???' }}</small>
-                                <a :href="file.url" target="_blank" class="ml-2 fas fa-download is-inline cursor-pointer"></a>
+                                <a :href="file.url" target="_blank"
+                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
                             </span>
                         </div>
                     </div>
@@ -35,11 +36,12 @@
                     <div v-if="message?.attachments?.length > 0" class="attachments">
                         <div v-for="file in message.attachments" :key="file.id" class="attachment">
                             <span
-                               class="is-flex is-align-items-center is-justify-content-space-between">
+                                    class="is-flex is-align-items-center is-justify-content-space-between">
                                 <span class="is-medium cursor-pointer" @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
                                     }}..{{ file?.name?.split('.').pop() || '???' }}</span>
-                                <a target="_blank" :href="file.url" class="ml-2 fas fa-download is-inline cursor-pointer"></a>
+                                <a target="_blank" :href="file.url"
+                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
                             </span>
                         </div>
                     </div>
@@ -63,9 +65,9 @@
                     <textarea id="chat_input" class="chat_input" type="text" placeholder="Type a message..."
                               v-model="composed_message" autocomplete="none"></textarea>
 
-                    <i class="attachment fas fa-paperclip" @click="openFilePicker()"></i>
-                    <button class="chat_button is-primary fas fa-paper-plane" @click="sendMessage()"
-                            :class="{ 'is-loading': pending }"></button>
+                    <button class="button attachment fas fa-paperclip" @click="openFilePicker()" :disabled="pending"></button>
+                    <button class="button is-primary fas fa-paper-plane" @click="sendMessage()"
+                            :class="{ 'is-loading': pending }" :disabled="pending"></button>
                 </div>
             </div>
             <embed class="file-preview" id="file-preview"/>
@@ -173,6 +175,7 @@ async function sendMessage() {
                 props.messages?.push(response.value?.body)
                 console.log("Message added via post request")
                 useWsServerStatus().value = SocketStatus.UNKNOWN
+                positionMessages()
             }
         }, 500)
     } else {
@@ -279,7 +282,6 @@ function closePreview() {
 }
 
 .attachment {
-  font-size: 1.05rem;
   color: #2aa7c4;
 
   opacity: 0.5;
@@ -303,7 +305,7 @@ function closePreview() {
     color: #2aa7c4;
     opacity: 0.5;
     cursor: pointer;
-      font-size: 0.9rem;
+    font-size: 0.9rem;
   }
 }
 
@@ -366,17 +368,17 @@ function closePreview() {
   display: none;
 }
 
-.incoming .attachment{
-    background: #0015ff;
+.incoming .attachment {
+  background: #0015ff;
+  color: #c5ffde;
+
+  a {
     color: #c5ffde;
 
-    a{
-        color: #c5ffde;
-
-        &:hover{
-            color: #b558e4;
-            scale: 1.25;
-        }
+    &:hover {
+      color: #b558e4;
+      scale: 1.25;
     }
+  }
 }
 </style>

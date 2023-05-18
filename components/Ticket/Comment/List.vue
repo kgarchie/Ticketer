@@ -3,7 +3,7 @@
         <p>
             <strong>{{ comment?.comment.split(' : ')[0] }}</strong>
             <br>
-            {{ comment?.comment.split(' : ')[1] }}
+            <span v-html="parseComment(comment?.comment.split(' : ')[1])"></span>
             <br>
             <small>
                 <a @click.prevent="showReplyForm(comment)">Reply</a> · <a
@@ -127,12 +127,25 @@ async function deleteComment(comment: any) {
     if (response?.value?.statusCode !== 200) {
         alert('An error occurred')
         console.log(response?.value?.body)
+    } else {
+        setTimeout(async () => {
+            if (props.ticket.comments.find((c: any) => c.id === comment.id)) {
+                window.location.reload()
+            } else {
+                console.log('comment deleted via websocket')
+            }
+        }, 500);
     }
 }
 
 function formatDate(dateString: string) {
     const date = new Date(dateString)
     return date.toLocaleString()
+}
+
+function parseComment(comment: string) {
+    const regex = /@(\w+)/g
+    return comment.replace(regex, '<a href="/user/$1">@$1</a>')
 }
 
 </script>

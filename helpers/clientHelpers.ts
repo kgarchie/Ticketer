@@ -28,3 +28,29 @@ export async function updateNotifications(State: any, user_id: string){
         State.value = res.body
     }
 }
+
+export async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
+    let retries = 0;
+    while (retries < maxRetries) {
+        try {
+            const response = await $fetch('/api/status');
+            if (response) {
+                console.log('Server Up | Response Received')
+                if (response.statusCode === 200) {
+                    console.log('Server status okay, server is online');
+                    return 'online';
+                } else {
+                    console.log(`Server status check failed, retrying in ${intervalSeconds} seconds`);
+                    await new Promise(resolve => setTimeout(resolve, intervalSeconds * 1000));
+                    retries++;
+                }
+            }
+        } catch (e) {
+            console.log(`Server status check failed, retrying in ${intervalSeconds} seconds`);
+            await new Promise(resolve => setTimeout(resolve, intervalSeconds * 1000));
+            retries++;
+        }
+    }
+    console.log('Server status check failed after maximum retries');
+    return 'offline';
+}

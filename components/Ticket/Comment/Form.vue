@@ -13,8 +13,15 @@
                             </li>
                         </ul>
                     </div>
-                    <textarea class="textarea" placeholder="Add a comment..." v-model="comment"
-                              id="commentReplyTextArea"></textarea>
+                    <div class="text-area-container is-relative">
+                        <div class="backdrop">
+                            <div class="highlights is-absolute" id="highlights">
+                                <span v-html="commentClone" class="textarea is-fullwidth"></span>
+                            </div>
+                        </div>
+                        <textarea class="textarea is-transparent" placeholder="Add a comment..." v-model="comment"
+                                  id="commentReplyTextArea"></textarea>
+                    </div>
                 </div>
             </div>
             <div class="field is-grouped">
@@ -41,6 +48,17 @@ const props = defineProps({
 })
 
 const comment = ref('')
+
+const commentClone = computed(() => {
+    let commentClone = comment.value
+    let taggedPeople = tagged.value
+    taggedPeople.forEach((person: TaggedPerson) => {
+        let name = person.name || person.user_id
+        commentClone = commentClone.replace('@' + name, '<mark>@' + name + '</mark>')
+    })
+    return commentClone
+})
+
 const tagged = ref<TaggedPerson[]>([])
 const displayTaggablePeople = ref(false)
 
@@ -71,10 +89,6 @@ function tagPerson(user_id: string) {
 
 function closestMatches(input: string) {
     let localPeople = taggablePeople.value
-    // return localPeople.filter((person: TaggedPerson) => {
-    //     return person.name?.toLowerCase().startsWith(input.toLowerCase()) || person.name?.toLowerCase().includes(input.toLowerCase())
-    // })
-    // priority to startsWith
     let startsWith = localPeople.filter((person: TaggedPerson) => {
         return person.name?.toLowerCase().startsWith(input.toLowerCase())
     })
@@ -112,6 +126,7 @@ watch(comment, (newComment) => {
         filteredTagged.value = closestMatches(input)
     }
 })
+
 
 onMounted(() => {
     const commentReplyTextArea = document.getElementById('commentReplyTextArea')
@@ -180,11 +195,17 @@ onMounted(() => {
         for (let i = 0; i < length; i++) {
             let name = nameList[i].innerHTML.toLowerCase()
             if (name.trim().startsWith(startsWith.trim())) {
-                console.log(nameList[i])
+                // console.log(nameList[i])
                 nameList[i].classList.add('highlight')
             } else {
                 nameList[i].classList.remove('highlight')
             }
+        }
+    })
+    const highlights = document.getElementById('highlights')
+    commentReplyTextArea?.addEventListener('scroll', () => {
+        if (highlights) {
+            highlights.scrollTop = commentReplyTextArea.scrollTop
         }
     })
 })
@@ -225,5 +246,13 @@ onUnmounted(() => {
 
 .tag-list-item {
     padding: 0.25rem;
+}
+
+.textarea.is-transparent{
+    opacity: 0.5;
+}
+
+.textarea.is-fullwidth{
+    border-color: transparent;
 }
 </style>

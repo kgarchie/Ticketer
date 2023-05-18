@@ -119,6 +119,7 @@
 import {Comment} from "@prisma/client";
 import {CommentOperation, SocketStatus, STATUS, TaggedPerson, TicketOperation} from "~/types";
 import {$fetch} from "ofetch";
+import {pollServerStatus} from "~/helpers/clientHelpers";
 
 const user = useUser()
 const userName = ref('')
@@ -288,19 +289,6 @@ async function getUserName(user_id: string) {
 
 userName.value = await getUserName(props.ticket?.creator)
 
-watch(useWsServerStatus(), value => {
-    if (value !== SocketStatus.OPEN) {
-        let poll = setInterval(async () => {
-            if (useWsServerStatus().value === SocketStatus.OPEN) {
-                clearInterval(poll)
-            } else {
-                let new_ticket = await $fetch(`/api/tickets/${props.ticket.id}`)
-                local_ticket.value.comments = new_ticket.body?.comments
-            }
-        }, 2000)
-    }
-})
-
 watch(useNewTicketComment(), (newValue, oldValue) => {
     if (newValue !== oldValue) {
         // if there is a new ticket comment and it doesn't already exist in the comments array, add it
@@ -329,6 +317,36 @@ watch(useTicketActions(), async value => {
         }
     }
 })
+
+// watch(useWsServerStatus(), async (newValue) => {
+//     if (!(newValue === SocketStatus.CLOSED)) {
+//         console.log('Socket Server is up')
+//         return
+//     } else {
+//         console.log('Socket Server is down | Switching to long polling')
+//         const serverStatus = await pollServerStatus();
+//         if (serverStatus === 'online') {
+//             console.log('HTTP Server is up');
+//             const pollM = setInterval(async () => {
+//                 try {
+//                     console.log('Polling for new comments');
+//                     let new_ticket = await $fetch(`/api/tickets/${props.ticket.id}`)
+//                     local_ticket.value.comments = new_ticket.body?.comments
+//                     await refreshNuxtData()
+//                     if (useWsServerStatus().value === SocketStatus.OPEN) {
+//                         console.log('Socket has opened removing poll...');
+//                         clearInterval(pollM);
+//                         return;
+//                     }
+//                 } catch (e) {
+//                     console.log(e)
+//                 }
+//             }, 3000);
+//         } else {
+//             console.log('Server is offline');
+//         }
+//     }
+// })
 </script>
 
 <style scoped>
