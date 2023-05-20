@@ -9,7 +9,6 @@ export function obtainChat_id(from_user_id: string, to_user_id: string) {
 
 export function writeFileToStorage(given_path: string, locationsOnDisk: string[], file:any) {
     // TODO: Find a better way of serving static files in nuxt3 instead of using public folder
-    // let root = `${path.join(process.cwd(), "public")}/uploads/${given_path}`
     let root = `${path.join(process.cwd(), "public", "uploads", given_path)}`
     let loc_url = `api/download/${given_path}`
 
