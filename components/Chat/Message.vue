@@ -236,6 +236,7 @@ function preview(file: File) {
         filePreview?.setAttribute('type', file.type)
         filePreview?.setAttribute('controls', 'true')
     } else {
+        previewButton?.classList.add('not_active')
         alert('File preview not yet supported for this kind of file')
     }
 }
