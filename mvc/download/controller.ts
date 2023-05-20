@@ -1,5 +1,5 @@
 import {createRouter, defineEventHandler} from "h3";
-import {getFiles} from "~/mvc/download/model";
+import {getFiles} from "~/mvc/download/functions";
 
 const router = createRouter();
 

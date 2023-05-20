@@ -1,5 +1,5 @@
 import {defineEventHandler, createRouter} from "h3";
-import {readNotification, getNotifications} from "~/mvc/notifications/model";
+import {readNotification, getNotifications} from "~/mvc/notifications/functions";
 
 const router = createRouter()
 

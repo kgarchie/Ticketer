@@ -149,7 +149,6 @@ async function resolveTicket(id: number) {
 
 const emit = defineEmits(['search'])
 
-
 watch(() => search.value, (value) => {
     emit('search', value)
 })

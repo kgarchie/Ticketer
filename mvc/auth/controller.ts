@@ -1,5 +1,5 @@
 import {createRouter, defineEventHandler} from "h3";
-import {identify, login, register, reset, saveNewPassword, logout, getUserToken} from "~/mvc/auth/model";
+import {identify, login, register, reset, saveNewPassword, logout, getUserToken} from "~/mvc/auth/functions";
 
 const router = createRouter();
 

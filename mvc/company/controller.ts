@@ -1,5 +1,5 @@
 import {createRouter, defineEventHandler} from "h3";
-import {Companies, getCompany} from "~/mvc/company/model";
+import {Companies, getCompany} from "~/mvc/company/functions";
 
 const router = createRouter()
 

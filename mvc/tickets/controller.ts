@@ -9,7 +9,7 @@ import {
     resolveTicket,
     search,
     deleteTicket, searchFilter
-} from "~/mvc/tickets/model";
+} from "~/mvc/tickets/functions";
 
 const router = createRouter()
 

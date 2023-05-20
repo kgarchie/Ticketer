@@ -73,7 +73,7 @@
                                             <tr v-for="(item, index) in tickets" :key="index">
                                                 <td width="5%"><i class="fa fa-bell-o"></i></td>
                                                 <td>{{ item.issue }}</td>
-                                                <td>{{ item.safaricom_no }}</td>
+                                                <td>{{ item.reference }}</td>
                                                 <td class="level-right">
                                                     <NuxtLink class="button is-small is-primary"
                                                               :to="`tickets/view/${item.id}`" @click="pendTicket(item.id)">
@@ -198,9 +198,8 @@ const notifications = useNotifications()
 
 async function pendTicket(id: any) {
     if (user.is_admin) {
-        const { data: response } = await useFetch(`/api/tickets/${id}/pend`)
+        await useFetch(`/api/tickets/${id}/pend`)
 
-        // update the ticket status
         // @ts-ignore
         const ticket = tickets.value.find(ticket => ticket.id === id)
         if (ticket) {

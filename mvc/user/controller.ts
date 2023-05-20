@@ -1,5 +1,5 @@
 import {createRouter, defineEventHandler} from "h3";
-import {getAdminUsers, getUser, getUserTickets} from "~/mvc/user/model";
+import {getAdminUsers, getUser, getUserTickets} from "~/mvc/user/functions";
 
 const router = createRouter();
 
