@@ -152,10 +152,10 @@ onMounted(() => {
                 });
             }
 
-            // navigator.serviceWorker.register('/sw.js')
-            //     .catch((registrationError) => {
-            //         console.log('Service worker registration failed: ', registrationError)
-            //     })
+            navigator.serviceWorker.register('/sw.js')
+                .catch((registrationError) => {
+                    console.log('Service worker registration failed: ', registrationError)
+                })
         }
     } else {
         console.log('User is not available')

@@ -27,7 +27,7 @@ export async function getNotifications(event:H3Event){
     const user_id = await readBody(event)
     let response = {} as HttpResponseTemplate
 
-    if(!user_id){
+    if(!user_id || user_id === "" || user_id === undefined){
         response.statusCode = 401
         response.body = "Botched Request"
     }

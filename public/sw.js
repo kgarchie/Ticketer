@@ -1,7 +1,9 @@
 let socket = null;
+let url = new URL(location);
 
 function openSocket() {
-    socket = new WebSocket(`wss://ticketer.up.railway.app`);
+    let protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    socket = new WebSocket(`${protocol}//${url.host}`);
 
     socket.onmessage = (message) => {
         let { type, body } = JSON.parse(message.data);
@@ -13,7 +15,7 @@ function openSocket() {
                         body: body.message,
                         icon: "/favicon.ico",
                         badge: "/favicon.ico",
-                        click_action: "ticketer.up.railway.app",
+                        click_action: `${url.origin}`
                     })
                     .then((r) => console.log(r));
             }
@@ -116,6 +118,7 @@ async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
 
 
 self.addEventListener("install", (event) => {
+    console.log(url)
     console.log("Service worker installed:", event);
 });
 

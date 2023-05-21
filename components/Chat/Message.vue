@@ -25,7 +25,7 @@
                                     file?.name?.substring(0, 10) || 'unknown'
                                     }}..{{ file?.name?.split('.').pop() || '???' }}</small>
                                 <a :href="file.url" target="_blank"
-                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
+                                   class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
                             </span>
                         </div>
                     </div>
@@ -65,7 +65,8 @@
                     <textarea id="chat_input" class="chat_input" type="text" placeholder="Type a message..."
                               v-model="composed_message" autocomplete="none"></textarea>
 
-                    <button class="button attachment fas fa-paperclip" @click="openFilePicker()" :disabled="pending"></button>
+                    <button class="button attachment fas fa-paperclip" @click="openFilePicker()"
+                            :disabled="pending"></button>
                     <button class="button is-primary fas fa-paper-plane" @click="sendMessage()"
                             :class="{ 'is-loading': pending }" :disabled="pending"></button>
                 </div>
@@ -323,7 +324,7 @@ function closePreview() {
   top: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
 }
 
 .close-preview {
