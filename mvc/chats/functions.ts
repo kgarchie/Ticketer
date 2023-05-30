@@ -74,10 +74,13 @@ export async function sendMessage(event: H3Event) {
 
 
     let socketResponse = {} as SocketTemplate
+
     socketResponse.statusCode = 200
     socketResponse.type = TYPE.MESSAGE
+    
     socketResponse.body = {
         message: await getMessageById(createdMessage.id),
+        chat_id: chat.chat_id,
         fromUserName: await getUserName(from_user_id)
     }
 

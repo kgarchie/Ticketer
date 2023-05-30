@@ -279,9 +279,11 @@ watch(useNewMessage(), newMessage => {
     // console.log("new message", newMessage)
     if (newMessage) {
         try {
-            let chat = chats.value.find(chat => chat.id.toString() === newMessage?.chatId.toString())
+            let chat = chats.value.find(chat => chat.chat_id === newMessage?.chat_id)
+            console.log(chat)
+            console.log(newMessage)
 
-            if (chat && newMessage) {
+            if (chat) {
                 if (!chat.Message.find((message: any) => message.id === newMessage.id)) {
                     chat.Message.push(newMessage)
                 } else {

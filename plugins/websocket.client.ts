@@ -135,10 +135,14 @@ export default defineNuxtPlugin(() => {
 
                         break;
                     case TYPE.MESSAGE:
-                        const message = SocketResponse.body.message as Message
+                        const message = SocketResponse.body.message
                         const fromUserName = SocketResponse.body.fromUserName as string
+                        const chat_id = SocketResponse.body.chat_id as string
+                        
+                        message.chat_id = chat_id
                         // console.log('User message received', message)
                         newMessageState.value = message
+                        
                         // console.log('New message state', useNewMessageState.value)
                         // check if tab is open
                         if (document.visibilityState !== 'visible') {

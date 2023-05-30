@@ -175,7 +175,7 @@ export async function storeFiles(files: any[], messageId: number, chat_id: strin
 
 
 export async function getMessageById(messageId: number) {
-    return prisma.message.findFirst({
+    const message = prisma.message.findFirst({
         where: {
             id: messageId
         },
@@ -183,6 +183,8 @@ export async function getMessageById(messageId: number) {
             attachments: true
         }
     })
+
+    return message
 }
 
 

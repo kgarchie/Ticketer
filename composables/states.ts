@@ -1,4 +1,4 @@
-import {Message, Ticket, Notification, Comment} from "@prisma/client";
+import {Ticket, Notification, Comment} from "@prisma/client";
 import {SocketStatus, UserAuth} from "~/types";
 
 export const useUser = () => useState<UserAuth>('user', () => {
