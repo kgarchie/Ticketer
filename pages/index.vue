@@ -189,7 +189,6 @@ import {
   updateTicketsMetaData,
   onNewTicketCallback,
   onUpdateTicketCallback,
-  onDeleteTicketCallback,
   getUserName
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";

@@ -276,7 +276,7 @@ function closePreview() {
 }
 
 let _switch = false
-
+ya
 function placeAudioCall() {
   if (!_switch) {
     eCall.placeAudioCall(props.to_user.user_id, props.chat_id || null)

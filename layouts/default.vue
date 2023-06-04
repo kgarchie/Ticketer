@@ -114,11 +114,12 @@ const socket = useGlobalSocket().value
 
 // console.log(socket.onNotificationCallback)
 
-if(socket){
+if (socket) {
   socket.onNotificationCallback = (_notification: Notification) => {
-    if ('serviceWorker' in navigator) {
-      if (Notification.permission !== "granted") {
-        Notification.requestPermission().then((permission) => {
+
+    if (process.client && 'serviceWorker' in navigator) {
+      if (window.Notification.permission !== "granted") {
+        window.Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
             console.log("Notification permission granted.");
           } else {

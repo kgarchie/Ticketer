@@ -63,7 +63,7 @@ function unread_count(eval_messages: any[]) {
 
 function show_all_unread_count() {
   let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
-  let new_message_indicator = document.getElementById('new-message-indicator')
+  let new_message_indicator = document?.getElementById('new-message-indicator')
 
   if (!(process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value)) return
   if (!new_message_indicator) return
@@ -141,14 +141,14 @@ function revealChat(event: any) {
 
   if (!process.client) return
 
-  let new_message_indicator = document.getElementById('new-message-indicator')
+  let new_message_indicator = document?.getElementById('new-message-indicator')
   new_message_indicator?.classList.add('hidden')
 }
 
 function concealChat() {
   chat_isRevealed.value = false
 
-  document.getElementById('chat')?.classList.remove('is-open')
+  document?.getElementById('chat')?.classList.remove('is-open')
 
   setTimeout(() => {
     show_all_unread_count()
@@ -200,18 +200,18 @@ function closeChatBox() {
 }
 
 function hideChatButton() {
-  document.getElementById('chat')?.classList.add('not_active')
+  document?.getElementById('chat')?.classList.add('not_active')
 }
 
 function showChatButton() {
-  if (document.getElementById('chat')?.classList.contains('not_active')) {
-    document.getElementById('chat')?.classList.remove('not_active')
+  if (document?.getElementById('chat')?.classList.contains('not_active')) {
+    document?.getElementById('chat')?.classList.remove('not_active')
   }
 }
 
 function positionMessages() {
   nextTick(() => {
-    const messages_container = document.getElementById("messages_container")
+    const messages_container = document?.getElementById("messages_container")
 
     if (messages_container) {
       messages_container.scrollTop = messages_container.scrollHeight;

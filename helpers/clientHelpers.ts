@@ -1,4 +1,4 @@
-import {CommentOperation, STATUS, TicketOperation, UserAuth, UserChatObject} from "~/types";
+import {STATUS, UserChatObject} from "~/types";
 import {Attachment, Comment, Message, Notification, Ticket} from "@prisma/client";
 import {Ref} from "vue";
 
