@@ -1,6 +1,6 @@
 import prisma from "~/db";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
-import {writeFileToStorage, obtainChat_id} from "~/mvc/chats/helpers";
+import {obtainChat_id, writeFileToStorage} from "~/mvc/chats/helpers";
 import path from "path";
 
 export async function getUserChats(user_id: string) {
@@ -51,12 +51,11 @@ export async function getUserChats(user_id: string) {
     let admins = await getAdmins()
     let chat_length = mapped_chats.length
 
-    // if an admin is not in the chats, create a chat with them, and send an initial message, and then add it to the chats
+    // if an admin is not in the chats, create a chat with them
     for (let admin of admins) {
         let chats_has_admin = chatsWithMessages.find(chat => chat.Message[0].from_user_id?.toString() === admin.user_id.toString() || chat.Message[0].to_user_id?.toString() === admin.user_id.toString())
 
         if (!chats_has_admin && admin.user_id.toString() !== user_id.toString()) {
-
             mapped_chats.push({
                 id: ++chat_length,
                 Message: [],
@@ -73,31 +72,13 @@ export async function getUserChats(user_id: string) {
 }
 
 export async function getOrCreateChat(from_user_id: string, to_user_id: string) {
-    let chat = await prisma.chat.findFirst({
+    return await prisma.chat.upsert({
+        create: {
+            chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
+        },
+        update: {},
         where: {
             chat_id: obtainChat_id(from_user_id, to_user_id).toString()
-        },
-        include: {
-            Message: true
-        }
-    }).then(
-        (data) => {
-            if (data) {
-                return data
-            } else {
-                return null
-            }
-        }
-    ).catch((err) => {
-        console.log(err)
-        return null;
-    })  // if no chat exists, create one
-
-    if (chat) return chat
-
-    chat = await prisma.chat.create({
-        data: {
-            chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
         },
         include: {
             Message: true
@@ -108,8 +89,6 @@ export async function getOrCreateChat(from_user_id: string, to_user_id: string) 
             return null
         }
     )
-
-    return chat
 }
 
 export async function createMessage(chat_id: string, from_user_id: string, to_user_id: string, message: string) {

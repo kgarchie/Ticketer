@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./dev.db" // env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 model Company {
@@ -89,6 +89,7 @@ model Chat {
   created_at DateTime  @default(now())
   chat_id    String    @unique
   Message    Message[]
+  Call       Call[]
 }
 
 model Message {
@@ -100,7 +101,21 @@ model Message {
   chat         Chat         @relation(fields: [chatId], references: [id])
   from_user_id String?
   to_user_id   String?
+  is_call      Boolean      @default(false)
+  call         Call?        @relation(fields: [callId], references: [id])
   attachments  Attachment[]
+  callId       Int?
+}
+
+model Call {
+  id         Int       @id @default(autoincrement())
+  created_at DateTime  @default(now())
+  chatId     Int
+  chat       Chat      @relation(fields: [chatId], references: [id])
+  from       String
+  to         String
+  duration   Float
+  Message    Message[]
 }
 
 model Attachment {

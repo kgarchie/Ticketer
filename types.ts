@@ -7,6 +7,7 @@ import {Message} from "@prisma/client";
 export type Client = {
     user_id: string | null;
     Socket: WebSocket;
+    is_inCall?: boolean;
 }
 
 export type MessageTemplate = {
@@ -41,6 +42,13 @@ export type SocketTemplate = {
 export type HttpResponseTemplate = {
     statusCode: number;
     body?: any;
+}
+
+export type sdpCall = {
+    sdp: string,
+    caller_user_id: string,
+    callee_user_id: string,
+    chat_id: string
 }
 
 export type UserAuth = {
@@ -141,6 +149,8 @@ export enum TYPE {
     NEW_TICKET = "new ticket",
     UPDATE_TICKET = "update ticket",
     DELETE_TICKET = "delete ticket",
+    CALL = "call",
+    CALL_SDP = "call sdp",
 }
 
 export enum TicketOperation {

@@ -19,7 +19,7 @@ export function writeFileToStorage(given_path: string, locationsOnDisk: string[]
     let fullyQualifiedUrl = `${loc_url}/${file.originalFilename.replace(/ /g, "_")}`
     let fullyQualifiedPath = `${root}/${file.originalFilename.replace(/ /g, "_")}`
 
-    // TODO: Find a better way of handling file name collisions, like fs.promises.access
+    // TODO: Find a better way, like fs.promises.access
     if (fs.existsSync(fullyQualifiedUrl)) {
         let fileName = file.originalFilename.split(".")
         let fileExtension = fileName.pop()

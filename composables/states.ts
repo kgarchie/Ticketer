@@ -1,5 +1,5 @@
-import {Ticket, Notification, Comment} from "@prisma/client";
-import {SocketStatus, UserAuth} from "~/types";
+import {UserAuth} from "~/types";
+import {Notification} from "@prisma/client";
 
 export const useUser = () => useState<UserAuth>('user', () => {
     return {
@@ -9,25 +9,12 @@ export const useUser = () => useState<UserAuth>('user', () => {
     }
 });
 
-export const useNotifications = () => useState<Notification[]>('Notifications', () => []);
-export const useNewMessage = () => useState<any>('NewMessage', () => null);
-export const useWsServerStatus = () => useState<SocketStatus>('wsServerStatus', () => SocketStatus.OPEN);
-export const useNewTickets = () => useState<Ticket[]>('NewTickets', () => []);
+export const useCall = () => useState<any>('call', () => null);
+export const useGlobalSocket = () => useState<any>('globalSocket', () => null);
+export const useNotifications = () => useState<Notification[]>('notifications', () => []);
 export const useTicketsMetaData = () => useState<{ [key: string]: number }>('TicketsMetaData', () => ({
     pending_count: 0,
     resolved_count: 0,
     exceptions_count: 0,
     new_count: 0
 }));
-export const useNewTicketComment = () => useState<Comment | null>('NewTicketComment', () => null);
-export const useCommentActions = () => useState<{}>('CommentActions', () => ({
-    action: '',
-    commentId: null
-}));
-
-export const useTicketActions = () => useState<{}>('TicketActions', () => ({
-    action: '',
-    ticketId: null
-}));
-
-

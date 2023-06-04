@@ -1,5 +1,5 @@
 import {Client, ServerStatus, TYPE, websocketPort, SocketTemplate, SocketStatus} from "~/types";
-import {WebSocket, WebSocketServer} from "ws"
+import {WebSocketServer} from "ws"
 import {socketSendData} from "~/mvc/utils";
 
 // Declare the global WebSocket server
@@ -167,7 +167,7 @@ function monitorClientConnections() {
     // Send periodic heartbeats to all connected clients
     setInterval(() => {
         monitor()
-    }, 100000); // Send heartbeat every 100 seconds
+    }, 100000);
 }
 
 monitorClientConnections();

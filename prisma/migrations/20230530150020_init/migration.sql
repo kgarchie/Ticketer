@@ -88,7 +88,21 @@ CREATE TABLE "Message" (
     "chatId" INTEGER NOT NULL,
     "from_user_id" TEXT,
     "to_user_id" TEXT,
-    CONSTRAINT "Message_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "is_call" BOOLEAN NOT NULL DEFAULT false,
+    "callId" INTEGER,
+    CONSTRAINT "Message_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Message_callId_fkey" FOREIGN KEY ("callId") REFERENCES "Call" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Call" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "chatId" INTEGER NOT NULL,
+    "from" TEXT NOT NULL,
+    "to" TEXT NOT NULL,
+    "duration" REAL NOT NULL,
+    CONSTRAINT "Call_chatId_fkey" FOREIGN KEY ("chatId") REFERENCES "Chat" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateTable

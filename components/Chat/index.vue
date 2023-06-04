@@ -1,310 +1,238 @@
 <template>
-    <div class="Chat">
-        <div class="chat-wrapper" v-if="chat_isRevealed">
-            <div class="chat_container">
-                <div class="user-profile" style="width: 100%">
-                    <div class="user-name is-flex is-align-items-center" style="font-size: 1.2rem">Chats</div>
-                    <button class="close-chat" style="cursor: pointer" @click="concealChat">
-                        <span class="ex"></span>
-                    </button>
-                </div>
-                <div class="is-flex is-flex-direction-column message-list">
-                    <ul class="people">
-                        <li class="person" v-for="chat in  chats " :key="chat.id"
-                            @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
-                            <div class="message-preview">
-                                <span class="chat_title">{{ getChatTitle(chat) }}</span>
-                                <span class="company-info" v-if=" user.is_admin ">{{
-                                    chat.WithUser?.company?.name || chat?.WithUser?.company
-                                    }}</span>
-                                <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
-                                <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
-                                    unread_count(chat.Message)
-                                    }}</span>
-                                <span class="preview">{{ lastMessage(chat.Message) }}</span>
-                                <span class="time">{{ lastMessageTime(chat.Message) }}</span>
-                            </div>
-                            <br>
-                        </li>
-                    </ul>
-                </div>
-                <ChatMessage :messages="messages" :to_user=" to_user " :chat_id="chat_id"
-                             v-if=" message_isRevealed "
-                             @close=" closeChatBox "/>
-            </div>
+  <div class="Chat">
+    <div class="chat-wrapper" v-if="chat_isRevealed">
+      <div class="chat_container">
+        <div class="user-profile" style="width: 100%">
+          <div class="user-name is-flex is-align-items-center" style="font-size: 1.2rem">Chats</div>
+          <button class="close-chat" style="cursor: pointer" @click="concealChat">
+            <span class="ex"></span>
+          </button>
         </div>
-        <div>
-            <span id="new-message-indicator" class="new-message-indicator hidden"></span>
-            <button class="button is-primary" id="chat" @click="revealChat">
-                Chat
-            </button>
+        <div class="is-flex is-flex-direction-column message-list">
+          <ul class="people">
+            <li class="person" v-for="chat in  chats" :key="chat.id"
+                @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
+              <div class="message-preview">
+                <span class="chat_title">{{ getChatTitle(chat) }}</span>
+                <span class="company-info" v-if=" user.is_admin ">{{
+                    chat.WithUser?.company?.name || chat?.WithUser?.company
+                  }}</span>
+                <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
+                <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
+                    unread_count(chat.Message)
+                  }}</span>
+                <span class="preview">{{ lastMessage(chat.Message) }}</span>
+                <span class="time">{{ lastMessageTime(chat.Message) }}</span>
+              </div>
+              <br>
+            </li>
+          </ul>
         </div>
+        <ChatMessage :messages="messages" :to_user=" to_user " :chat_id="chat_id"
+                     v-if=" message_isRevealed "
+                     @close=" closeChatBox "/>
+      </div>
     </div>
+    <div>
+      <span id="new-message-indicator" class="new-message-indicator hidden"></span>
+      <button class="button is-primary" id="chat" @click="revealChat">
+        Chat
+      </button>
+    </div>
+  </div>
 </template>
 <script setup lang="ts">
-import {UserChatObject, SocketStatus} from "~/types";
-import {updateNewTickets, updateNotifications, updateTicketsMetaData, pollServerStatus} from "~/helpers/clientHelpers";
+import {UserChatObject} from "~/types";
+import {onMessageCallback} from "~/helpers/clientHelpers";
+import {Attachment, Message} from "@prisma/client";
 
 const user = useUser().value
-const WsServerStatusState = useWsServerStatus()
-
 const chats = ref<UserChatObject[]>([])
 const chat_id = ref<string>('')
 const chat_isRevealed = ref<boolean>(false)
 
 const messages = computed(() => {
-    return chats.value.find((chat: any) => chat.chat_id === chat_id.value)?.Message
+  return chats.value.find((chat: any) => chat.chat_id === chat_id.value)?.Message
 })
 
 const to_user = ref<any>({})
 
 function unread_count(eval_messages: any[]) {
-    return eval_messages.filter((message: any) => !message?.opened && message?.from_user_id != user.user_id).length
+  return eval_messages.filter((message: any) => !message?.opened && message?.from_user_id != user.user_id).length
 }
 
-
 function show_all_unread_count() {
-    let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
-    // console.log(chats_with_unread_messages)
+  let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
+  let new_message_indicator = document.getElementById('new-message-indicator')
 
-    if (process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value) {
-        let new_message_indicator = document.getElementById('new-message-indicator')
-        if (new_message_indicator) {
-            if (chats_with_unread_messages.length > 0) {
-                new_message_indicator.classList.remove('hidden')
-                new_message_indicator.innerText = chats_with_unread_messages.length.toString()
-            } else {
-                new_message_indicator.classList.add('hidden')
-            }
-        }
-    }
+  if (!(process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value)) return
+  if (!new_message_indicator) return
+
+  if (chats_with_unread_messages.length > 0) {
+    new_message_indicator.classList.remove('hidden')
+    new_message_indicator.innerText = chats_with_unread_messages.length.toString()
+  } else {
+    new_message_indicator.classList.add('hidden')
+  }
 }
 
 
 function getChatTitle(chat: any) {
-    // console.log(chat.WithUser)
-    if (chat.WithUser.name !== "Anonymous") {
-        return chat.WithUser.name
-    } else {
-        return chat.WithUser.user_id
-    }
+  if (chat.WithUser.name !== "Anonymous") {
+    return chat.WithUser.name
+  } else {
+    return chat.WithUser.user_id
+  }
 }
 
 
 function markMessagesAsRead(chat: any, force: boolean = false) {
-    if (unread_count(chat.Message) > 0 || force) {
-        $fetch('/api/chats/messages/read', {
-            method: 'POST',
-            body: {
-                chat_id: chat.chat_id,
-                user_id: user.user_id
-            }
-        }).then((res: any) => {
-            if (res.statusCode === 200) {
-                chats.value = chats.value.map((c: any) => {
-                    if (c.chat_id === chat.chat_id) {
-                        return {
-                            ...c,
-                            Message: c.Message.map((m: any) => {
-                                return {
-                                    ...m,
-                                    opened: true
-                                }
-                            })
-                        }
-                    } else {
-                        return c
-                    }
-                })
+  if (unread_count(chat.Message) > 0 || force) {
+    $fetch('/api/chats/messages/read', {
+      method: 'POST',
+      body: {
+        chat_id: chat.chat_id,
+        user_id: user.user_id
+      }
+    }).then((res: any) => {
+      if (res.statusCode !== 200) return
 
-                show_all_unread_count()
-            }
-        }).catch((e: any) => {
-            console.log(e)
-        })
-    }
+      chats.value = chats.value.map((c: any) => {
+        if (c.chat_id !== chat.chat_id) return c
+
+        return {
+          ...c,
+          Message: c.Message.map((m: any) => {
+            return {...m, opened: true}
+          })
+        }
+      })
+      show_all_unread_count()
+    }).catch((e: any) => {
+      console.log(e)
+    })
+  }
 }
 
 function lastMessage(Message: any[]) {
-    try {
-        let last = Message[Message.length - 1].message.split('').splice(0, 20).join('')
-        if (last.length >= 20) {
-            last += '...'
-        }
-        return last
-    } catch (e) {
-        return "No Messages"
-    }
+  try {
+    let last = Message[Message.length - 1].message.split('').splice(0, 20).join('')
+
+    if (last.length < 20) return last
+
+    last += '...'
+    return last
+  } catch (e) {
+    return "No Messages"
+  }
 }
 
 function lastMessageTime(Message: any[]) {
-    try {
-        return new Date(Message[Message.length - 1].created_at).toLocaleString()
-    } catch (e) {
-        return ""
-    }
+  try {
+    return new Date(Message[Message.length - 1].created_at).toLocaleString()
+  } catch (e) {
+    return ""
+  }
 }
 
-
 function revealChat(event: any) {
-    chat_isRevealed.value = true
+  chat_isRevealed.value = true
+  event.target.classList.add('is-open')
 
-    // console.log(event)
+  if (!process.client) return
 
-    // add style to the chat button
-    event.target.classList.add('is-open')
-
-    // remove the new message indicator
-    if (process.client) {
-        let new_message_indicator = document.getElementById('new-message-indicator')
-        if (new_message_indicator) {
-            new_message_indicator.classList.add('hidden')
-        }
-    }
+  let new_message_indicator = document.getElementById('new-message-indicator')
+  new_message_indicator?.classList.add('hidden')
 }
 
 function concealChat() {
-    chat_isRevealed.value = false
+  chat_isRevealed.value = false
 
-    document.getElementById('chat')?.classList.remove('is-open')
+  document.getElementById('chat')?.classList.remove('is-open')
 
-    setTimeout(() => {
-        show_all_unread_count()
-    }, 500)
+  setTimeout(() => {
+    show_all_unread_count()
+  }, 500)
 }
 
 const message_isRevealed = computed(() => {
-    return chat_isRevealed.value && (chat_id.value !== '' && chat_id.value !== undefined && chat_id.value !== null)
+  return chat_isRevealed.value && (chat_id.value !== '' && chat_id.value !== undefined && chat_id.value !== null)
 })
 
 async function getChats() {
-    let db_chats = await $fetch('/api/chats', {
-        method: 'POST',
-        body: user.user_id.toString()
-    }).then(
-        (res: any) => {
-            if (res.statusCode === 200) {
-                return res.body as UserChatObject[]
-            } else {
-                console.log(res.body)
-                return []
-            }
-        }
-    ).catch((e: any) => {
-        console.log(e)
-        return []
-    })
+  let db_chats = await $fetch('/api/chats', {
+    method: 'POST',
+    body: user.user_id.toString()
+  }).then(
+      (res: any) => {
+        if (res.statusCode !== 200) return []
+        return res.body as UserChatObject[]
+      }
+  ).catch((e: any) => {
+    console.log(e)
+    return []
+  })
 
-    chats.value = db_chats.filter((chat: any) => chat.WithUser.user_id !== user.user_id)
-    sortChats()
+  chats.value = db_chats.filter((chat: any) => chat.WithUser.user_id !== user.user_id)
+  sortChats()
 
-    show_all_unread_count()
+  show_all_unread_count()
 }
 
 function sortChats() {
-    // sort chats except
-    chats.value = chats.value.sort((a: any, b: any) => {
-        let a_last_message = a.Message[a.Message.length - 1] || null
-        let b_last_message = b.Message[b.Message.length - 1] || null
+  chats.value = chats.value.sort((a: any, b: any) => {
+    let a_last_message = a.Message[a.Message.length - 1] || null
+    let b_last_message = b.Message[b.Message.length - 1] || null
 
-        if (a_last_message && b_last_message) {
-            return new Date(b_last_message.created_at).getTime() - new Date(a_last_message.created_at).getTime()
-        } else {
-            return 0
-        }
-    })
+    if (a_last_message && b_last_message) {
+      return new Date(b_last_message.created_at).getTime() - new Date(a_last_message.created_at).getTime()
+    } else {
+      return 0
+    }
+  })
 }
 
-watch(WsServerStatusState, async (newValue) => {
-    if (!(newValue === SocketStatus.CLOSED)) {
-        console.log('Socket Server is up')
-        return
-    } else {
-        console.log('Socket Server is down | Switching to long polling')
-        const serverStatus = await pollServerStatus();
-        if (serverStatus === 'online') {
-            console.log('HTTP Server is up');
-            // poll messages
-            const pollM = setInterval(() => {
-                try {
-                    console.log('Polling for new messages, tickets and notifications...');
-                    getChats();
-                    sortChats()
-                    updateTicketsMetaData(useTicketsMetaData().value)
-                    updateNewTickets(useNewTickets())
-                    updateNotifications(useNotifications(), user.user_id)
-
-                    if (WsServerStatusState.value === SocketStatus.OPEN) {
-                        console.log('Socket has opened removing poll...');
-                        clearInterval(pollM);
-                        return;
-                    }
-                } catch (e) {
-                    console.log(e)
-                }
-            }, 3000);
-        } else {
-            console.log('Server is offline');
-        }
-    }
-})
-
 function closeChatBox() {
-    chat_id.value = ''
-    to_user.value = {}
+  chat_id.value = ''
+  to_user.value = {}
 
-    showChatButton()
+  showChatButton()
 }
 
 function hideChatButton() {
-    document.getElementById('chat')?.classList.add('not_active')
+  document.getElementById('chat')?.classList.add('not_active')
 }
 
 function showChatButton() {
-    if (document.getElementById('chat')?.classList.contains('not_active')) {
-        document.getElementById('chat')?.classList.remove('not_active')
-    }
+  if (document.getElementById('chat')?.classList.contains('not_active')) {
+    document.getElementById('chat')?.classList.remove('not_active')
+  }
 }
 
 function positionMessages() {
-    nextTick(() => {
-        // @ts-ignore
-        document.getElementById("messages_container").scrollTop = document.getElementById("messages_container")?.scrollHeight;
-    })
+  nextTick(() => {
+    const messages_container = document.getElementById("messages_container")
+
+    if (messages_container) {
+      messages_container.scrollTop = messages_container.scrollHeight;
+    }
+  })
 }
 
 getChats()
 
-watch(useNewMessage(), newMessage => {
-    // console.log("new message", newMessage)
-    if (newMessage) {
-        try {
-            let chat = chats.value.find(chat => chat.chat_id === newMessage?.chat_id)
-            console.log(chat)
-            console.log(newMessage)
+const socket = useGlobalSocket().value
+if(socket){
+  socket.onMessageCallback = (_message: Message & { attachments: Attachment[] } & { chat_id: string }) => {
+    const chat = onMessageCallback(_message, chats, getChats)
 
-            if (chat) {
-                if (!chat.Message.find((message: any) => message.id === newMessage.id)) {
-                    chat.Message.push(newMessage)
-                } else {
-                    console.log('message already exists')
-                }
-            } else {
-                getChats()
-            }
+    if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)
 
-            if (chat?.chat_id === chat_id.value) {
-                markMessagesAsRead(chat, true)
-            }
-            positionMessages()
-            sortChats()
-            show_all_unread_count()
-        } catch (e) {
-            console.warn(e)
-        }
-    }
-})
-
+    positionMessages()
+    sortChats()
+    show_all_unread_count()
+  }
+}
 </script>
 <style scoped lang="scss">
 $accent: hsl(221, 73%, 63%);

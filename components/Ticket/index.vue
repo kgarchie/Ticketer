@@ -116,10 +116,14 @@
 </template>
 
 <script lang="ts" setup>
-import {Comment} from "@prisma/client";
-import {CommentOperation, SocketStatus, STATUS, TaggedPerson, TicketOperation} from "~/types";
-import {$fetch} from "ofetch";
-import {pollServerStatus} from "~/helpers/clientHelpers";
+import {Comment, Ticket} from "@prisma/client";
+import {SocketStatus, STATUS, TaggedPerson} from "~/types";
+import {
+  getUserName,
+  onDeleteComment,
+  onNewComment,
+} from "~/helpers/clientHelpers";
+
 
 const user = useUser()
 const userName = ref('')
@@ -135,10 +139,8 @@ const local_ticket = ref(props.ticket)
 const comments = ref(local_ticket.value?.comments)
 const taggable = ref<TaggedPerson[]>([])
 
-// using native fetch due to lifecycle issues
 const response = await fetch('/api/user/admins').then(res => res.json()).catch(err => console.log(err))
 let admins = response?.body
-
 async function getTaggablePeople() {
     let taggable_user_ids = props?.ticket?.comments.map((comment: any) => comment.commentor)
     taggable_user_ids = [...new Set(taggable_user_ids)]
@@ -156,8 +158,6 @@ async function getTaggablePeople() {
         }
     })
 
-    // console.log(taggable)
-
     return taggable
 }
 
@@ -169,7 +169,6 @@ async function closeTicket() {
             method: 'POST'
         })
 
-        // update the ticket status
         if (response?.value?.statusCode === 200) {
             local_ticket.value.status = STATUS.C
         } else {
@@ -221,7 +220,6 @@ async function deleteTicket() {
 }
 
 let oldComment = ''
-
 async function submitComment(payload: any) {
     let {comment, tagged} = payload
     if (comment === '') return alert('Please enter a comment before submitting')
@@ -253,10 +251,7 @@ async function submitComment(payload: any) {
         } else {
             let comment = response?.value?.body
 
-            // console.log(comment)
-
-            // if comment doesn't exist in comments array, add it
-            if (useWsServerStatus().value !== SocketStatus.OPEN) {
+            if (socket.WsServerStatus !== SocketStatus.OPEN) {
                 props.ticket.comments.push(comment)
             } else {
                 setTimeout(() => {
@@ -277,76 +272,24 @@ async function submitComment(payload: any) {
 
 }
 
-async function getUserName(user_id: string) {
-    const res = await useFetch(`/api/user/${user_id}`)
-    // console.log(res.data.value.body)
-    if (res?.data?.value?.statusCode === 200) {
-        return res.data.value.body
-    } else {
-        return user_id
-    }
-}
-
 userName.value = await getUserName(props.ticket?.creator)
 
-watch(useNewTicketComment(), (newValue, oldValue) => {
-    if (newValue !== oldValue) {
-        // if there is a new ticket comment and it doesn't already exist in the comments array, add it
-        if (newValue?.ticketId === local_ticket.value.id && !local_ticket.value.comments.find((c: any) => c.id === newValue?.id)) {
-            comments.value.push(newValue)
-            console.log(newValue)
-        }
-    }
-})
+const socket = useGlobalSocket().value
 
-watch(useCommentActions(), value => {
-    if (value) {
-        // console.log(value)
-        if (value.action === CommentOperation.DELETE && value.ticket.id === props.ticket.id) {
-            comments.value = comments.value.filter((comment: Comment) => comment.id !== value.commentId)
-        }
-    }
-})
+if(socket){
+  socket.onNewCommentCallback = (comment: Comment) => {
+    onNewComment(comment, comments)
+  }
 
+  socket.onDeleteCommentCallback = (comment:Comment & { ticket: Ticket }) => {
+    onDeleteComment(comment, comments)
+  }
 
-watch(useTicketActions(), async value => {
-    if (value) {
-        // console.log(value)
-        if (value.action === TicketOperation.DELETE && value.ticketId === props.ticket.id) {
-            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
-        }
-    }
-})
-
-// watch(useWsServerStatus(), async (newValue) => {
-//     if (!(newValue === SocketStatus.CLOSED)) {
-//         console.log('Socket Server is up')
-//         return
-//     } else {
-//         console.log('Socket Server is down | Switching to long polling')
-//         const serverStatus = await pollServerStatus();
-//         if (serverStatus === 'online') {
-//             console.log('HTTP Server is up');
-//             const pollM = setInterval(async () => {
-//                 try {
-//                     console.log('Polling for new comments');
-//                     let new_ticket = await $fetch(`/api/tickets/${props.ticket.id}`)
-//                     local_ticket.value.comments = new_ticket.body?.comments
-//                     await refreshNuxtData()
-//                     if (useWsServerStatus().value === SocketStatus.OPEN) {
-//                         console.log('Socket has opened removing poll...');
-//                         clearInterval(pollM);
-//                         return;
-//                     }
-//                 } catch (e) {
-//                     console.log(e)
-//                 }
-//             }, 3000);
-//         } else {
-//             console.log('Server is offline');
-//         }
-//     }
-// })
+  socket.onDeleteTicketCallback = async (ticket: Ticket) => {
+    if(ticket.id !== props.ticket.id) return
+    await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
+  }
+}
 </script>
 
 <style scoped>
