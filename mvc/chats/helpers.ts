@@ -88,7 +88,7 @@ async function schedulePurge(totalSize: Float<number> = 0.0): Promise<null | voi
 async function startPurge() {
     const discard = await getPurgeList()
     for (const attachment of discard) {
-        minioClient!.removeObject(bucketName!, attachment.url, function (err) {
+        minioClient!.removeObject(bucketName!, attachment.attachment.url, function (err) {
             if (err) return console.log(err)
         })
         await deletePurgeItem(attachment.id)

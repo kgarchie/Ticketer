@@ -3,7 +3,7 @@ import Minio from "minio";
 const bucketName = process.env.BUCKET_NAME
 const accessKey = process.env.ACCESS_KEY
 const secretKey = process.env.SECRET_KEY
-const endPoint = process.env.HOST
+const endPoint = process.env.MINIO_HOST
 
 if (!bucketName || !accessKey || !secretKey || !endPoint) throw new Error("Minio env variables not found");
 

@@ -134,7 +134,7 @@ model Attachment {
 
 model FilePurge {
   id           Int        @id @default(autoincrement())
-  attachmentId Int
+  attachmentId Int        @unique
   deadline     DateTime
   attachment   Attachment @relation(fields: [attachmentId], references: [id])
 }

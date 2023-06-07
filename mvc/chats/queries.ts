@@ -266,12 +266,15 @@ export async function getPurgeList() {
             deadline: {
                 lte: new Date()
             }
+        },
+        include: {
+            attachment: true
         }
     })
 }
 
 export async function deletePurgeItem(attachmentId: number) {
-    await prisma.filePurge.delete({
+    await prisma.filePurge.deleteMany({
         where: {
             attachmentId: attachmentId
         }
