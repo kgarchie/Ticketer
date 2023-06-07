@@ -5,7 +5,7 @@ const accessKey = process.env.ACCESS_KEY
 const secretKey = process.env.SECRET_KEY
 const endPoint = process.env.HOST
 
-if(!bucketName || !accessKey || !secretKey || !endPoint) throw new Error("Minio env variables not found");
+if (!bucketName || !accessKey || !secretKey || !endPoint) throw new Error("Minio env variables not found");
 
 function MinioClient() {
     try {
@@ -21,26 +21,17 @@ function MinioClient() {
 }
 
 const minioClient = MinioClient();
-if(!minioClient) throw new Error("Minio client not found");
+if (!minioClient) throw new Error("Minio client not found");
 
-const bucketExists = await new Promise((resolve, reject) => {
-    minioClient.bucketExists(bucketName, function (err, exists) {
-        if (err) return reject(err);
-        resolve(exists);
-    });
+
+minioClient.bucketExists(bucketName, function (err, exists) {
+    if (err) return;
+
+    if (!exists) {
+        minioClient.makeBucket(bucketName, function (err:any) {
+            if (err) throw err;
+        });
+    }
 });
 
-if (!bucketExists) {
-    await new Promise((resolve, reject) => {
-        minioClient.makeBucket(bucketName, function (err:any) {
-            if (err) return reject(err);
-            resolve(null);
-        });
-    }).then(
-        () => console.log("Bucket created successfully in " + process.env.HOST),
-    ).catch(
-        (err) => {throw new Error(err)}
-    )
-}
-
-export {bucketName, accessKey, secretKey, endPoint, minioClient}
+export { bucketName, accessKey, secretKey, endPoint, minioClient }
