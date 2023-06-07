@@ -2,6 +2,8 @@ import prisma from "~/db";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 import {obtainChat_id, writeFileToStorage} from "~/mvc/chats/helpers";
 import path from "path";
+import {UploadedObjectInfo} from "minio";
+import {expressionStatement} from "@babel/types";
 
 export async function getUserChats(user_id: string) {
     const chatsFromMessages = await prisma.message.findMany({
@@ -131,30 +133,49 @@ export async function readUserMessage(user_id: string, chat_id: string) {
 
 export async function storeFiles(files: any[], messageId: number, chat_id: string, user_id: string) {
     let filePath = path.join(user_id, chat_id)
-    let locationsOnDisk: string[] = []
 
     for (const file of files) {
-        await writeFileToStorage(filePath, locationsOnDisk, file)
+        try{
+            await writeFileToStorage(filePath, file, messageId)
+        } catch (e) {
+            throw e
+        }
     }
+}
 
-    for(let location of locationsOnDisk) {
-        await prisma.attachment.create({
-            data: {
-                Message: {
-                    connect: {
-                        id: messageId
-                    }
-                },
-                url: location,
-                name: location.split('/').pop() || 'unknown'
-            }
+export async function storeLocation(location: string, messageId: number, fileSize: number, uploadedInfo: UploadedObjectInfo) {
+    await prisma.attachment.create({
+        data: {
+            Message: {
+                connect: {
+                    id: messageId
+                }
+            },
+            url: location,
+            name: location.split('/').pop() || 'unknown',
+            size: fileSize,
+            uploadInfo: JSON.stringify(uploadedInfo)
+        }
+    }).catch(
+        (error) => {
+            console.log(error)
+            return null
         })
-    }
+}
+
+export async function fileExists(url: string) {
+    const attachment = await prisma.attachment.findFirst({
+        where: {
+            url: url
+        }
+    })
+
+    return !!attachment
 }
 
 
 export async function getMessageById(messageId: number) {
-    const message = prisma.message.findFirst({
+    return prisma.message.findFirst({
         where: {
             id: messageId
         },
@@ -162,8 +183,6 @@ export async function getMessageById(messageId: number) {
             attachments: true
         }
     })
-
-    return message
 }
 
 
@@ -186,4 +205,75 @@ export async function deleteMessage(messageId: number) {
     })
 
     return true
+}
+
+export async function getOldestUnpurgedAttachments(limit: number | null) {
+    return prisma.attachment.findMany({
+        where: {
+            to_purge: false
+        },
+        orderBy: {
+            created_at: 'asc'
+        },
+        take: limit || 100
+    });
+}
+
+
+export async function getTotalAttachmentsSize(callback: Function | null = null){
+    const total = await prisma.attachment.aggregate({
+        _sum: {
+            size: true
+        }
+    })
+
+    if (callback) return callback(total._sum.size)
+    return total._sum.size
+}
+
+export async function deleteAttachment(attachmentId: number) {
+    await prisma.attachment.delete({
+        where: {
+            id: attachmentId
+        }
+    })
+}
+
+export async function addToPurge(attachmentId: number) {
+    const max_days = process.env.DELETE_WARNING || "2"
+    const deadline_date = new Date(Date.now() + parseInt(max_days) * 24 * 60 * 60 * 1000)
+    
+    await prisma.filePurge.create({
+        data: {
+            attachmentId: attachmentId,
+            deadline: deadline_date
+        }
+    })
+
+    await prisma.attachment.update({
+        where: {
+            id: attachmentId
+        },
+        data: {
+            to_purge: true
+        }
+    })
+}
+
+export async function getPurgeList() {
+    return prisma.filePurge.findMany({
+        where: {
+            deadline: {
+                lte: new Date()
+            }
+        }
+    })
+}
+
+export async function deletePurgeItem(attachmentId: number) {
+    await prisma.filePurge.delete({
+        where: {
+            attachmentId: attachmentId
+        }
+    })
 }

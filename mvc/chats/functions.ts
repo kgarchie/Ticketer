@@ -11,6 +11,7 @@ import {
 } from "~/mvc/chats/queries";
 import {getConnectedClientSockets, shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
+import {getPresignedUrl} from "~/mvc/chats/helpers";
 
 export async function getChats(event: H3Event) {
     const user_id = await readBody(event) || null;
@@ -77,7 +78,7 @@ export async function sendMessage(event: H3Event) {
 
     socketResponse.statusCode = 200
     socketResponse.type = TYPE.MESSAGE
-    
+
     socketResponse.body = {
         message: await getMessageById(createdMessage.id),
         chat_id: chat.chat_id,
@@ -190,5 +191,22 @@ export async function rejectCall(event: H3Event) {
     response.statusCode = 229
     response.body = "Call rejected"
 
+    return response
+}
+
+export async function getFileUrl(event: H3Event) {
+    const file_url = event.context.params?.file_url || null
+    let link = await getPresignedUrl(file_url).catch(e => null)
+
+    let response = {} as HttpResponseTemplate
+
+    if (!link) {
+        response.statusCode = 500
+        response.body = "Error getting file"
+        return response
+    }
+
+    response.statusCode = 200
+    response.body = link
     return response
 }

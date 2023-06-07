@@ -119,13 +119,24 @@ model Call {
 }
 
 model Attachment {
-  id         Int      @id @default(autoincrement())
+  id         Int         @id @default(autoincrement())
   url        String
   name       String
-  created_at DateTime @default(now())
-  deleted    Boolean  @default(false)
-  Message    Message? @relation(fields: [messageId], references: [id])
+  created_at DateTime    @default(now())
+  size       Float
+  uploadInfo String
+  deleted    Boolean     @default(false)
+  Message    Message?    @relation(fields: [messageId], references: [id])
   messageId  Int?
+  to_purge   Boolean     @default(false)
+  FilePurge  FilePurge[]
+}
+
+model FilePurge {
+  id           Int        @id @default(autoincrement())
+  attachmentId Int
+  deadline     DateTime
+  attachment   Attachment @relation(fields: [attachmentId], references: [id])
 }
 
 model Paybill {

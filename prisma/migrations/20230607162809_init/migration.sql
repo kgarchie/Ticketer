@@ -129,8 +129,20 @@ CREATE TABLE `Attachment` (
     `url` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `size` DOUBLE NOT NULL,
+    `uploadInfo` VARCHAR(191) NOT NULL,
     `deleted` BOOLEAN NOT NULL DEFAULT false,
     `messageId` INTEGER NULL,
+    `to_purge` BOOLEAN NOT NULL DEFAULT false,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `FilePurge` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `attachmentId` INTEGER NOT NULL,
+    `deadline` DATETIME(3) NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -182,6 +194,9 @@ ALTER TABLE `Call` ADD CONSTRAINT `Call_chatId_fkey` FOREIGN KEY (`chatId`) REFE
 
 -- AddForeignKey
 ALTER TABLE `Attachment` ADD CONSTRAINT `Attachment_messageId_fkey` FOREIGN KEY (`messageId`) REFERENCES `Message`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `FilePurge` ADD CONSTRAINT `FilePurge_attachmentId_fkey` FOREIGN KEY (`attachmentId`) REFERENCES `Attachment`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Paybill` ADD CONSTRAINT `Paybill_companyId_fkey` FOREIGN KEY (`companyId`) REFERENCES `Company`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -24,7 +24,7 @@
                                 <small class="is-small cursor-pointer" @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
                                   }}..{{ file?.name?.split('.').pop() || '???' }}</small>
-                                <a :href="file.url" target="_blank"
+                                <a :href="getUrl(file.url)" target="_blank"
                                    class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
                             </span>
             </div>
@@ -40,8 +40,8 @@
                                 <span class="is-medium cursor-pointer" @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
                                   }}..{{ file?.name?.split('.').pop() || '???' }}</span>
-                                <a target="_blank" :href="file.url"
-                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
+                                <a target="_blank" :href="getUrl(file.url)"
+                                   class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
                             </span>
             </div>
           </div>
@@ -168,7 +168,7 @@ async function sendMessage() {
 
   pending.value = false
 
-  console.log(response.value.body)
+  // console.log(response.value.body)
 
   if (response.value?.statusCode === 200) {
     setTimeout(() => {
@@ -256,8 +256,8 @@ function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | 
   }
 }
 
-function onlinePreview(partial_url: string) {
-  const url = window.location.origin + '/' + partial_url
+async function onlinePreview(partial_url: string) {
+  const url = await getUrl(partial_url)
   const filePreview = document.getElementById('file-preview')
   const previewButton = document.getElementById('close-preview-button')
   previewButton?.classList.remove('not_active')
@@ -276,7 +276,7 @@ function closePreview() {
 }
 
 let _switch = false
-ya
+
 function placeAudioCall() {
   if (!_switch) {
     eCall.placeAudioCall(props.to_user.user_id, props.chat_id || null)
@@ -284,6 +284,30 @@ function placeAudioCall() {
     eCall.endCall(user.user_id)
   }
   _switch = !_switch
+}
+
+const getUrl = (url: string) => {
+  useFetch('/api/chats/messages/attachment/' + url)
+      .then(
+          (res) => {
+            const response = res.data.value as any
+            if (response.statusCode === 200) {
+              return response.body
+            } else {
+              alert(response.body.toString())
+              return null
+            }
+          },
+          (error) => {
+            console.log(error)
+            return null
+          }
+      ).catch(
+      (error) => {
+        console.log(error)
+        return null
+      }
+  )
 }
 </script>
 
