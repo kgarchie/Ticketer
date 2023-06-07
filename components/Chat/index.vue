@@ -63,9 +63,8 @@ function unread_count(eval_messages: any[]) {
 
 function show_all_unread_count() {
   let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
-  let new_message_indicator = document?.getElementById('new-message-indicator')
-
   if (!(process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value)) return
+  let new_message_indicator = document?.getElementById('new-message-indicator')
   if (!new_message_indicator) return
 
   if (chats_with_unread_messages.length > 0) {

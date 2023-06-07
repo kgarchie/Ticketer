@@ -1,4 +1,4 @@
-import Minio from "minio";
+import * as Minio from "minio";
 
 const bucketName = process.env.BUCKET_NAME
 const accessKey = process.env.ACCESS_KEY
