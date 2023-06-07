@@ -4,7 +4,7 @@
   "module": "commonjs",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
+    "build": "yarn prisma generate && nuxt build",
     "build:sqlite": "yarn prisma:files && nuxt build && yarn prisma:db",
     "dev": "concurrently \"nuxt dev\" \"sass --watch src/scss/style.scss:assets/css/style.css\"",
     "sass:watch": "sass --watch src/scss/style.scss:assets/css/style.css &",
