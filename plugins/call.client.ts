@@ -1,11 +1,12 @@
-import {UserAuth} from "~/types";
+import {sdpCall, UserAuth} from "~/types";
 
 export default defineNuxtPlugin(() => {
-    const callState = useCall()
+    const eCall = useCall()
 
     class ECall {
         private peerConnection: RTCPeerConnection;
         private user: UserAuth;
+        public onCall: boolean = false;
         private localStream = new MediaStream();
         private remoteStream = new MediaStream();
 
@@ -14,9 +15,18 @@ export default defineNuxtPlugin(() => {
             this.user = user
         }
 
+        private createdOffer(description: RTCSessionDescription) {
+            this.peerConnection.setLocalDescription(description)
+                .then(() => {
+                    console.log("Offer created")
+                })
+                .catch((error) => {
+                    console.warn(error.message);
+                });
+        }
+
         public placeAudioCall(user_id: string, chat_id: string | null) {
-            document.getElementById('call-icon')?.classList.add('on-call')
-            callState.value = 1
+            document?.getElementById('call-icon')?.classList.add('on-call')
 
             if (!chat_id) {
                 alert("Chat id is null | Error")
@@ -53,15 +63,15 @@ export default defineNuxtPlugin(() => {
                         (response) => {
                             if (response.statusCode === 200) {
                                 console.log("Offer sent")
+                                return;
                             } else if (response.statusCode === 204) {
                                 alert("User is offline")
-                                callState.value = null
-                                return
                             } else {
                                 alert(response.body)
-                                callState.value = null
-                                return
                             }
+
+                            this.onCall = false
+                            return
                         }
                     )
                 })
@@ -76,12 +86,7 @@ export default defineNuxtPlugin(() => {
             }
         }
 
-        public acceptSdp(sdp: RTCSessionDescription | null) {
-            if (!sdp) {
-                alert("SDP is null | Error")
-                return
-            }
-
+        public acceptSdp(sdp: RTCSessionDescription) {
             this.peerConnection.setRemoteDescription(sdp).then(
                 () => {
                     console.log("Call placed")
@@ -98,13 +103,8 @@ export default defineNuxtPlugin(() => {
             }
         }
 
-        public acceptAudioCall(sdp: RTCSessionDescription | null, caller_user_id: string | null, chat_id: string | null) {
-            if (!sdp) {
-                alert("SDP is null | Error")
-                return
-            }
-
-            navigator.mediaDevices.getUserMedia({audio: true})
+        private getMediaStream(constraints:MediaStreamConstraints) {
+            navigator.mediaDevices.getUserMedia(constraints)
                 .then((stream) => {
                     this.remoteStream = stream
                     this.remoteStream.getTracks().forEach((track) => {
@@ -114,8 +114,12 @@ export default defineNuxtPlugin(() => {
                 .catch((error) => {
                     console.warn(error.message);
                 });
+        }
 
-            this.peerConnection.setRemoteDescription(sdp)
+        public setUpAcceptedCall(call:sdpCall, constraints: MediaStreamConstraints) {
+            this.getMediaStream(constraints)
+
+            this.peerConnection.setRemoteDescription(call.sdp)
                 .then(() => {
                     return this.peerConnection.createAnswer();
                 })
@@ -123,25 +127,7 @@ export default defineNuxtPlugin(() => {
                     return this.peerConnection.setLocalDescription(answer);
                 })
                 .then(async () => {
-                    const response = await $fetch('/api/chats/call/accept',
-                        {
-                            method: 'POST',
-                            body: {
-                                callee_user_id: this.user.user_id,
-                                caller_user_id: caller_user_id,
-                                chat_id: chat_id,
-                                sdp: this.peerConnection.localDescription
-                            }
-                        }
-                    )
-
-                    if (response.statusCode === 200) {
-                        console.log("Call accept sent")
-                    } else if (response.statusCode === 204) {
-                        alert("User is offline")
-                    } else {
-                        alert(response.body)
-                    }
+                    // TODO: send to server via socket, throw error if no socket
                 })
                 .catch((error) => {
                     console.warn(error.message);
@@ -159,38 +145,13 @@ export default defineNuxtPlugin(() => {
         }
 
         public rejectAudioCall(user_id: string) {
-            this.peerConnection.close()
-            this.peerConnection = new RTCPeerConnection()
+            this.endCall()
 
-
-            this.localStream.getTracks().forEach((track) => {
-                track.stop();
-            });
-            this.localStream = new MediaStream();
-
-            $fetch('/api/chats/call/reject',
-                {
-                    method: 'POST',
-                    body: {
-                        caller: user_id,
-                        callee: this.user.user_id
-                    }
-                }).then(
-                (response) => {
-                    if (response.statusCode === 200) {
-                        alert("Call rejected")
-                        callState.value = null
-                    } else if (response.statusCode === 204) {
-                        alert("User is offline")
-                    } else {
-                        alert(response.body)
-                    }
-                }
-            )
+            // TODO: send to server
         }
 
-        public endCall(user_id: string) {
-            document.getElementById('call-icon')?.classList.remove('on-call')
+        private endCall() {
+            document?.getElementById('call-icon')?.classList.remove('on-call')
             this.peerConnection.close()
             this.peerConnection = new RTCPeerConnection()
 
@@ -203,22 +164,6 @@ export default defineNuxtPlugin(() => {
                 track.stop();
             })
             this.remoteStream = new MediaStream();
-
-            $fetch('/api/chats/call/end',
-                {
-                    method: 'POST',
-                    body: {
-                        user: user_id,
-                    }
-                }).then(
-                (response) => {
-                    if (response?.statusCode === 200) {
-                        alert("Call ended")
-                        callState.value = null
-                    } else {
-                        alert(response.body)
-                    }
-                })
         }
     }
 })

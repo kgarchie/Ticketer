@@ -237,7 +237,7 @@ async function search() {
   await navigateTo(`/tickets/search/${encodeURI(JSON.stringify(query))}`)
 }
 
-updateTicketsMetaData(ticketsMetaDataState.value)
+updateTicketsMetaData(ticketsMetaDataState)
 updateNewTickets(tickets)
 
 const socket = useGlobalSocket().value
@@ -245,12 +245,17 @@ const socket = useGlobalSocket().value
 if(socket){
   socket.onNewTicketCallback = (ticket: Ticket) => {
     onNewTicketCallback(ticket, tickets)
-    updateTicketsMetaData(ticketsMetaDataState.value)
+    updateTicketsMetaData(ticketsMetaDataState)
   }
 
   socket.onUpdateTicketCallback = (ticket: Ticket) => {
     onUpdateTicketCallback(ticket, tickets)
-    updateTicketsMetaData(ticketsMetaDataState.value)
+    updateTicketsMetaData(ticketsMetaDataState)
+  }
+
+  socket.onDeleteTicketCallback = (ticket: Ticket) => {
+    tickets.value = tickets.value.filter(t => t.id !== ticket.id)
+    updateTicketsMetaData(ticketsMetaDataState)
   }
 }
 </script>

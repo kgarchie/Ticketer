@@ -6,10 +6,10 @@ export async function updateTicketsMetaData(StateValue: any) {
     const res = await $fetch('/api/tickets/query/count')
 
     if (res && res.statusCode === 200) {
-        StateValue.pending_count = res.body?.pending_count
-        StateValue.resolved_count = res.body?.resolved_count
-        StateValue.exceptions_count = res.body?.closed_count
-        StateValue.new_count = res.body?.new_count
+        StateValue.value.pending_count = res.body?.pending_count
+        StateValue.value.resolved_count = res.body?.resolved_count
+        StateValue.value.exceptions_count = res.body?.closed_count
+        StateValue.value.new_count = res.body?.new_count
     }
 }
 
@@ -33,32 +33,6 @@ export async function updateNotifications(State: any, user_id: string) {
     }
 }
 
-export async function pollServerStatus(maxRetries = 10, intervalSeconds = 3) {
-    let retries = 0;
-    while (retries < maxRetries) {
-        try {
-            const response = await $fetch('/api/status');
-            if (response) {
-                console.log('Server Up | Response Received')
-                if (response.statusCode === 200) {
-                    console.log('Server status okay, server is online');
-                    return 'online';
-                } else {
-                    console.log(`Server status check failed, retrying in ${intervalSeconds} seconds`);
-                    await new Promise(resolve => setTimeout(resolve, intervalSeconds * 1000));
-                    retries++;
-                }
-            }
-        } catch (e) {
-            console.log(`Server status check failed, retrying in ${intervalSeconds} seconds`);
-            await new Promise(resolve => setTimeout(resolve, intervalSeconds * 1000));
-            retries++;
-        }
-    }
-    console.log('Server status check failed after maximum retries');
-    return 'offline';
-}
-
 export async function getUserName(user_id: string) {
     const res = await $fetch(`/api/user/${user_id}`)
     if (res?.statusCode === 200) {
@@ -75,9 +49,9 @@ export function onNewTicketCallback(ticket: Ticket, newTicketsState: Ref<Ticket[
 }
 
 export function onUpdateTicketCallback(ticket: Ticket, newTicketsState: Ref<Ticket[] | null>) {
-    const ticketIndexNew = newTicketsState.value?.findIndex((t: Ticket) => t.id === ticket.id) || null
+    const ticketIndexNew = newTicketsState.value?.findIndex((t: Ticket) => t.id === ticket.id)
 
-    if (ticketIndexNew === -1 || ticketIndexNew === null) {
+    if (ticketIndexNew === -1 || ticketIndexNew === undefined) {
         console.log('Ticket not found in new tickets state, ticket is not new')
         // TODO: Re-fetch tickets from server
         return

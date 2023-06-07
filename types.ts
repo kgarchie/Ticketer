@@ -45,7 +45,7 @@ export type HttpResponseTemplate = {
 }
 
 export type sdpCall = {
-    sdp: string,
+    sdp: RTCSessionDescription,
     caller_user_id: string,
     callee_user_id: string,
     chat_id: string
@@ -177,6 +177,21 @@ export enum Initiator {
 /*
     *  Define custom const here
  */
+
+export const videoConstraints:MediaStreamConstraints = {
+    audio: {
+        echoCancellation: {exact: true}
+    },
+    video: {
+        width: 1280, height: 720
+    }
+};
+
+export const audioConstraints:MediaStreamConstraints = {
+    audio: {
+        echoCancellation: {exact: true}
+    }
+};
 
 export const websocketPort = 9000;
 

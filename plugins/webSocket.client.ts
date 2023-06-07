@@ -15,6 +15,7 @@ export default defineNuxtPlugin(() => {
         webSocket: WebSocket
         detailsSent: boolean = false
         WsServerStatus: SocketStatus = SocketStatus.CLOSED
+        previousMessage: string = ''
 
         setUpSocket() {
             this.webSocket = new WebSocket(socket_url)
@@ -26,6 +27,8 @@ export default defineNuxtPlugin(() => {
             }
 
             this.webSocket.onmessage = (event: MessageEvent) => {
+                if(event.data === this.previousMessage) return
+                this.previousMessage = event.data
                 const SocketResponse = JSON.parse(event.data) as SocketTemplate
                 if (this.WsServerStatus !== SocketStatus.OPEN) this.WsServerStatus = SocketStatus.OPEN
 
@@ -94,7 +97,9 @@ export default defineNuxtPlugin(() => {
             this.detailsSent = false
         }
 
-        onNotificationCallback: Function | null = null
+        onNotificationCallback: Function = (notification:Notification) => {
+            console.warn("Notification callback not set up", notification)
+        }
         onNotification = (SocketResponse: SocketTemplate) => {
             const notification = SocketResponse.body as Notification
 
@@ -116,14 +121,12 @@ export default defineNuxtPlugin(() => {
                 alert("Your browser doesn't support notifications. Please use a modern browser")
             }
 
-            if (this.onNotificationCallback) {
-                this.onNotificationCallback(notification)
-            } else {
-                console.error("Notifications state is null | Not set up")
-            }
+            this.onNotificationCallback(notification)
         }
 
-        onMessageCallback: Function | null = null
+        onMessageCallback: Function = (message:Comment) => {
+            console.warn("Message callback not set up", message)
+        }
         onMessage = (SocketResponse: SocketTemplate) => {
             const message = SocketResponse.body.message
             const fromUserName = SocketResponse.body.fromUserName as string
@@ -145,66 +148,64 @@ export default defineNuxtPlugin(() => {
                 })
             }
 
-
-            if (this.onMessageCallback) {
-                this.onMessageCallback(message)
-            } else {
-                console.error("New message state is null | Not set up")
-            }
+            this.onMessageCallback(message)
         }
 
-        onNewTicketCallback: Function | null = null
-        onUpdateTicketCallback: Function | null = null
-        onDeleteTicketCallback: Function | null = null
+        onNewTicketCallback: Function = (ticket:Ticket) => {
+            console.warn("New ticket callback not set up", ticket)
+        }
+        onUpdateTicketCallback: Function = (ticket:Ticket) => {
+            console.warn("Update ticket callback not set up", ticket)
+        }
+        onDeleteTicketCallback: Function = (ticket:Ticket) => {
+            console.warn("Delete ticket callback not set up", ticket)
+        }
         onTicket = (SocketResponse: SocketTemplate, type: TYPE) => {
             const ticket = SocketResponse.body as Ticket
             switch (type) {
                 case TYPE.NEW_TICKET:
-                    if (!this.onNewTicketCallback) break
                     this.onNewTicketCallback(ticket)
                     break
                 case TYPE.UPDATE_TICKET:
-                    if (!this.onUpdateTicketCallback) break
                     this.onUpdateTicketCallback(ticket)
                     break
                 case TYPE.DELETE_TICKET:
-                    if (!this.onDeleteTicketCallback) break
                     this.onDeleteTicketCallback(ticket)
                     break
             }
-
-            updateTicketsMetaData(useTicketsMetaData()).then(() => {
-                console.log('Tickets meta data updated')
-            })
         }
 
-        onNewCommentCallback: Function | null = null
-        onDeleteCommentCallback: Function | null = null
+        onNewCommentCallback: Function = (comment:Comment) => {
+            console.warn("New comment callback not set up", comment)
+        }
+        onDeleteCommentCallback: Function = (comment:Comment) => {
+            console.warn("Delete comment callback not set up", comment)
+        }
         onComment = (SocketResponse: SocketTemplate, type: TYPE) => {
             const comment = SocketResponse.body as Comment
             switch (type) {
                 case TYPE.NEW_COMMENT:
-                    if (!this.onNewCommentCallback) break
                     this.onNewCommentCallback(comment)
                     break
                 case TYPE.DELETE_COMMENT:
-                    if (!this.onDeleteCommentCallback) break
                     this.onDeleteCommentCallback(comment)
                     break
             }
         }
 
-        onCallCallback: Function | null = null
-        onCallSdpCallback: Function | null = null
+        onCallCallback: Function = (call:sdpCall) => {
+            console.warn("Call callback not set up", call)
+        }
+        onCallSdpCallback: Function = (call:sdpCall) => {
+            console.warn("Call sdp callback not set up", call)
+        }
         onCall = (SocketResponse: SocketTemplate, type: TYPE) => {
             const call = SocketResponse.body as sdpCall
             switch (type) {
                 case TYPE.CALL:
-                    if (!this.onCallCallback) break
                     this.onCallCallback(call)
                     break
                 case TYPE.CALL_SDP:
-                    if (!this.onCallSdpCallback) break
                     this.onCallSdpCallback(call)
                     break
             }

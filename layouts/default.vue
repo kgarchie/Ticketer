@@ -72,7 +72,7 @@
 <script setup lang="ts">
 import {UserAuth} from "~/types"
 import {Notification} from "@prisma/client";
-import {onNotificationCallback} from "~/helpers/clientHelpers"
+import {onNotificationCallback, updateNotifications} from "~/helpers/clientHelpers"
 
 // const {$ECall: ECall} = useNuxtApp()
 // const callState = useCall()
@@ -112,8 +112,6 @@ async function markNotificationAsRead(id: any) {
 
 const socket = useGlobalSocket().value
 
-// console.log(socket.onNotificationCallback)
-
 if (socket) {
   socket.onNotificationCallback = (_notification: Notification) => {
 
@@ -139,6 +137,8 @@ if (socket) {
 }
 
 onMounted(() => {
+  updateNotifications(notifications, user.user_id)
+
   const nav = document?.getElementById('navMenu')
   // @ts-ignore
   const a_nav = Array.from(nav?.getElementsByTagName('a'))

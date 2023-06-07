@@ -9,8 +9,6 @@
   </div>
 </template>
 <script setup>
-import {getUserName} from "~/helpers/clientHelpers";
-
 const callState = useCall().value
 const user = useUser().value
 const sdp = ref('')
