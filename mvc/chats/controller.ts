@@ -13,7 +13,7 @@ router.post('/messages/send', defineEventHandler(async (event) => {
     }
 ));
 
-router.get('/messages/attachments/:file_url', defineEventHandler(async (event) => {
+router.post('/messages/attachment', defineEventHandler(async (event) => {
         return await getFileUrl(event)
 }));
 

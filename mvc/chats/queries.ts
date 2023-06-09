@@ -175,7 +175,7 @@ export async function fileExists(url: string) {
 
 
 export async function getMessageById(messageId: number) {
-    return prisma.message.findFirst({
+    return prisma.message.findUnique({
         where: {
             id: messageId
         },

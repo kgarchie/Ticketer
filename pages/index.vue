@@ -189,7 +189,7 @@ import {
   updateTicketsMetaData,
   onNewTicketCallback,
   onUpdateTicketCallback,
-  getUserName
+  getUserName, onDeleteTicketCallback
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";
 import {Ticket} from "@prisma/client";
@@ -254,7 +254,7 @@ if(socket){
   }
 
   socket.onDeleteTicketCallback = (ticket: Ticket) => {
-    tickets.value = tickets.value.filter(t => t.id !== ticket.id)
+    onDeleteTicketCallback(ticket, tickets)
     updateTicketsMetaData(ticketsMetaDataState)
   }
 }

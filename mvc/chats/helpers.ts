@@ -42,9 +42,9 @@ export async function writeFileToStorage(constructed_path: string, file: any, me
     })
 
     return minioClient.fPutObject(bucketName, fullyQualifiedUrl, file.filepath)
-        .then((uploadedInfo) => {
+        .then(async (uploadedInfo) => {
             if (!uploadedInfo) return console.error("Error uploading file")
-            storeLocation(fullyQualifiedUrl, messageId, file.size, uploadedInfo)
+            await storeLocation(fullyQualifiedUrl, messageId, file.size, uploadedInfo)
         }).catch((err) => {
             minioClient!.removeIncompleteUpload(bucketName!, fullyQualifiedUrl, function (err) {
                 if (err) return console.log(err)

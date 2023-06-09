@@ -153,6 +153,16 @@ watch(() => search.value, (value) => {
     emit('search', value)
 })
 
+const socket = useGlobalSocket().value
+
+socket.onDeleteTicketCallback((ticket: Ticket) => {
+    const index = props.tickets.findIndex(item => item.id === ticket.id)
+    if (index !== -1) {
+        props.tickets.splice(index, 1)
+    }
+    console.log('ticket deleted')
+})
+
 </script>
 <style scoped>
 .router-link-active {

@@ -24,8 +24,8 @@
                                 <small class="is-small cursor-pointer" @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
                                   }}..{{ file?.name?.split('.').pop() || '???' }}</small>
-                                <a :href="getUrl(file.url)" target="_blank"
-                                   class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
+                                <a @click.prevent="downloadFile(file.url)"
+                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
                             </span>
             </div>
           </div>
@@ -37,10 +37,13 @@
             <div v-for="file in message.attachments" :key="file.id" class="attachment">
                             <span
                                 class="is-flex is-align-items-center is-justify-content-space-between">
-                                <span class="is-medium cursor-pointer" @click="onlinePreview(file.url)">{{
+                                <span class="is-medium cursor-pointer"
+                                      @click="onlinePreview(file.url)">{{
                                     file?.name?.substring(0, 10) || 'unknown'
-                                  }}..{{ file?.name?.split('.').pop() || '???' }}</span>
-                                <a target="_blank" :href="getUrl(file.url)"
+                                  }}.{{
+                                    file?.name?.split('.').pop() || '???'
+                                  }}</span>
+                                <a @click.prevent="downloadFile(file.url)"
                                    class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
                             </span>
             </div>
@@ -53,9 +56,9 @@
       <ul class="is-flex scroll-left" v-if="files">
         <li v-for="file in files" :key="file.name" class="is-inline">
           <p class="file-name is-flex is-align-items-center is-justify-content-space-between">
-            <small @click="preview(file)" class="is-small cursor-pointer">{{
-                file.name.substring(0, 10)
-              }}..{{ file.name.split('.').pop() }}</small>
+            <small @click="preview(file)" class="is-small cursor-pointer">{{ file.name.substring(0, 10) }}.{{
+                file.name.split('.').pop()
+              }}</small>
             <i class="ml-2 fas fa-times is-inline cursor-pointer" @click="removeFile(file.name)"></i>
           </p>
         </li>
@@ -113,13 +116,9 @@ function positionMessages() {
 
 positionMessages()
 
-// function upload (url: string, file: File, message:any) {
-//     const form = new FormData()
-//     form.append('file', file)
-//
-//
+// function upload (formData: FormData) {
 //     const xhr = new XMLHttpRequest()
-//     xhr.open('post', url, true)
+//     xhr.open('POST', '/api/chats/messages/send')
 //     xhr.upload.onprogress = function (ev) {
 //         // Upload progress here
 //         console.log(ev)
@@ -130,7 +129,7 @@ positionMessages()
 //             console.log('Uploaded')
 //         }
 //     }
-//     xhr.send(form)
+//     xhr.send(formData)
 // }
 
 async function sendMessage() {
@@ -159,13 +158,11 @@ async function sendMessage() {
     }
   }
 
-  // console.log(message)
   pending.value = true
   const {data: response} = await useFetch('/api/chats/messages/send', {
     method: 'POST',
     body: formData
   })
-
   pending.value = false
 
   // console.log(response.value.body)
@@ -231,24 +228,58 @@ function preview(file: File) {
   showFile(filePreview, previewButton, file)
 }
 
-function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | null, file_or_url: any) {
-  let ext = null
-  let type
+async function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | null, file_or_url: any) {
+  let ext: string | null = null
+  let type: string | null = null
 
   if (typeof file_or_url === 'object') {
     type = file_or_url.type.split('/')[0]
     ext = file_or_url.name.split('.').pop()?.toLowerCase()
-    type = type.toLowerCase()
+    type = type?.toLowerCase() || null
   } else {
-    type = file_or_url.split('.').pop()?.toLowerCase() || ''
-    type = type.toLowerCase()
+    const trail = file_or_url.split('.').pop()?.toLowerCase() || ''
+    ext = trail.split('?')[0].toLowerCase()
   }
 
-  if (type === 'image' || type === 'jpg' || type === 'jpeg' || type === 'png' || type === 'gif') {
-    filePreview?.setAttribute('src', URL.createObjectURL(file_or_url))
-  } else if (type === 'video' || type === 'audio' || ext === 'pdf' || type === 'mp4' || type === 'mp3' || type === 'pdf') {
-    filePreview?.setAttribute('src', URL.createObjectURL(file_or_url))
-    filePreview?.setAttribute('type', file_or_url.type)
+  if (type === 'video' || type === 'audio' || ext === 'mp4' || type === 'application/pdf' || ext === 'pdf') {
+    if (typeof file_or_url === 'object') {
+      filePreview?.setAttribute('src', URL.createObjectURL(file_or_url))
+      filePreview?.setAttribute('type', file_or_url.type)
+    } else {
+      const is_playable = type === 'video' || type === 'audio' || ext === 'mp4' || ext === 'mp3'
+
+      if (!is_playable) {
+        console.log('not playable')
+        filePreview?.setAttribute('src', URL.createObjectURL(await pullFile(file_or_url)))
+        return
+      }
+
+      function tagName(): string {
+        if (type === 'audio' || ext === 'mp3') return 'audio'
+        return 'video'
+      }
+
+      let tag: any
+      const otherPreview = document.getElementById('other-preview')
+      if (otherPreview) {
+        tag = otherPreview as HTMLAudioElement | HTMLVideoElement
+      } else {
+        tag = document.createElement(tagName())
+      }
+
+      tag.style.position = 'absolute'
+      tag.style.top = '0'
+      tag.style.width = '100%'
+      tag.style.height = '100%'
+      tag.style.backgroundColor = 'black'
+      tag.id = 'other-preview'
+
+      filePreview?.replaceWith(tag)
+      tag.setAttribute('src', await getUrl(file_or_url))
+      tag.setAttribute('controls', 'true')
+      console.log(tag)
+      return
+    }
     filePreview?.setAttribute('controls', 'true')
   } else {
     previewButton?.classList.add('not_active')
@@ -256,18 +287,50 @@ function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | 
   }
 }
 
-async function onlinePreview(partial_url: string) {
+async function pullFile(partial_url: string) {
   const url = await getUrl(partial_url)
+  const name = url.split('?')[0].split('/').pop() || 'file'
+  return await $fetch(url, {
+    method: 'GET',
+    responseType: 'stream'
+  }).then(async (response: any) => {
+    return new File([await response], name, {type: response.type})
+  })
+}
+
+async function downloadFile(partial_url: string) {
+  const url = await getUrl(partial_url)
+  console.log(url)
+  const xhr = new XMLHttpRequest()
+  xhr.open('GET', url, true)
+  xhr.responseType = 'blob'
+  xhr.onload = function (e) {
+    const blob = xhr.response
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = url.split('?')[0].split('/').pop() || 'file'
+    link.click()
+  }
+  xhr.onprogress = function (e) {
+    // console.log(Math.ceil(e.loaded / e.total * 100), '%')
+  }
+  xhr.send()
+}
+
+async function onlinePreview(partial_url: string) {
   const filePreview = document.getElementById('file-preview')
   const previewButton = document.getElementById('close-preview-button')
   previewButton?.classList.remove('not_active')
 
-  showFile(filePreview, previewButton, url)
+  showFile(filePreview, previewButton, partial_url)
 }
 
 function closePreview() {
   const previewButton = document.getElementById('close-preview-button')
   const filePreview = document.getElementById('file-preview')
+  const otherPreview = document.getElementById('other-preview')
+
+  if (otherPreview) otherPreview.style.display = 'none'
 
   previewButton?.classList.add('not_active')
   filePreview?.removeAttribute('src')
@@ -286,23 +349,24 @@ function placeAudioCall() {
   _switch = !_switch
 }
 
-const getUrl = (url: string) => {
-  useFetch('/api/chats/messages/attachment/' + url)
-      .then(
-          (res) => {
-            const response = res.data.value as any
-            if (response.statusCode === 200) {
-              return response.body
-            } else {
-              alert(response.body.toString())
-              return null
-            }
-          },
-          (error) => {
-            console.log(error)
-            return null
-          }
-      ).catch(
+const getUrl = async (url: string) => {
+  return await $fetch('/api/chats/messages/attachment', {
+    method: 'POST',
+    body: {url: url}
+  }).then(
+      (response) => {
+        if (response.statusCode === 200) {
+          return response.body
+        } else {
+          alert(response.body.toString())
+          return null
+        }
+      },
+      (error) => {
+        console.log(error)
+        return null
+      }
+  ).catch(
       (error) => {
         console.log(error)
         return null

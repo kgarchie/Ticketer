@@ -16,11 +16,11 @@ export default defineEventHandler((event) => {
     // @ts-ignore
     let server = event.node.res.socket?.server;
     if (!global.wss && server) {
-        // Production
-        wss = new WebSocketServer({server: server});
-
-        // Development
-        // wss = new WebSocketServer({port: websocketPort, host: "localhost"});
+        if(process.env?.DEV === "true") {
+            wss = new WebSocketServer({host: "localhost", port: websocketPort});
+        } else {
+            wss = new WebSocketServer({server: server});
+        }
 
         wss.on("connection", (ws) => {
             ws.on("message", (message: any) => {
@@ -36,7 +36,7 @@ export default defineEventHandler((event) => {
                         body: "Invalid Json"
                     } as SocketTemplate
 
-                    socketSendData(ws, JSON.stringify(response))
+                    socketSendData(ws, JSON.stringify(response)).then(() => console.log("Invalid Json"))
                     return
                 }
 
@@ -53,7 +53,7 @@ export default defineEventHandler((event) => {
                                 body: "No User Id Sent To Socket Server"
                             } as SocketTemplate);
 
-                            socketSendData(ws, response)
+                            socketSendData(ws, response).then(() => console.log("No User Id Sent To Socket Server"))
                             break;
                         }
 
@@ -79,7 +79,7 @@ export default defineEventHandler((event) => {
                             body: message
                         } as SocketTemplate);
 
-                        socketSendData(ws, response)
+                        socketSendData(ws, response).then(() => console.log("Client Added"))
                         // removeDuplicates();
                         break;
                     case TYPE.STATUS:
@@ -89,7 +89,7 @@ export default defineEventHandler((event) => {
                             body: SocketStatus.OPEN
                         } as SocketTemplate);
 
-                        socketSendData(ws, res)
+                        socketSendData(ws, res).then(() => console.log("Server status Sent to client", ws))
                         break;
                     default:
                         console.log(SocketResponse);

@@ -1,23 +1,25 @@
 import {Comment, Notification, Ticket} from "@prisma/client";
 import {sdpCall, SocketStatus, SocketTemplate, TYPE, websocketPort} from "~/types";
-import {updateTicketsMetaData} from "~/helpers/clientHelpers";
 
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
-// For Development
-// const socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
-
-// For Production
-const socket_url: string = `${wsProtocol}//${window.location.host}`
+let socket_url: string | null = null
 
 export default defineNuxtPlugin(() => {
+    const runtimeConfig = useRuntimeConfig()
+    if(runtimeConfig.public.DEV === "true"){
+        socket_url = `${wsProtocol}//${window.location.hostname}:${websocketPort}`
+    } else {
+        socket_url = `${wsProtocol}//${window.location.host}`
+    }
     class ClientWebSocket {
-        webSocket: WebSocket
+        webSocket: WebSocket | undefined
         detailsSent: boolean = false
         WsServerStatus: SocketStatus = SocketStatus.CLOSED
         previousMessage: string = ''
 
         setUpSocket() {
+            if(!socket_url) return
             this.webSocket = new WebSocket(socket_url)
 
             this.webSocket.onopen = () => {
@@ -69,7 +71,7 @@ export default defineNuxtPlugin(() => {
 
             this.webSocket.onerror = () => {
                 console.log('Socket error')
-                this.webSocket.close()
+                this.webSocket!.close()
                 this.pollWsStatus().then(() => {
                     console.log('Socket reconnected reconnect attempt complete | After Error')
                 })
@@ -78,7 +80,7 @@ export default defineNuxtPlugin(() => {
             this.webSocket.onclose = () => {
                 console.log('Socket closed')
                 this.WsServerStatus = SocketStatus.CLOSED
-                this.webSocket.close()
+                this.webSocket!.close()
                 this.pollWsStatus().then(() => {
                     console.log('Socket reconnect attempt complete | After Closed')
                 })
@@ -229,9 +231,9 @@ export default defineNuxtPlugin(() => {
             } as SocketTemplate)
 
             this.WsServerStatus = SocketStatus.OPEN
-            await this.socketSendData(this.webSocket, response)
+            await this.socketSendData(this.webSocket!, response)
 
-            this.detailsSent = true
+            this!.detailsSent = true
             console.log('Details sent for user: ' + user.user_id)
         }
 
@@ -241,7 +243,7 @@ export default defineNuxtPlugin(() => {
                 type: TYPE.HEARTBEAT
             } as SocketTemplate)
 
-            this.socketSendData(this.webSocket, response)
+            this.socketSendData(this.webSocket!, response)
         }
 
         private socketSendData(WebSocket: WebSocket, response: string, maxRetries = 5) {
@@ -268,9 +270,9 @@ export default defineNuxtPlugin(() => {
             this.polling = true
             console.log('Polling socket server status')
 
-            if (this.WsServerStatus !== SocketStatus.OPEN && this.webSocket.readyState === WebSocket.OPEN) {
+            if (this.WsServerStatus !== SocketStatus.OPEN && this.webSocket!.readyState === WebSocket.OPEN) {
                 this.WsServerStatus = SocketStatus.OPEN
-            } else if (this.webSocket.readyState === WebSocket.CLOSED) {
+            } else if (this.webSocket!.readyState === WebSocket.CLOSED) {
                 this.WsServerStatus = SocketStatus.CLOSED
                 try {
                     this.setUpSocket()
@@ -290,7 +292,6 @@ export default defineNuxtPlugin(() => {
         }
 
         constructor() {
-            this.webSocket = new WebSocket(socket_url)
             this.setUpSocket()
         }
     }

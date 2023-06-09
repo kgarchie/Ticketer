@@ -115,10 +115,15 @@ function markMessagesAsRead(chat: any, force: boolean = false) {
 
 function lastMessage(Message: any[]) {
   try {
-    let last = Message[Message.length - 1].message.split('').splice(0, 20).join('')
+    let lastMessage = Message.at(-1)
+    let last = lastMessage.message.split('').splice(0, 20).join('')
 
-    if (last.length < 20) return last
+    if (last.length < 20) {
+      if (last !== '') return last
 
+      let attachments = Message.at(-1).attachments as Attachment[]
+      return "Attachment" + (attachments.length > 1 ? "s" : "")
+    }
     last += '...'
     return last
   } catch (e) {
@@ -221,7 +226,7 @@ function positionMessages() {
 getChats()
 
 const socket = useGlobalSocket().value
-if(socket){
+if (socket) {
   socket.onMessageCallback = (_message: Message & { attachments: Attachment[] } & { chat_id: string }) => {
     const chat = onMessageCallback(_message, chats, getChats)
 

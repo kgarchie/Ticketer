@@ -286,7 +286,7 @@ if(socket){
   }
 
   socket.onDeleteTicketCallback = async (ticket: Ticket) => {
-    if(ticket.id !== props.ticket.id) return
+    if(ticket.id !== local_ticket.value.ticket.id) return
     await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
   }
 }

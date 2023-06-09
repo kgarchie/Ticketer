@@ -3,5 +3,10 @@ export default defineNuxtConfig({
     css: [
         '~/assets/css/bulma.min.css',
         '~/assets/css/style.css'
-    ]
+    ],
+    runtimeConfig: {
+        public: {
+            DEV: process.env.DEV
+        }
+    }
 })

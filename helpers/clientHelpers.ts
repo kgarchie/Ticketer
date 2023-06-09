@@ -97,7 +97,6 @@ export function onMessageCallback(
         { attachments: Attachment[] } &
         { chat_id: string },
     chatsState: Ref<UserChatObject[]>, onNoChat: Function) {
-
     try {
         let chat = chatsState.value.find((chat: UserChatObject) => chat.chat_id === message?.chat_id) || null
 

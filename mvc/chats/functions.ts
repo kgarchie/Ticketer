@@ -195,8 +195,8 @@ export async function rejectCall(event: H3Event) {
 }
 
 export async function getFileUrl(event: H3Event) {
-    const file_url = event.context.params?.file_url || null
-    let link = await getPresignedUrl(file_url).catch(e => null)
+    const {url: url} = await readBody(event)
+    let link = await getPresignedUrl(url).catch(e => null)
 
     let response = {} as HttpResponseTemplate
 
