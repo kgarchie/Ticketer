@@ -1,5 +1,5 @@
-import {UserAuth} from "~/types";
-import {Notification} from "@prisma/client";
+import {type UserAuth} from "~/types";
+import {type Notification} from "@prisma/client";
 
 export const useUser = () => useState<UserAuth>('user', () => {
     return {

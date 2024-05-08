@@ -1,6 +1,6 @@
 import {H3Event} from "h3";
 import {readFiles} from 'h3-formidable'
-import {HttpResponseTemplate, sdpCall, SocketTemplate, TYPE} from "~/types";
+import {type HttpResponseTemplate, type sdpCall, type SocketTemplate, TYPE} from "~/types";
 import {
     createMessage, deleteMessage,
     getMessageById,

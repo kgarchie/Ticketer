@@ -1,6 +1,6 @@
-import {STATUS, UserChatObject} from "~/types";
-import {Attachment, Comment, Message, Notification, Ticket} from "@prisma/client";
-import {Ref} from "vue";
+import {STATUS, type UserChatObject} from "~/types";
+import type {Attachment, Comment, Message, Notification, Ticket} from "@prisma/client";
+import {type Ref} from "vue";
 
 export async function updateTicketsMetaData(StateValue: any) {
     const res = await $fetch('/api/tickets/query/count')

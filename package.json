@@ -6,8 +6,8 @@
   "scripts": {
     "build": "yarn prisma generate && nuxt build",
     "build:sqlite": "yarn prisma:files && nuxt build && yarn prisma:db",
-    "dev": "concurrently \"nuxt dev\" \"sass --watch src/scss/style.scss:assets/css/style.css\"",
-    "sass:watch": "sass --watch src/scss/style.scss:assets/css/style.css &",
+    "dev": "concurrently \"nuxt dev\" \"sass --watch scss/style.scss:assets/css/style.css\"",
+    "sass:watch": "sass --watch scss/style.scss:assets/css/style.css &",
     "prisma:files": "yarn prisma generate && cp ./node_modules/.prisma/client/*.js ./node_modules/@prisma/client",
     "prisma:files:windows": "yarn prisma generate && xcopy /s /y .\\\\node_modules\\\\.prisma\\\\client\\\\*.js .\\\\node_modules\\\\@prisma\\\\client &",
     "prisma:db": "cp ./prisma/dev.db ./.output/server/node_modules/.prisma/client",
@@ -32,9 +32,7 @@
   },
   "dependencies": {
     "@prisma/client": "^4.15.0",
-    "@types/minio": "^7.1.1",
     "h3-formidable": "^0.3.2",
-    "minio": "^7.1.1",
     "nodemailer": "^6.9.1",
     "prisma": "^4.15.0",
     "ts-node": "^10.9.1",

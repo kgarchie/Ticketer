@@ -7,8 +7,7 @@ import {
     deletePurgeItem,
     getTotalAttachmentsSize
 } from "~/mvc/chats/queries";
-import { minioClient, bucketName } from "~/minioClient";
-import { Float } from "type-fest";
+import type { Float } from "type-fest";
 
 const targetSizeInGB = process.env.TARGET_SIZE || "3"
 const targetSize = parseInt(targetSizeInGB) * 1024 * 1024 * 1024
@@ -31,9 +30,9 @@ export async function writeFileToStorage(constructed_path: string, file: any, me
     }
 
 
-    if (!minioClient || !bucketName) {
-        throw new Error("Minio client not initialized")
-    }
+    // if (!minioClient || !bucketName) {
+    //     throw new Error("Minio client not initialized")
+    // }
 
     getTotalAttachmentsSize((totalSize:Float<number>) => {
         if (totalSize >= targetSize) {
@@ -41,34 +40,34 @@ export async function writeFileToStorage(constructed_path: string, file: any, me
         }
     })
 
-    return minioClient.fPutObject(bucketName, fullyQualifiedUrl, file.filepath)
-        .then(async (uploadedInfo) => {
-            if (!uploadedInfo) return console.error("Error uploading file")
-            await storeLocation(fullyQualifiedUrl, messageId, file.size, uploadedInfo)
-        }).catch((err) => {
-            minioClient!.removeIncompleteUpload(bucketName!, fullyQualifiedUrl, function (err) {
-                if (err) return console.log(err)
-            })
-            schedulePurge()
-            throw err
-        })
+    // return minioClient.fPutObject(bucketName, fullyQualifiedUrl, file.filepath)
+    //     .then(async (uploadedInfo) => {
+    //         if (!uploadedInfo) return console.error("Error uploading file")
+    //         await storeLocation(fullyQualifiedUrl, messageId, file.size, uploadedInfo)
+    //     }).catch((err) => {
+    //         minioClient!.removeIncompleteUpload(bucketName!, fullyQualifiedUrl, function (err) {
+    //             if (err) return console.log(err)
+    //         })
+    //         schedulePurge()
+    //         throw err
+    //     })
 }
 
 export async function getPresignedUrl(fullyQualifiedUrl: string | null) {
-    if (!minioClient || !bucketName) {
-        throw new Error("Minio client not initialized")
-    }
+    // if (!minioClient || !bucketName) {
+    //     throw new Error("Minio client not initialized")
+    // }
 
     if (!fullyQualifiedUrl) return null
 
     const expiry = 24 * 60 * 60 * Number(process.env.PRESIGNED_LINK_EXPIRY) || 24 * 60 * 60 * 7
 
-    return new Promise<string>((resolve, reject) => {
-        minioClient!.presignedUrl('GET', bucketName!, fullyQualifiedUrl, expiry, function (err, presignedUrl) {
-            if (err) reject(err);
-            resolve(presignedUrl);
-        });
-    })
+    // return new Promise<string>((resolve, reject) => {
+    //     minioClient!.presignedUrl('GET', bucketName!, fullyQualifiedUrl, expiry, function (err, presignedUrl) {
+    //         if (err) reject(err);
+    //         resolve(presignedUrl);
+    //     });
+    // })
 }
 
 async function schedulePurge(totalSize: Float<number> = 0.0): Promise<null | void> {
@@ -88,9 +87,9 @@ async function schedulePurge(totalSize: Float<number> = 0.0): Promise<null | voi
 async function startPurge() {
     const discard = await getPurgeList()
     for (const attachment of discard) {
-        minioClient!.removeObject(bucketName!, attachment.attachment.url, function (err) {
-            if (err) return console.log(err)
-        })
+        // minioClient!.removeObject(bucketName!, attachment.attachment.url, function (err) {
+        //     if (err) return console.log(err)
+        // })
         await deletePurgeItem(attachment.id)
     }
 }

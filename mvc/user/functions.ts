@@ -1,5 +1,5 @@
 import {H3Event} from "h3";
-import {HttpResponseTemplate} from "~/types";
+import {type HttpResponseTemplate} from "~/types";
 import {getTicketsCreatedByUser} from "~/mvc/tickets/queries";
 import {getAdmins, getUserNameOrUser_Id, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 

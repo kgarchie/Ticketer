@@ -2,8 +2,6 @@ import prisma from "~/db";
 import {getAdmins, getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
 import {obtainChat_id, writeFileToStorage} from "~/mvc/chats/helpers";
 import path from "path";
-import {UploadedObjectInfo} from "minio";
-import {expressionStatement} from "@babel/types";
 
 export async function getUserChats(user_id: string) {
     const chatsFromMessages = await prisma.message.findMany({
@@ -143,7 +141,7 @@ export async function storeFiles(files: any[], messageId: number, chat_id: strin
     }
 }
 
-export async function storeLocation(location: string, messageId: number, fileSize: number, uploadedInfo: UploadedObjectInfo) {
+export async function storeLocation(location: string, messageId: number, fileSize: number, uploadedInfo: any) {
     await prisma.attachment.create({
         data: {
             Message: {

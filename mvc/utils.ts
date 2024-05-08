@@ -1,4 +1,4 @@
-import {PASSWORD_RESET_TEMPLATE, SocketTemplate, TYPE} from "~/types";
+import {PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE} from "~/types";
 import {WebSocket} from "ws";
 import nodemailer from "nodemailer";
 import prisma from "~/db";
