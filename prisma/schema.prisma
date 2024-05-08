@@ -124,7 +124,6 @@ model Attachment {
   name       String
   created_at DateTime    @default(now())
   size       Float
-  uploadInfo String
   deleted    Boolean     @default(false)
   Message    Message?    @relation(fields: [messageId], references: [id])
   messageId  Int?

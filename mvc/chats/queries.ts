@@ -141,7 +141,7 @@ export async function storeFiles(files: any[], messageId: number, chat_id: strin
     }
 }
 
-export async function storeLocation(location: string, messageId: number, fileSize: number, uploadedInfo: any) {
+export async function storeLocation(location: string, messageId: number, fileSize: number) {
     await prisma.attachment.create({
         data: {
             Message: {
@@ -151,8 +151,7 @@ export async function storeLocation(location: string, messageId: number, fileSiz
             },
             url: location,
             name: location.split('/').pop() || 'unknown',
-            size: fileSize,
-            uploadInfo: JSON.stringify(uploadedInfo)
+            size: fileSize
         }
     }).catch(
         (error) => {
