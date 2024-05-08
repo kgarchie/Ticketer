@@ -8,6 +8,7 @@ import {
     getTotalAttachmentsSize
 } from "~/mvc/chats/queries";
 import type { Float } from "type-fest";
+import imageStorage from "~/filestorage";
 
 const targetSizeInGB = process.env.TARGET_SIZE || "3"
 const targetSize = parseInt(targetSizeInGB) * 1024 * 1024 * 1024
