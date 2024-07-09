@@ -7,7 +7,7 @@ router.get('/:id/read', defineEventHandler(async event => {
     return await readNotification(event)
 }))
 
-router.post('/', defineEventHandler(async event => {
+router.get('/', defineEventHandler(async event => {
     return await getNotifications(event)
 }))
 

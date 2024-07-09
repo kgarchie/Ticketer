@@ -23,7 +23,7 @@
     </div>
 </template>
 <script setup lang="ts">
-import {SocketStatus, TaggedPerson} from "~/types";
+import {SocketStatus, type TaggedPerson} from "~/types";
 
 const user = useUser()
 

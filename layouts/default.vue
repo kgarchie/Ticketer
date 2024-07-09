@@ -70,8 +70,8 @@
   </section>
 </template>
 <script setup lang="ts">
-import {UserAuth} from "~/types"
-import {Notification} from "@prisma/client";
+import {type UserAuth} from "~/types"
+import type {Notification} from "@prisma/client";
 import {onNotificationCallback, updateNotifications} from "~/helpers/clientHelpers"
 
 // const {$ECall: ECall} = useNuxtApp()

@@ -1,13 +1,17 @@
-import { createStorage, defineDriver, type StorageValue as _StorageValue } from "unstorage";
-import { existsSync, watch } from "fs";
-import { readFile, writeFile, rename, unlink, readdir, lstat } from "fs/promises";
+import {createStorage, defineDriver} from "unstorage";
+import {existsSync, watch} from "fs";
+import {readFile, writeFile, rename, unlink, readdir, lstat} from "fs/promises";
 import path from "path";
+import type {WatchEventType} from "node:fs";
 
 const customDriver = defineDriver((options?: { destination: string }) => {
     if (!options || !options.destination) {
-        options = { destination: './' }
+        options = {destination: './'}
     }
-    const location = (destination: string) => path.join(options.destination, destination)
+    const location = (destination: string) => {
+        const basePath = path.join("public", "uploads", options!.destination, destination).replace(/:/g, "_")
+        return path.resolve(basePath)
+    }
 
     return {
         name: "custom-driver",
@@ -26,7 +30,7 @@ const customDriver = defineDriver((options?: { destination: string }) => {
             }
         },
         async setItemRaw(key, value, _opts) {
-            return await rename(value.filePath, location(key))
+            return await rename(value.filepath, location(key))
         },
         async removeItem(key, _opts) {
             return await unlink(location(key))
@@ -42,14 +46,14 @@ const customDriver = defineDriver((options?: { destination: string }) => {
                 return path.join(sb, location)
             }
 
-            const files = await readdir(options.destination).catch(e => {
+            const files = await readdir(path.join(options!.destination, "public", "uploads")).catch(e => {
                 console.error(e)
                 return []
             })
 
             const keys: string[] = []
             for (const file of files) {
-                construct(file, options.destination).then(value => {
+                construct(file, path.join(options!.destination, "public", "uploads")).then(value => {
                     keys.push(value)
                 })
             }
@@ -72,12 +76,13 @@ const customDriver = defineDriver((options?: { destination: string }) => {
                 }
             }
 
-            return await deleteFiles(options.destination)
+            return await deleteFiles(path.join(options!.destination, "public", "uploads"))
         },
-        async dispose() { },
-        async watch(callback) {
-            const watcher = watch(options.destination, { recursive: true }, (event, filename) => {
-                (event as any, filename)
+        async dispose() {
+        },
+        async watch(callback: (event: WatchEventType, filename: string | null) => void) {
+            const watcher = watch(path.join(options!.destination, "public", "uploads"), {recursive: true}, (event, filename) => {
+                callback(event, filename)
             })
 
             return () => {

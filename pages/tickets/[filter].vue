@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import {Ticket} from "@prisma/client";
+import {type Ticket} from "@prisma/client";
 
 const route = useRoute()
 const filter_json = route.params.filter

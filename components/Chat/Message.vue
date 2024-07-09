@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import {SocketStatus} from "~/types";
+import {SocketStatus, type HttpResponseTemplate} from "~/types";
 
 const eCall = useCall().value
 
@@ -159,7 +159,7 @@ async function sendMessage() {
   }
 
   pending.value = true
-  const {data: response} = await useFetch('/api/chats/messages/send', {
+  const response = await $fetch<HttpResponseTemplate>('/api/chats/messages/send', {
     method: 'POST',
     body: formData
   })
@@ -167,17 +167,17 @@ async function sendMessage() {
 
   // console.log(response.value.body)
 
-  if (response.value?.statusCode === 200) {
+  if (response?.statusCode === 200) {
     setTimeout(() => {
-      if (!props.messages?.find((msg: any) => msg.id === response.value?.body?.id)) {
-        props.messages?.push(response.value?.body)
+      if (!props.messages?.find((msg: any) => msg.id === response?.body?.id)) {
+        props.messages?.push(response?.body)
         console.log("Message added via post request")
         useGlobalSocket().value.WsServerStatus = SocketStatus.UNKNOWN
         positionMessages()
       }
     }, 500)
   } else {
-    alert(response.value?.body.toString())
+    alert(response?.body.toString())
   }
   positionMessages()
   composed_message.value = ''

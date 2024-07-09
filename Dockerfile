@@ -17,13 +17,7 @@ RUN mkdir -p /nuxt/public/uploads && \
     chown -R node:node /nuxt/public && \
     chmod -R 777 /nuxt/public
 
+RUN pnpm run migrate
 RUN pnpm run build
-
-# set environment variables
-ENV PORT=3000
-
-# which port should be exposed expose 3000
-EXPOSE 3000
-
 # commands to build and run the nuxt app
 CMD ["pnpm", "run", "start"]

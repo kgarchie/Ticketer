@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import {LoginCredentials} from "~/types";
+import {type LoginCredentials} from "~/types";
 
 const email = ref('')
 const password = ref('')

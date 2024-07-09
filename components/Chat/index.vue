@@ -42,9 +42,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import {UserChatObject} from "~/types";
+import {type UserChatObject} from "~/types";
 import {onMessageCallback} from "~/helpers/clientHelpers";
-import {Attachment, Message} from "@prisma/client";
+import type {Attachment, Message} from "@prisma/client";
 
 const user = useUser().value
 const chats = ref<UserChatObject[]>([])
@@ -164,9 +164,12 @@ const message_isRevealed = computed(() => {
 })
 
 async function getChats() {
+  const id = user.user_id
+  if(!id || id.trim() === "") return
   let db_chats = await $fetch('/api/chats', {
-    method: 'POST',
-    body: user.user_id.toString()
+    headers: {
+      "Authorization": "User " + id,
+    }
   }).then(
       (res: any) => {
         if (res.statusCode !== 200) return []

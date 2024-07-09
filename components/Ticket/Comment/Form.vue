@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import {TaggedPerson} from "~/types";
+import {type TaggedPerson} from "~/types";
 
 const props = defineProps({
     taggable: {

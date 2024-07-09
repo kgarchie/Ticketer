@@ -56,9 +56,9 @@
 </template>
 
 <script setup lang="ts">
-import {RegisterCredentials, UserAuth} from "~/types";
+import {type RegisterCredentials, type UserAuth} from "~/types";
 
-let companies = null
+let companies:any = null
 const {data:companies_data} = await useFetch('/api/company')
 if(companies_data.value){
     companies = companies_data.value.body

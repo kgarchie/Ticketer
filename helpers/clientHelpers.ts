@@ -24,8 +24,9 @@ export async function updateNewTickets(State: any) {
 
 export async function updateNotifications(State: any, user_id: string) {
     const res = await $fetch('/api/notifications', {
-        method: 'POST',
-        body: user_id
+        headers: {
+            "Authorization": `User ${user_id}`
+        }
     })
 
     if (res?.statusCode === 200) {

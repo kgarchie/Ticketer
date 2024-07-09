@@ -1,4 +1,6 @@
+// @ts-ignore
 import {H3Event} from "h3";
+// @ts-ignore
 import {readFiles} from 'h3-formidable'
 import {type HttpResponseTemplate, type sdpCall, type SocketTemplate, TYPE} from "~/types";
 import {
@@ -14,7 +16,7 @@ import {getUserName} from "~/mvc/user/queries";
 import {getPresignedUrl} from "~/mvc/chats/helpers";
 
 export async function getChats(event: H3Event) {
-    const user_id = await readBody(event) || null;
+    const user_id = readAuthToken(event, "User")
     let response = {} as HttpResponseTemplate
 
     if (!user_id) {

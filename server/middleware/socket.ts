@@ -1,4 +1,4 @@
-import {Client, TYPE, websocketPort, SocketTemplate, SocketStatus} from "~/types";
+import {type Client, TYPE, websocketPort, type SocketTemplate, SocketStatus} from "~/types";
 import {WebSocketServer} from "ws"
 import {socketSendData} from "~/mvc/utils";
 

@@ -98,7 +98,7 @@
 </template>
 <script setup lang="ts">
 import {STATUS} from "~/types";
-import {Ticket} from "@prisma/client";
+import {type Ticket} from "@prisma/client";
 
 const user = useUser().value
 const search = ref('')

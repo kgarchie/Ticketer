@@ -5,3 +5,18 @@ services:
     build: .
     ports:
       - "3000:3000"
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgres://postgres:allan.allan@db:5432/ticketer
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: allan.allan
+      POSTGRES_DB: ticketer
+    ports:
+      - "5432:5432"

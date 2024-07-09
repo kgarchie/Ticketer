@@ -1,5 +1,5 @@
 import {WebSocket} from "ws";
-import {Message} from "@prisma/client";
+import {type Message} from "@prisma/client";
 
 /*
     *  Define custom types here
@@ -74,7 +74,7 @@ export type UserChatObject = {
     id: string,
     created_at: Date,
     ticketId: number | null,
-    chat_id: string | null,
+    chat_id?: string,
     Message: Message[],
     user_id: string,
     WithUser: {

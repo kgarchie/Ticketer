@@ -183,7 +183,7 @@
   </main>
 </template>
 <script setup lang="ts">
-import {SearchQuery, STATUS} from "~/types";
+import {type SearchQuery, STATUS} from "~/types";
 import {
   updateNewTickets,
   updateTicketsMetaData,
@@ -192,7 +192,7 @@ import {
   getUserName, onDeleteTicketCallback
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";
-import {Ticket} from "@prisma/client";
+import {type Ticket} from "@prisma/client";
 
 const tickets = ref<Ticket[]>([])
 const ticketsMetaDataState = ref({

@@ -130,7 +130,7 @@ export async function readUserMessage(user_id: string, chat_id: string) {
 }
 
 export async function storeFiles(files: any[], messageId: number, chat_id: string, user_id: string) {
-    let filePath = path.join(user_id, chat_id)
+    let filePath = [user_id, chat_id].join(path.sep)
 
     for (const file of files) {
         try{

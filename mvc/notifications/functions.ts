@@ -1,5 +1,5 @@
 import {H3Event} from "h3";
-import {HttpResponseTemplate} from "~/types";
+import {type HttpResponseTemplate} from "~/types";
 import {getAuthCookie} from "~/mvc/auth/helpers";
 import {getAllUnreadNotifications, markNotificationAsRead} from "~/mvc/notifications/queries";
 
@@ -24,12 +24,13 @@ export async function readNotification(event:H3Event){
 
 
 export async function getNotifications(event:H3Event){
-    const user_id = await readBody(event)
+    const user_id = readAuthToken(event, "User")
     let response = {} as HttpResponseTemplate
 
     if(!user_id || user_id === "" || user_id === undefined){
         response.statusCode = 401
         response.body = "Botched Request"
+        return response
     }
 
     const notifications = await getAllUnreadNotifications(user_id)

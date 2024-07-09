@@ -116,8 +116,9 @@
 </template>
 
 <script lang="ts" setup>
-import {Comment, Ticket} from "@prisma/client";
-import {SocketStatus, STATUS, TaggedPerson} from "~/types";
+import {type Comment, type Ticket} from "@prisma/client";
+import {SocketStatus, STATUS, type TaggedPerson} from "~/types";
+
 import {
   getUserName,
   onDeleteComment,
