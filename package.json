@@ -15,7 +15,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "start": "nuxt start",
+    "start": "pnpm run migrate && nuxt start",
     "studio": "pnpm prisma studio",
     "migrate": "pnpm prisma migrate dev --name init && pnpm prisma generate",
     "build:windows": "pnpm prisma:files:windows && nuxt build && pnpm prisma:db:windows"

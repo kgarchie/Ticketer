@@ -1,18 +1,7 @@
 version: '3'
 
 services:
-  web:
-    build: .
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-    volumes:
-      - .:/app
-    environment:
-      DATABASE_URL: postgres://postgres:allan.allan@db:5432/ticketer
-
-  db:
+  database:
     image: postgres
     environment:
       POSTGRES_USER: postgres
@@ -20,3 +9,15 @@ services:
       POSTGRES_DB: ticketer
     ports:
       - "5432:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - database
+    volumes:
+      - .:/app
+    
