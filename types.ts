@@ -151,6 +151,9 @@ export enum TYPE {
     DELETE_TICKET = "delete ticket",
     CALL = "call",
     CALL_SDP = "call sdp",
+    CLOSE_SOCKET = "close socket",
+    PING = "ping",
+    PONG = "pong",
 }
 
 export enum TicketOperation {

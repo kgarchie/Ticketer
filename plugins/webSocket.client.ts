@@ -1,5 +1,5 @@
-import {Comment, Notification, Ticket} from "@prisma/client";
-import {sdpCall, SocketStatus, SocketTemplate, TYPE, websocketPort} from "~/types";
+import type {Comment, Notification, Ticket} from "@prisma/client";
+import {type sdpCall, SocketStatus, type SocketTemplate, TYPE, websocketPort} from "~/types";
 
 const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:"
 
@@ -323,7 +323,7 @@ export default defineNuxtPlugin(() => {
             lock = true
             await useGlobalSocket().value.pollWsStatus()
 
-            await new Promise<void>(resolve => setTimeout(() => {
+            await new Promise<void>((resolve) => setTimeout(() => {
                 lock = false
                 resolve()
             }, 30000))

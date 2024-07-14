@@ -15,7 +15,6 @@
         </p>
         <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm"
                            :taggable="taggable_computed"/>
-        <!-- display child comments in recursive nest -->
         <div v-if="(comment.children && comment?.children.length > 0)">
             <TicketCommentList v-for="child in comment?.children" :key="child.id" :comment="child"
                                :ticket="ticket" :taggable="taggable_computed"/>

@@ -11,6 +11,9 @@ importers:
       '@prisma/client':
         specifier: ^4.16.2
         version: 4.16.2(prisma@4.16.2)
+      crossws:
+        specifier: ^0.2.4
+        version: 0.2.4
       h3-formidable:
         specifier: ^0.3.8
         version: 0.3.8(h3@1.11.1)
@@ -26,6 +29,9 @@ importers:
       typescript:
         specifier: ^4.9.5
         version: 4.9.5
+      ulid:
+        specifier: ^2.3.0
+        version: 2.3.0
       unstorage:
         specifier: ^1.10.2
         version: 1.10.2(ioredis@5.4.1)
@@ -3425,6 +3431,10 @@ packages:
 
   ufo@1.5.3:
     resolution: {integrity: sha512-Y7HYmWaFwPUmkoQCUIAYpKqkOf+SbVj/2fJJZ4RJMCfZp0rTGwRbzQD+HghfnhKOjL9E01okqz+ncJskGYfBNw==}
+
+  ulid@2.3.0:
+    resolution: {integrity: sha512-keqHubrlpvT6G2wH0OEfSW4mquYRcbe/J8NMmveoQOjUqmo+hXtO+ORCpWhdbZ7k72UtY61BL7haGxW6enBnjw==}
+    hasBin: true
 
   ultrahtml@1.5.3:
     resolution: {integrity: sha512-GykOvZwgDWZlTQMtp5jrD4BVL+gNn2NVlVafjcFUJ7taY20tqYdwdoWBFy6GBJsNTZe1GkGPkSl5knQAjtgceg==}
@@ -7733,6 +7743,8 @@ snapshots:
   typescript@4.9.5: {}
 
   ufo@1.5.3: {}
+
+  ulid@2.3.0: {}
 
   ultrahtml@1.5.3: {}
 

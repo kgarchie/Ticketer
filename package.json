@@ -1,24 +1,17 @@
 {
-  "name": "nuxt-app",
+  "name": "ticketer",
   "version": "1.0.0",
   "module": "commonjs",
   "private": true,
   "scripts": {
     "build": "pnpm prisma generate && nuxt build",
-    "build:sqlite": "pnpm prisma:files && nuxt build && pnpm prisma:db",
-    "dev": "concurrently \"nuxt dev --host\" \"sass --watch scss/style.scss:assets/css/style.css\"",
-    "sass:watch": "sass --watch scss/style.scss:assets/css/style.css &",
-    "prisma:files": "pnpm prisma generate && cp ./node_modules/.prisma/client/*.js ./node_modules/@prisma/client",
-    "prisma:files:windows": "pnpm prisma generate && xcopy /s /y .\\\\node_modules\\\\.prisma\\\\client\\\\*.js .\\\\node_modules\\\\@prisma\\\\client &",
-    "prisma:db": "cp ./prisma/dev.db ./.output/server/node_modules/.prisma/client",
-    "prisma:db:windows": "xcopy /s /y .\\\\prisma\\\\dev.db .\\\\.output\\\\server\\\\node_modules\\\\.prisma\\\\client &",
+    "dev": "nuxt dev --host",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "start": "pnpm run migrate && nuxt start",
     "studio": "pnpm prisma studio",
-    "migrate": "pnpm prisma migrate dev --name init && pnpm prisma generate",
-    "build:windows": "pnpm prisma:files:windows && nuxt build && pnpm prisma:db:windows"
+    "migrate": "pnpm prisma migrate dev --name init && pnpm prisma generate"
   },
   "devDependencies": {
     "@types/multer": "^1.4.11",
@@ -32,11 +25,13 @@
   },
   "dependencies": {
     "@prisma/client": "^4.16.2",
+    "crossws": "^0.2.4",
     "h3-formidable": "^0.3.8",
     "nodemailer": "^6.9.13",
     "prisma": "^4.16.2",
     "ts-node": "^10.9.2",
     "typescript": "^4.9.5",
+    "ulid": "^2.3.0",
     "unstorage": "^1.10.2",
     "uuid": "^9.0.1",
     "vue": "^3.4.27",

@@ -1,7 +1,7 @@
 /*
     Note: these files are ran in alphabetical order, it's imperative that this file is ran before webSocket.client.ts
  */
-import {UserAuth} from "~/types";
+import type {UserAuth} from "~/types";
 
 export default defineNuxtPlugin(async () => {
     let _user_id: string | null = null
@@ -10,7 +10,7 @@ export default defineNuxtPlugin(async () => {
     if (userState.value.user_id) return
 
     // @ts-ignore
-    let user = await useCookie('auth')?.value as UserAuth
+    let user = useCookie('auth')?.value as UserAuth
 
     if (user == null || user?.user_id == '') {
         const {data: response} = await useFetch('/api/auth/identity')

@@ -1,4 +1,4 @@
-import {sdpCall, UserAuth} from "~/types";
+import type {sdpCall, UserAuth} from "~/types";
 
 export default defineNuxtPlugin(() => {
     const eCall = useCall()

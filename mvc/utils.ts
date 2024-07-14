@@ -1,8 +1,8 @@
-import {PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE} from "~/types";
-import {WebSocket} from "ws";
+import { PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE } from "~/types";
 import nodemailer from "nodemailer";
+import { Peer } from "crossws";
 import prisma from "~/db";
-import {getAdmins, getUserName} from "~/mvc/user/queries";
+import { getAdmins, getUserName } from "~/mvc/user/queries";
 
 export const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -79,24 +79,9 @@ export async function shuttleDataToAllClients(response: SocketTemplate) {
     }
 }
 
-export async function socketSendData(ws: WebSocket, message: string, maxRetries = 5) {
+export async function socketSendData(peer: Peer, message: any, maxRetries = 5) {
     setTimeout(() => {
-        ws.send(message, (err: any) => {
-            if (err) {
-                if (maxRetries > 0) {
-                    console.log("Retrying to send message")
-                    socketSendData(ws, message, maxRetries - 1)
-                } else {
-                    console.log("Could not send message, removing client and closing socket...")
-                    ws.close()
-                    let local_clients = global.clients
-                    if (local_clients?.length > 0) {
-                        local_clients = local_clients.filter((c) => c.Socket !== ws)
-                        global.clients = local_clients
-                    }
-                }
-            }
-        })
+        peer.send(message)
     }, 0);
 }
 

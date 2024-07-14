@@ -8,5 +8,10 @@ export default defineNuxtConfig({
         public: {
             DEV: process.env.DEV
         }
+    },
+    nitro: {
+        experimental: {
+            websocket: true
+        }
     }
 })
