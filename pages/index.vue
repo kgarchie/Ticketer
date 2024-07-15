@@ -1,20 +1,21 @@
 <template>
+
   <Head>
     <Title>Home</Title>
   </Head>
   <main class="main">
     <div class="container">
       <div class="columns">
-        <SideNav/>
+        <SideNav />
         <div class="column is-9">
           <section class="hero is-info welcome is-small" id="hero">
             <div class="hero-body">
               <div class="container">
-                <Call/>
+                <Call />
               </div>
               <div class="container">
                 <h1 class="title">
-                  Hello <client-only>{{name}}</client-only>
+                  Hello <client-only>{{ name }}</client-only>
                 </h1>
                 <h2 class="subtitle">
                   You have <client-only>{{ notifications?.length }}</client-only> new notifications
@@ -25,28 +26,28 @@
           <section class="info-tiles">
             <div class="tile is-ancestor has-text-centered">
               <NuxtLink class="tile is-parent"
-                        :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`">
+                :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`">
                 <article class="tile is-child box">
                   <p class="title">{{ ticketsMetaDataState.new_count }}</p>
                   <p class="subtitle">New Tickets</p>
                 </article>
               </NuxtLink>
               <NuxtLink class="tile is-parent"
-                        :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`">
+                :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`">
                 <article class="tile is-child box">
                   <p class="title">{{ ticketsMetaDataState.pending_count }}</p>
                   <p class="subtitle">Pending Tickets</p>
                 </article>
               </NuxtLink>
               <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.R })}`)}`"
-                        class="tile is-parent">
+                class="tile is-parent">
                 <article class="tile is-child box">
                   <p class="title">{{ ticketsMetaDataState.resolved_count }}</p>
                   <p class="subtitle">Resolved</p>
                 </article>
               </NuxtLink>
               <NuxtLink class="tile is-parent"
-                        :to="`${encodeURI(`tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`">
+                :to="`${encodeURI(`tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`">
                 <article class="tile is-child box">
                   <p class="title">{{ ticketsMetaDataState.exceptions_count }}</p>
                   <p class="subtitle">Closed</p>
@@ -62,33 +63,33 @@
                     New Tickets
                   </p>
                   <a href="#" class="card-header-icon" aria-label="more options">
-                                        <span class="icon">
-                                            <i class="fa fa-angle-down" aria-hidden="true"></i>
-                                        </span>
+                    <span class="icon">
+                      <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </span>
                   </a>
                 </header>
                 <div class="card-table">
                   <div class="content">
                     <table class="table is-fullwidth is-striped">
                       <tbody>
-                      <tr v-for="(item, index) in tickets" :key="index">
-                        <td width="5%"><i class="fa fa-bell-o"></i></td>
-                        <td>{{ item.issue }}</td>
-                        <td>{{ item.reference }}</td>
-                        <td class="level-right">
-                          <NuxtLink class="button is-small is-primary"
-                                    :to="`tickets/view/${item.id}`" @click="pendTicket(item.id)">
-                            View
-                          </NuxtLink>
-                        </td>
-                      </tr>
+                        <tr v-for="(item, index) in tickets" :key="index">
+                          <td width="5%"><i class="fa fa-bell-o"></i></td>
+                          <td>{{ item.issue }}</td>
+                          <td>{{ item.reference }}</td>
+                          <td class="level-right">
+                            <NuxtLink class="button is-small is-primary" :to="`tickets/view/${item.id}`"
+                              @click="pendTicket(item.id)">
+                              View
+                            </NuxtLink>
+                          </td>
+                        </tr>
                       </tbody>
                     </table>
                   </div>
                 </div>
                 <div class="card-footer">
                   <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: 'None' })}`)}`"
-                            class="card-footer-item">
+                    class="card-footer-item">
                     View All
                   </NuxtLink>
                 </div>
@@ -101,23 +102,22 @@
                     Ticket Search
                   </p>
                   <a href="#" class="card-header-icon" aria-label="more options">
-                                        <span class="icon">
-                                            <i class="fa fa-angle-down" aria-hidden="true"></i>
-                                        </span>
+                    <span class="icon">
+                      <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </span>
                   </a>
                 </header>
                 <form class="card-content" @submit.prevent="search">
                   <div class="content">
                     <div class="control has-icons-left has-icons-right">
-                      <input class="input" type="text"
-                             placeholder="Enter Transaction Code or Reference"
-                             v-model="search_transaction_code_or_reference">
+                      <input class="input" type="text" placeholder="Enter Transaction Code or Reference"
+                        v-model="search_transaction_code_or_reference">
                       <span class="icon is-medium is-left">
-                                                <i class="fa fa-search"></i>
-                                            </span>
+                        <i class="fa fa-search"></i>
+                      </span>
                       <span class="icon is-medium is-right">
-                                                <i class="fa fa-check"></i>
-                                            </span>
+                        <i class="fa fa-check"></i>
+                      </span>
                     </div>
                   </div>
                 </form>
@@ -128,22 +128,21 @@
                     User Search
                   </p>
                   <a href="#" class="card-header-icon" aria-label="more options">
-                                        <span class="icon">
-                                            <i class="fa fa-angle-down" aria-hidden="true"></i>
-                                        </span>
+                    <span class="icon">
+                      <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </span>
                   </a>
                 </header>
                 <form class="card-content" @submit.prevent="search">
                   <div class="content">
                     <div class="control has-icons-left has-icons-right">
-                      <input class="input" type="text" placeholder="Enter Email or Name(s)"
-                             v-model="email_or_name">
+                      <input class="input" type="text" placeholder="Enter Email or Name(s)" v-model="email_or_name">
                       <span class="icon is-medium is-left">
-                                                <i class="fa fa-search"></i>
-                                            </span>
+                        <i class="fa fa-search"></i>
+                      </span>
                       <span class="icon is-medium is-right">
-                                                <i class="fa fa-check"></i>
-                                            </span>
+                        <i class="fa fa-check"></i>
+                      </span>
                     </div>
                   </div>
                 </form>
@@ -154,9 +153,9 @@
                     Search Date Range
                   </p>
                   <a href="#" class="card-header-icon" aria-label="more options">
-                                        <span class="icon">
-                                            <i class="fa fa-angle-down" aria-hidden="true"></i>
-                                        </span>
+                    <span class="icon">
+                      <i class="fa fa-angle-down" aria-hidden="true"></i>
+                    </span>
                   </a>
                 </header>
                 <form class="card-content" @submit.prevent="search">
@@ -183,7 +182,7 @@
   </main>
 </template>
 <script setup lang="ts">
-import {type SearchQuery, STATUS} from "~/types";
+import { type SearchQuery, type SocketTemplate, STATUS, TYPE } from "~/types";
 import {
   updateNewTickets,
   updateTicketsMetaData,
@@ -192,7 +191,7 @@ import {
   getUserName, onDeleteTicketCallback
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";
-import {type Ticket} from "@prisma/client";
+import { type Ticket } from "@prisma/client";
 
 const tickets = ref<Ticket[]>([])
 const ticketsMetaDataState = ref({
@@ -240,23 +239,32 @@ async function search() {
 updateTicketsMetaData(ticketsMetaDataState)
 updateNewTickets(tickets)
 
-const socket = useGlobalSocket().value
-
-if(socket){
-  socket.onNewTicketCallback = (ticket: Ticket) => {
-    onNewTicketCallback(ticket, tickets)
-    updateTicketsMetaData(ticketsMetaDataState)
+const socket = useSocket().value
+socket?.on("data", (data: SocketTemplate) => {
+  switch (data?.type) {
+    case TYPE.NEW_TICKET:
+      onNewTicketCallback(data.body, tickets)
+      updateTicketsMetaData(ticketsMetaDataState)
+      break
+    case TYPE.UPDATE_TICKET:
+      onUpdateTicketCallback(data.body, tickets)
+      updateTicketsMetaData(ticketsMetaDataState)
+      break
+    case TYPE.DELETE_TICKET:
+      onDeleteTicketCallback(data.body, tickets)
+      updateTicketsMetaData(ticketsMetaDataState)
+      break
+    default:
+      console.log("No valid data", data)
+      break
   }
+})
 
-  socket.onUpdateTicketCallback = (ticket: Ticket) => {
-    onUpdateTicketCallback(ticket, tickets)
-    updateTicketsMetaData(ticketsMetaDataState)
-  }
-
-  socket.onDeleteTicketCallback = (ticket: Ticket) => {
-    onDeleteTicketCallback(ticket, tickets)
-    updateTicketsMetaData(ticketsMetaDataState)
-  }
+if (process.client) {
+  setTimeout(() => {
+    socket?.push({ test: "test" })
+    console.log("Pushed")
+  }, 2000)
 }
 </script>
 <style scoped>

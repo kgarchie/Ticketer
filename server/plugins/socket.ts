@@ -7,6 +7,9 @@ declare global {
 }
 
 export default defineNitroPlugin(app => {
+    global.clients = new Clients()
+    global.channels = new Channels()
+
     global.clients!.on("data", (data, client) => {
         console.log("Data", data)
         try {
@@ -28,6 +31,7 @@ export default defineNitroPlugin(app => {
             body: "Invalid Json"
         } as SocketTemplate
         client.send(response)
+        client.close()
         console.error("Error", error)
     })
 })

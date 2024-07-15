@@ -1,6 +1,6 @@
 import { PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE } from "~/types";
 import nodemailer from "nodemailer";
-import { Peer } from "crossws";
+import { Client } from "~/server/utils/socket";
 import prisma from "~/db";
 import { getAdmins, getUserName } from "~/mvc/user/queries";
 
@@ -74,14 +74,14 @@ export async function notifyAllAndConnectedAdmins(response: SocketTemplate, send
 }
 
 export async function shuttleDataToAllClients(response: SocketTemplate) {
-    for (const client of global.clients) {
-        socketSendData(client.Socket, JSON.stringify(response))
+    for (const client of global.clients?.value || []) {
+        socketSendData(client, JSON.stringify(response))
     }
 }
 
-export async function socketSendData(peer: Peer, message: any, maxRetries = 5) {
+export async function socketSendData(client: Client, message: any, maxRetries = 5) {
     setTimeout(() => {
-        peer.send(message)
+        client.send(message)
     }, 0);
 }
 

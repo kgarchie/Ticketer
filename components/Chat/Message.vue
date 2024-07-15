@@ -172,7 +172,7 @@ async function sendMessage() {
       if (!props.messages?.find((msg: any) => msg.id === response?.body?.id)) {
         props.messages?.push(response?.body)
         console.log("Message added via post request")
-        useGlobalSocket().value.WsServerStatus = SocketStatus.UNKNOWN
+        useSocket().value!.status = SocketStatus.UNKNOWN
         positionMessages()
       }
     }, 500)

@@ -11,7 +11,7 @@
         <div class="is-flex is-flex-direction-column message-list">
           <ul class="people">
             <li class="person" v-for="chat in  chats" :key="chat.id"
-                @click="chat_id = chat.chat_id; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
+                @click="chat_id = chat.chat_id!; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
               <div class="message-preview">
                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
                 <span class="company-info" v-if=" user.is_admin ">{{
@@ -42,7 +42,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {type UserChatObject} from "~/types";
+import {TYPE, type UserChatObject} from "~/types";
 import {onMessageCallback} from "~/helpers/clientHelpers";
 import type {Attachment, Message} from "@prisma/client";
 
@@ -228,18 +228,16 @@ function positionMessages() {
 
 getChats()
 
-const socket = useGlobalSocket().value
-if (socket) {
-  socket.onMessageCallback = (_message: Message & { attachments: Attachment[] } & { chat_id: string }) => {
-    const chat = onMessageCallback(_message, chats, getChats)
-
+const socket = useSocket().value
+socket?.on("data", (data: any) => {
+  if (data.type === TYPE.MESSAGE){
+    const chat = onMessageCallback(data.body, chats, getChats)
     if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)
-
     positionMessages()
     sortChats()
     show_all_unread_count()
   }
-}
+})
 </script>
 <style scoped lang="scss">
 $accent: hsl(221, 73%, 63%);

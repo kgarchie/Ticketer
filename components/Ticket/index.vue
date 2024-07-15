@@ -81,7 +81,7 @@
             <article class="box pb-5" v-if="user.is_admin">
                 <div class="buttons mt-3 is-flex is-fullwidth">
                     <button class="button is-success" @click="resolveTicket"
-                            :disabled="local_ticket.status === STATUS.R">
+                        :disabled="local_ticket.status === STATUS.R">
                         Resolve
                     </button>
                     <button class="button is-warning" @click="closeTicket" :disabled="local_ticket.status === STATUS.C">
@@ -94,35 +94,35 @@
             </article>
             <article class="comments">
                 <h3 class="is-5 raised">Comments</h3>
-                <div v-if="comments?.length > 0" v-for="comment in comments"
-                     :key="comment.id">
+                <div v-if="comments?.length > 0" v-for="comment in comments" :key="comment.id">
                     <div v-if="comment?.parentId === null">
                         <article class="media">
                             <div class="media-content">
-                                <TicketCommentList :comment="comment" :ticket="local_ticket" :taggable="taggable"/>
+                                <TicketCommentList :comment="comment" :ticket="local_ticket" :taggable="taggable" />
                             </div>
                         </article>
                     </div>
-                    <hr v-if="comment?.parentId === null"/>
+                    <hr v-if="comment?.parentId === null" />
                 </div>
                 <div class="box" v-else>
                     <p>No comments yet</p>
                 </div>
                 <div class="mt-3"></div>
-                <TicketCommentForm @comment="submitComment" :taggable="taggable"/>
+                <TicketCommentForm @comment="submitComment" :taggable="taggable" />
             </article>
         </div>
     </main>
 </template>
 
 <script lang="ts" setup>
-import {type Comment, type Ticket} from "@prisma/client";
-import {SocketStatus, STATUS, type TaggedPerson} from "~/types";
+import { type Comment, type Ticket } from "@prisma/client";
+import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
+import type { SocketTemplate } from "~/types"
 
 import {
-  getUserName,
-  onDeleteComment,
-  onNewComment,
+    getUserName,
+    onDeleteComment,
+    onNewComment,
 } from "~/helpers/clientHelpers";
 
 
@@ -150,12 +150,12 @@ async function getTaggablePeople() {
 
     for (const user_id of taggable_user_ids) {
         const name_or_user_id = await getUserName(user_id)
-        taggable.push({name: name_or_user_id, user_id: user_id})
+        taggable.push({ name: name_or_user_id, user_id: user_id })
     }
 
     admins?.forEach((admin: any) => {
         if (!taggable_user_ids.includes(admin.user_id)) {
-            taggable.push({name: admin.name, user_id: admin.user_id})
+            taggable.push({ name: admin.name, user_id: admin.user_id })
         }
     })
 
@@ -166,7 +166,7 @@ taggable.value = await getTaggablePeople()
 
 async function closeTicket() {
     if (user.value.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/close`, {
+        const { data: response } = await useFetch(`/api/tickets/${local_ticket.value.id}/close`, {
             method: 'POST'
         })
 
@@ -182,13 +182,13 @@ async function closeTicket() {
 
 onBeforeMount(async () => {
     if (!props.ticket) {
-        await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
+        await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
     }
 })
 
 async function resolveTicket() {
     if (user.value.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}/resolve`, {
+        const { data: response } = await useFetch(`/api/tickets/${local_ticket.value.id}/resolve`, {
             method: 'POST'
         })
 
@@ -205,13 +205,13 @@ async function resolveTicket() {
 
 async function deleteTicket() {
     if (user.value.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${local_ticket.value.id}`, {
+        const { data: response } = await useFetch(`/api/tickets/${local_ticket.value.id}`, {
             method: 'DELETE'
         })
 
         // update the ticket status
         if (response?.value?.statusCode === 200) {
-            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
+            await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
         } else {
             alert('Operation Failed')
         }
@@ -222,9 +222,9 @@ async function deleteTicket() {
 
 let oldComment = ''
 async function submitComment(payload: any) {
-    let {comment, tagged} = payload
+    let { comment, tagged } = payload
     if (comment === '') return alert('Please enter a comment before submitting')
-    const {data: db_user} = await useFetch(`/api/user/${user.value.user_id}`)
+    const { data: db_user } = await useFetch(`/api/user/${user.value.user_id}`)
     // console.log(db_user.value)
 
     if (db_user?.value?.statusCode === 200 && oldComment !== comment) {
@@ -234,7 +234,7 @@ async function submitComment(payload: any) {
         // console.log(comment)
         oldComment = comment
 
-        const {data: response} = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
+        const { data: response } = await useFetch(`/api/tickets/${props.ticket.id}/comment`, {
             method: 'POST',
             body: {
                 comment: comment,
@@ -252,7 +252,7 @@ async function submitComment(payload: any) {
         } else {
             let comment = response?.value?.body
 
-            if (socket.WsServerStatus !== SocketStatus.OPEN) {
+            if (socket?.status !== SocketStatus.OPEN) {
                 props.ticket.comments.push(comment)
             } else {
                 setTimeout(() => {
@@ -275,22 +275,17 @@ async function submitComment(payload: any) {
 
 userName.value = await getUserName(props.ticket?.creator)
 
-const socket = useGlobalSocket().value
-
-if(socket){
-  socket.onNewCommentCallback = (comment: Comment) => {
-    onNewComment(comment, comments)
-  }
-
-  socket.onDeleteCommentCallback = (comment:Comment & { ticket: Ticket }) => {
-    onDeleteComment(comment, comments)
-  }
-
-  socket.onDeleteTicketCallback = async (ticket: Ticket) => {
-    if(ticket.id !== local_ticket.value.ticket.id) return
-    await navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`)
-  }
-}
+const socket = useSocket().value
+socket?.on("data", (data: SocketTemplate) => {
+    if (data.type === TYPE.NEW_COMMENT) {
+        onNewComment(data.body, comments)
+    } else if (data.type === TYPE.DELETE_COMMENT) {
+        onDeleteComment(data.body, comments)
+    } else if (data.type === TYPE.DELETE_TICKET) {
+        if (data.body.id !== local_ticket.value.id) return
+        navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
+    }
+})
 </script>
 
 <style scoped>

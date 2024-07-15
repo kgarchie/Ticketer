@@ -1,14 +1,17 @@
+import { SocketStatus, TYPE, type SocketTemplate } from "~/types";
+
 type Events = "data" | "error" | "open" | "close"
-abstract class RealTime {
+abstract class _RealTime {
     push(data: any) { }
     setup() { }
     on(event: Events, callback: Function) { }
     emit(event: Events, data: any) { }
+    close() { }
     get value(): any { return null }
-    get type(): string { return "RealTime" }
+    static get type(): string { return "RealTime" }
 }
 
-export class SSE implements RealTime {
+class SSE implements _RealTime {
     private eventSource: EventSource
     private _events: Record<Events, Array<(data: any) => void>>;
     private _history: Record<Events, any>;
@@ -35,6 +38,7 @@ export class SSE implements RealTime {
         }
         this.eventSource.onerror = (event) => {
             this.emit("error", event)
+            this.emit("close", event)
         }
         this.eventSource.onopen = (event) => {
             this.emit("open", event)
@@ -61,10 +65,13 @@ export class SSE implements RealTime {
         this._events[event].forEach(callback => callback(data))
         this._history[event].push(data)
     }
+    close(): void {
+        this.eventSource.close()
+    }
     get value() {
         return this.eventSource
     }
-    get type() {
+    static get type() {
         return "SSE"
     }
     [Symbol.dispose]() {
@@ -73,7 +80,7 @@ export class SSE implements RealTime {
 }
 
 
-export class Poll implements RealTime {
+class Poll implements _RealTime {
     private _events: Record<Events, Array<(data: any) => void>>;
     private _history: Record<Events, any>;
     private interval: NodeJS.Timeout | undefined;
@@ -95,16 +102,22 @@ export class Poll implements RealTime {
     }
     setup(): void {
         this.interval = setInterval(async () => {
-            await $fetch("/poll/get", {
+            await $fetch<SocketTemplate>("/poll/get", {
                 method: "GET"
             }).then(response => {
-                console.log("Response", response)
-                this.emit("data", response)
+                try {
+                    if (Array.isArray(response)) {
+                        response.forEach(data => this.emit("data", data))
+                    } else {
+                        this.emit("data", response)
+                    }
+                } catch (_) { }
             }).catch(error => {
                 console.error("Error", error)
                 this.emit("error", error)
             })
         }, this.intervalTime)
+        this.emit("open", null)
     }
     async push(data: any, options?: any) {
         return await $fetch("/poll/put", {
@@ -127,10 +140,13 @@ export class Poll implements RealTime {
         this._events[event].forEach(callback => callback(data))
         this._history[event].push(data)
     }
+    close(): void {
+        clearInterval(this.interval)
+    }
     get value() {
         return null
     }
-    get type() {
+    static get type() {
         return "Poll"
     }
     [Symbol.dispose]() {
@@ -138,7 +154,7 @@ export class Poll implements RealTime {
     }
 }
 
-export class WS implements RealTime {
+class WS implements _RealTime {
     private ws: WebSocket
     private _events: Record<Events, Array<(data: any) => void>>;
     private _history: Record<Events, any>;
@@ -161,7 +177,15 @@ export class WS implements RealTime {
     }
     setup() {
         this.ws.onmessage = (event) => {
-            this.emit("data", event.data)
+            try {
+                const data = JSON.parse(event.data) as SocketTemplate
+                if (data?.type === TYPE.CLOSE_SOCKET) {
+                    this.ws.close()
+                }
+                this.emit("data", data)
+            } catch (_) {
+                this.emit("data", event.data)
+            }
         }
         this.ws.onerror = (event) => {
             this.emit("error", event)
@@ -184,13 +208,131 @@ export class WS implements RealTime {
         this._events[event].forEach(callback => callback(data))
         this._history[event].push(data)
     }
+    close() {
+        this.ws.close()
+    }
     get value() {
         return this.ws
     }
-    get type() {
+    static get type() {
         return "WS"
     }
     [Symbol.dispose]() {
         this.ws.close()
-    }   
+    }
+}
+
+
+export class RealTime {
+    private current: {
+        type: string,
+        value: _RealTime,
+        priority: number
+    } | null = null
+    private _status: SocketStatus = SocketStatus.CLOSED
+    private _backpressure: any[] = []
+    constructor() {
+        if (!process.client) return
+        this.init()
+    }
+
+    private init(priority = 1) {
+        switch (priority) {
+            case 1:
+                var rt = new WS() as _RealTime
+                this.current = {
+                    type: WS.type,
+                    value: rt,
+                    priority: priority
+                }
+                break
+            case 2:
+                var rt = new SSE() as _RealTime
+                this.current = {
+                    type: SSE.type,
+                    value: rt,
+                    priority: priority
+                }
+                break
+            case 3:
+                var rt = new Poll() as _RealTime
+                this.current = {
+                    type: Poll.type,
+                    value: rt,
+                    priority: priority
+                }
+                break
+            default:
+                throw new Error("Invalid priority")
+        }
+
+        rt.on("open", () => {
+            this.status = SocketStatus.OPEN
+        })
+        rt.on("close", () => {
+            this.status = SocketStatus.CLOSED
+            this.retry()
+        })
+        rt.on("error", () => {
+            this.status = SocketStatus.UNKNOWN
+            this.handleError.bind(this)
+        })
+    }
+
+    handleError(error: any) {
+        console.error("Error", error)
+        console.info("Retrying with the next priority")
+        if (this.status === SocketStatus.CONNECTING) return
+        this.retry(0)
+    }
+
+    retry(intervalSeconds: number = 4) {
+        this.status = SocketStatus.CONNECTING
+        const interval = setInterval(() => {
+            if (this.status === SocketStatus.OPEN) {
+                clearInterval(interval)
+                this.drain()
+            } else {
+                this.current!.value?.close()
+                if (this.current!.priority === 3) {
+                    clearInterval(interval)
+                    console.error("All RealTime connections failed: Stopped")
+                } else {
+                    console.info("Retrying with the next priority", this.current!.priority + 1)
+                    this.init(this.current!.priority + 1)
+                }
+            }
+        }, intervalSeconds * 1000)
+    }
+
+    push(data: any) {
+        if (this.status === SocketStatus.OPEN) {
+            this.current!.value.push(data)
+        } else {
+            this._backpressure.push(data)
+        }
+    }
+
+    drain() {
+        this._backpressure.forEach(data => {
+            this.current!.value.push(data)
+        })
+        this._backpressure = []
+    }
+
+    on(event: Events, callback: (data: any) => void) {
+        this.current!.value.on(event, callback)
+    }
+
+    get value() {
+        return this.current!.value
+    }
+
+    get status() {
+        return this._status
+    }
+
+    set status(status: SocketStatus) {
+        this._status = status
+    }
 }

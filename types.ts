@@ -110,7 +110,8 @@ export enum ServerStatus {
 export enum SocketStatus {
     OPEN = "OPEN",
     CLOSED = "CLOSED",
-    UNKNOWN = "UNKNOWN"
+    UNKNOWN = "UNKNOWN",
+    CONNECTING = "CONNECTING"
 }
 
 export enum CHOICES {

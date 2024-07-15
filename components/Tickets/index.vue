@@ -17,30 +17,27 @@
                 </li>
 
                 <li>
-                    <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`"
-                            class="filter">
+                    <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.O })}`)}`"
+                        class="filter">
                         <span>New</span>
                     </NuxtLink>
                 </li>
 
                 <li>
-                    <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`"
-                            class="filter">
+                    <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.P })}`)}`"
+                        class="filter">
                         <span>Pending</span>
                     </NuxtLink>
                 </li>
                 <li>
-                    <NuxtLink
-                            :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.R })}`)}`"
-                            class="filter">
+                    <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.R })}`)}`"
+                        class="filter">
                         <span>Resolved</span>
                     </NuxtLink>
                 </li>
                 <li>
                     <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: STATUS.C })}`)}`"
-                              class="filter">
+                        class="filter">
                         <span>Closed</span>
                     </NuxtLink>
                 </li>
@@ -50,41 +47,41 @@
             <div class="table-container">
                 <table class="table is-bordered is-striped is-fullwidth is-hoverable is-fullwidth">
                     <thead>
-                    <tr>
-                        <th>Action</th>
-                        <th>View</th>
-                        <th>Paybill</th>
-                        <th>Issue</th>
-                        <th>Reference</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                        <th>Safaricom</th>
-                        <th>Airtel</th>
-                        <th>Urgency</th>
-                    </tr>
+                        <tr>
+                            <th>Action</th>
+                            <th>View</th>
+                            <th>Paybill</th>
+                            <th>Issue</th>
+                            <th>Reference</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Safaricom</th>
+                            <th>Airtel</th>
+                            <th>Urgency</th>
+                        </tr>
                     </thead>
                     <tbody class="is-vcentered">
-                    <tr v-for="item in tickets" :key="item.id">
-                        <td>
-                            <button class="button is-success mr-1" @click="resolveTicket(item.id)"
+                        <tr v-for="item in tickets" :key="item.id">
+                            <td>
+                                <button class="button is-success mr-1" @click="resolveTicket(item.id)"
                                     :disabled="item.status === STATUS.R">✓
-                            </button>
-                            <button class="button is-warning mr-1" @click="closeTicket(item.id)"
+                                </button>
+                                <button class="button is-warning mr-1" @click="closeTicket(item.id)"
                                     :disabled="item.status === STATUS.C">𐌗
-                            </button>
-                        </td>
-                        <td>
-                            <NuxtLink :to="`/tickets/view/${item.id}`">View</NuxtLink>
-                        </td>
-                        <td>{{ item.paybill_no }}</td>
-                        <td>{{ item.issue }}</td>
-                        <td>{{ item.reference }}</td>
-                        <td>{{ item.amount }}</td>
-                        <td>{{ item.transaction_date.split('T')[0] }}</td>
-                        <td>{{ item.safaricom_no }}</td>
-                        <td>{{ item.airtel_no }}</td>
-                        <td>{{ item.urgency }}</td>
-                    </tr>
+                                </button>
+                            </td>
+                            <td>
+                                <NuxtLink :to="`/tickets/view/${item.id}`">View</NuxtLink>
+                            </td>
+                            <td>{{ item.paybill_no }}</td>
+                            <td>{{ item.issue }}</td>
+                            <td>{{ item.reference }}</td>
+                            <td>{{ item.amount }}</td>
+                            <td>{{ new Date(item.created_at).toLocaleDateString() }}</td>
+                            <td>{{ item.safaricom_no }}</td>
+                            <td>{{ item.airtel_no }}</td>
+                            <td>{{ item.urgency }}</td>
+                        </tr>
                     </tbody>
                 </table>
 
@@ -97,8 +94,8 @@
     </div>
 </template>
 <script setup lang="ts">
-import {STATUS} from "~/types";
-import {type Ticket} from "@prisma/client";
+import { STATUS, TYPE, type SocketTemplate } from "~/types";
+import { type Ticket } from "@prisma/client";
 
 const user = useUser().value
 const search = ref('')
@@ -113,7 +110,7 @@ const props = defineProps({
 
 async function closeTicket(id: number) {
     if (user.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${id}/close`, {
+        const { data: response } = await useFetch(`/api/tickets/${id}/close`, {
             method: 'POST'
         })
 
@@ -131,7 +128,7 @@ async function closeTicket(id: number) {
 
 async function resolveTicket(id: number) {
     if (user.is_admin) {
-        const {data: response} = await useFetch(`/api/tickets/${id}/resolve`, {
+        const { data: response } = await useFetch(`/api/tickets/${id}/resolve`, {
             method: 'POST'
         })
 
@@ -153,16 +150,17 @@ watch(() => search.value, (value) => {
     emit('search', value)
 })
 
-const socket = useGlobalSocket().value
-
-socket.onDeleteTicketCallback((ticket: Ticket) => {
-    const index = props.tickets.findIndex(item => item.id === ticket.id)
-    if (index !== -1) {
-        props.tickets.splice(index, 1)
+const socket = useSocket().value
+socket?.on("data", (data: SocketTemplate) => {
+    if (data.type === TYPE.DELETE_TICKET) {
+        const ticket = data.body as Ticket
+        const index = props.tickets.findIndex(item => item.id === ticket.id)
+        if (index !== -1) {
+            props.tickets.splice(index, 1)
+        }
+        console.log('ticket deleted')
     }
-    console.log('ticket deleted')
 })
-
 </script>
 <style scoped>
 .router-link-active {

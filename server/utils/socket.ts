@@ -215,14 +215,16 @@ export class Client {
 
 export class WsClient extends Client {
     private peer: Peer;
+    private _id: string;
 
     constructor(peer: Peer) {
         super()
         this.peer = peer
+        this._id = ulid()
     }
 
     get id(): string {
-        return this.peer.id
+        return this._id
     }
 
     get value() {
@@ -304,14 +306,14 @@ export class SseClient extends Client {
     private _id: string | undefined;
     constructor(event: H3Event) {
         super()
-        const id = event.headers.get("X-Request-Id")
+        const id = getCookie(event, "X-Request-Id")
         if (id) {
-            const client = global.clients!.getClient(id) as SseClient
-            if (client) {
+            const client = global.clients!.getClient(id) as unknown
+            if (client && client instanceof SseClient) {
                 this._id = id
                 this.eventStream = client.eventStream
             } else {
-                event.headers.delete("X-Request-Id")
+                deleteCookie(event, "X-Request-Id")
                 this.setup(event)
             }
         } else {
@@ -321,12 +323,13 @@ export class SseClient extends Client {
 
     private setup(event: H3Event) {
         this._id = ulid()
-        event.headers.set("X-Request-Id", this._id)
+        setCookie(event, "X-Request-Id", this._id)
         this.eventStream = createEventStream(event) as any
         global.clients!.push(this)
         this.eventStream?.onClosed(() => {
             this.close()
         })
+        this.eventStream?.send()
     }
 
     get value() {
@@ -351,23 +354,25 @@ export class SseClient extends Client {
 export class PollClient extends Client {
     private _id: string;
     private _event: H3Event;
-    private _storage = new Map<string, any>();
+    private _storage = [];
 
     constructor(event: H3Event) {
         super()
-        let id = event.headers.get("X-Request-Id")
+        let id = getCookie(event, "X-Request-Id")
         if (!id) {
             id = ulid()
-            event.headers.set("X-Request-Id", id)
+            setCookie(event, "X-Request-Id", id)
         }
         this._id = id
         this._event = event
         const _client = global.clients!.getClient(this.id) as PollClient
-        if (_client.data) {
-            event.respondWith(new Response(_client.data))
+        if (_client?.hasData()) {
+            const _data = _client.data
+            event.respondWith(new Response(JSON.stringify(_data)))
             global.clients!.replaceClient(this.id, this)
         } else {
             global.clients!.push(this)
+            event.respondWith(new Response(null))
         }
     }
 
@@ -380,12 +385,16 @@ export class PollClient extends Client {
     }
 
     send(data: any): void {
-        this._storage.set(`poll-${this.id}`, data)
+        this._storage.push(data as unknown as never)
+    }
+
+    hasData() {
+        return this._storage.length > 0
     }
 
     get data() {
-        const data = this._storage.get(`poll-${this.id}`)
-        this._storage.delete(`poll-${this.id}`)
+        const data = this._storage
+        this._storage = []
         return data
     }
 

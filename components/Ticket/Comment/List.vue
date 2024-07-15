@@ -95,7 +95,7 @@ async function submitComment(payload: any) {
             // console.log(comment)
 
             // if comment doesn't exist in comments array, add it
-            if (useWsServerStatus().value !== SocketStatus.OPEN) {
+            if (useSocket().value?.status !== SocketStatus.OPEN) {
                 props.ticket.comments.push(comment)
             } else {
                 setTimeout(() => {
