@@ -1,20 +1,24 @@
 import type { Peer } from "crossws";
 import { WsClient } from "../utils/socket";
+import { SocketStatus } from "~/types";
 
 export default defineWebSocketHandler({
-    open(peer: Peer & { client?: WsClient }) {
-        console.log("Client Connected to WS")
-        peer.client = new WsClient(peer)
-        peer.client.close()
+    open(peer: Peer) {
+        const client = new WsClient(peer, SocketStatus.OPEN)
+        setTimeout(() => {
+            client.close()
+        }, 1000)
     },
-    message(peer: Peer & { client?: WsClient }, message) {
-        peer.client?.emit("data", message) || console.error("No Shimmed Peer", peer)
-        console.log("Message", message)
+    message(peer: Peer, message) {
+        const client = new WsClient(peer, SocketStatus.OPEN)
+        client.emit("data", message)
     },
-    close(peer: Peer & { client?: WsClient }, event) {
-        peer.client?.emit("end", event) || console.error("No Shimmed Peer", peer)
+    close(peer: Peer, event) {
+        const client = new WsClient(peer, SocketStatus.CLOSED)
+        client.emit("end", event)
     },
-    error(peer: Peer & { client?: WsClient }, error) {
-        peer.client?.emit("error", error) || console.error("No Shimmed Peer", peer)
+    error(peer: Peer, error) {
+        const client = new WsClient(peer, SocketStatus.CLOSED)
+        client.emit("error", error)
     },
 })

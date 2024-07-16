@@ -1,5 +1,5 @@
 import { ulid } from "ulid"
-import { TYPE, type SocketTemplate } from "~/types"
+import { SocketStatus, TYPE, type SocketTemplate } from "~/types"
 import { H3Event } from "h3"
 import { Peer } from "crossws"
 
@@ -145,7 +145,9 @@ export class Client {
     private interval: NodeJS.Timeout | null = null
     private intervalTime = 1000 * 30 // 30 seconds
     private _events: Record<Events, Array<(data: any) => void>> | undefined;
-    private _history: Record<Events, any> | undefined
+    private _history: Record<Events, any> | undefined;
+    protected _backpressure: any[] = []
+    private _status: SocketStatus = SocketStatus.UNKNOWN
     constructor() {
         this._init()
         global.clients!.push(this)
@@ -167,6 +169,9 @@ export class Client {
             end: []
         }
     }
+    get backpressure() {
+        return this._backpressure
+    }
     subscribe(channel: string) {
         global.channels!.subscribe(this, channel)
         this.channels.push(new Channel(channel))
@@ -175,8 +180,14 @@ export class Client {
         global.channels!.unsubscribe(this, channel)
         this.channels.unsubscribe(this, channel)
     }
+    hasData() {
+        return this._backpressure.length > 0
+    }
     getChannels() {
         return this.channels.value
+    }
+    drain() {
+        throw new Error("Method not implemented.")
     }
     ping() {
         this.send({
@@ -193,7 +204,7 @@ export class Client {
         } satisfies SocketTemplate)
     }
     send(data: any) {
-        throw new Error("Method not implemented yet, but here's the data for preview: " + data)
+        throw new Error("Method not implemented.")
     }
     close() {
         throw new Error("Method not implemented.")
@@ -208,8 +219,17 @@ export class Client {
     }
     get value(): any { throw new Error("Method not implemented.") }
     get id(): string { throw new Error("Method not implemented.") }
+    protected set status(state: SocketStatus) {
+        this._status = state
+    }
+    protected get status() {
+        return this._status
+    }
     [Symbol.dispose]() {
         clearInterval(this.interval!)
+    }
+    toString() {
+        throw new Error("Method not implemented.")
     }
 }
 
@@ -217,31 +237,62 @@ export class WsClient extends Client {
     private peer: Peer;
     private _id: string;
 
-    constructor(peer: Peer) {
+    constructor(peer: Peer, state: SocketStatus) {
         super()
         this.peer = peer
-        this._id = ulid()
+        const _peer = global.clients!.getClient(this.id) as unknown as Client | undefined
+        if (_peer?.hasData()) {
+            this._backpressure = _peer.backpressure
+        }
+        if (_peer && _peer instanceof WsClient) {
+            this._id = _peer.id || ulid()
+            global.clients!.replaceClient(this.id, this)
+        } else {
+            this._id = ulid()
+            global.clients!.push(this)
+        }
+        this.status = state
+        if (state === SocketStatus.OPEN) {
+            this.drain()
+        }
     }
 
     get id(): string {
         return this._id
     }
 
+    get peer_id() {
+        return this.peer.id
+    }
+
     get value() {
         return this.peer
     }
 
-    send(data: any) {
-        this.peer.send(data)
+    send(data: any, backpressure = true): void {
+        try {
+            this.peer.send(data)
+        } catch (_) {
+            console.error("Error sending data to peer", _)
+            if (backpressure) this._backpressure.push(data)
+        }
+    }
+
+    drain(): void {
+        if (this._backpressure.length > 0) {
+            this._backpressure.forEach(data => this.send(data, false))
+            this._backpressure = []
+        }
     }
 
     close() {
-        this.peer.send({
-            statusCode: 200,
-            type: TYPE.CLOSE_SOCKET,
-            body: "Connection closed"
-        } satisfies SocketTemplate)
+        this.value.ctx?.node?.req?.socket?.destroy()
+        this.status = SocketStatus.CLOSED
         global.clients!.removeClient(this.id)
+    }
+
+    toString() {
+        return `WS Client ${this.id}`
     }
 }
 
@@ -308,7 +359,11 @@ export class SseClient extends Client {
         super()
         const id = getCookie(event, "X-Request-Id")
         if (id) {
-            const client = global.clients!.getClient(id) as unknown
+            const client = global.clients!.getClient(id) as unknown as Client
+            if (client?.hasData()) {
+                this._backpressure = client.backpressure
+            }
+
             if (client && client instanceof SseClient) {
                 this._id = id
                 this.eventStream = client.eventStream
@@ -327,9 +382,15 @@ export class SseClient extends Client {
         this.eventStream = createEventStream(event) as any
         global.clients!.push(this)
         this.eventStream?.onClosed(() => {
+            this.status = SocketStatus.CLOSED
             this.close()
         })
-        this.eventStream?.send()
+        try {
+            this.eventStream?.send()
+            this.status = SocketStatus.OPEN
+            this.drain()
+            this.ping()
+        } catch (_) { }
     }
 
     get value() {
@@ -340,13 +401,38 @@ export class SseClient extends Client {
         return this._id!
     }
 
-    send(data: any) {
-        this.eventStream?.push(data)
+    send(data: any, backpressure = true): void {
+        try {
+            if (typeof data === "string") {
+                this.eventStream?.push(data)
+            } else {
+                this.eventStream?.push(JSON.stringify(data))
+            }
+        } catch (_) {
+            if (backpressure) this._backpressure.push(data)
+            this.status = SocketStatus.CLOSED
+        }
+    }
+
+    drain(): void {
+        if (this._backpressure.length > 0) {
+            this._backpressure.forEach(data => this.send(data, false))
+            this._backpressure = []
+        }
     }
 
     close() {
         this.eventStream?.close()
+        this.status = SocketStatus.CLOSED
         global.clients!.removeClient(this.id!)
+    }
+
+    [Symbol.dispose]() {
+        this.eventStream?.close()
+    }
+
+    toString() {
+        return `SSE Client ${this.id}`
     }
 }
 
@@ -388,10 +474,6 @@ export class PollClient extends Client {
         this._storage.push(data as unknown as never)
     }
 
-    hasData() {
-        return this._storage.length > 0
-    }
-
     get data() {
         const data = this._storage
         this._storage = []
@@ -399,7 +481,14 @@ export class PollClient extends Client {
     }
 
     close() {
-        this._event.node.res.end()
         global.clients!.removeClient(this.id)
+    }
+
+    [Symbol.dispose]() {
+        this._event.node.res.end()
+    }
+
+    toString() {
+        return `Poll Client ${this.id}`
     }
 }

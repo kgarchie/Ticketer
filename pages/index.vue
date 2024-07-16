@@ -179,7 +179,11 @@
         </div>
       </div>
     </div>
+    <div>
+      <button @click="sendData" class="button">Send Data</button>
+    </div>
   </main>
+
 </template>
 <script setup lang="ts">
 import { type SearchQuery, type SocketTemplate, STATUS, TYPE } from "~/types";
@@ -241,6 +245,7 @@ updateNewTickets(tickets)
 
 const socket = useSocket().value
 socket?.on("data", (data: SocketTemplate) => {
+  console.log(data)
   switch (data?.type) {
     case TYPE.NEW_TICKET:
       onNewTicketCallback(data.body, tickets)
@@ -260,11 +265,14 @@ socket?.on("data", (data: SocketTemplate) => {
   }
 })
 
-if (process.client) {
-  setTimeout(() => {
-    socket?.push({ test: "test" })
-    console.log("Pushed")
-  }, 2000)
+function sendData() {
+  if (!socket) return console.warn("Socket not connected")
+  socket?.push({
+    type: "data",
+    body: {
+      message: "Hello from the client"
+    }
+  })
 }
 </script>
 <style scoped>

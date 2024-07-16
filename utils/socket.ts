@@ -9,6 +9,7 @@ abstract class _RealTime {
     close() { }
     get value(): any { return null }
     static get type(): string { return "RealTime" }
+    set events(events: Record<Events, Array<(data: any) => void>>) { }
 }
 
 class SSE implements _RealTime {
@@ -34,7 +35,12 @@ class SSE implements _RealTime {
     }
     setup() {
         this.eventSource.onmessage = (event) => {
-            this.emit("data", event.data)
+            try {
+                var data = JSON.parse(event.data)
+            } catch (_) {
+                var data = event.data
+            }
+            this.emit("data", data)
         }
         this.eventSource.onerror = (event) => {
             this.emit("error", event)
@@ -74,6 +80,9 @@ class SSE implements _RealTime {
     static get type() {
         return "SSE"
     }
+    set events(_events: Record<Events, Array<(data: any) => void>>) {
+        this._events = _events
+    }
     [Symbol.dispose]() {
         this.eventSource.close()
     }
@@ -102,16 +111,19 @@ class Poll implements _RealTime {
     }
     setup(): void {
         this.interval = setInterval(async () => {
-            await $fetch<SocketTemplate>("/poll/get", {
+            await $fetch<string>("/poll/get", {
                 method: "GET"
-            }).then(response => {
+            }).then(_response => {
                 try {
+                    var response = JSON.parse(_response)
                     if (Array.isArray(response)) {
                         response.forEach(data => this.emit("data", data))
                     } else {
                         this.emit("data", response)
                     }
-                } catch (_) { }
+                } catch (_) {
+                    this.emit("data", _response)
+                }
             }).catch(error => {
                 console.error("Error", error)
                 this.emit("error", error)
@@ -149,6 +161,9 @@ class Poll implements _RealTime {
     static get type() {
         return "Poll"
     }
+    set events(_events: Record<Events, Array<(data: any) => void>>) {
+        this._events = _events
+    }
     [Symbol.dispose]() {
         clearInterval(this.interval)
     }
@@ -156,7 +171,7 @@ class Poll implements _RealTime {
 
 class WS implements _RealTime {
     private ws: WebSocket
-    private _events: Record<Events, Array<(data: any) => void>>;
+    _events: Record<Events, Array<(data: any) => void>>;
     private _history: Record<Events, any>;
     constructor() {
         const ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`)
@@ -180,7 +195,7 @@ class WS implements _RealTime {
             try {
                 const data = JSON.parse(event.data) as SocketTemplate
                 if (data?.type === TYPE.CLOSE_SOCKET) {
-                    this.ws.close()
+                    this.close()
                 }
                 this.emit("data", data)
             } catch (_) {
@@ -217,6 +232,9 @@ class WS implements _RealTime {
     static get type() {
         return "WS"
     }
+    set events(_events: Record<Events, Array<(data: any) => void>>) {
+        this._events = _events
+    }
     [Symbol.dispose]() {
         this.ws.close()
     }
@@ -231,7 +249,14 @@ export class RealTime {
     } | null = null
     private _status: SocketStatus = SocketStatus.CLOSED
     private _backpressure: any[] = []
+    private _events: Record<Events, Array<(data: any) => void>>;
     constructor() {
+        this._events = {
+            data: [],
+            error: [],
+            open: [],
+            close: [],
+        }
         if (!process.client) return
         this.init()
     }
@@ -266,14 +291,14 @@ export class RealTime {
                 throw new Error("Invalid priority")
         }
 
-        rt.on("open", () => {
+        this.on("open", () => {
             this.status = SocketStatus.OPEN
         })
-        rt.on("close", () => {
+        this.on("close", () => {
             this.status = SocketStatus.CLOSED
             this.retry()
         })
-        rt.on("error", () => {
+        this.on("error", () => {
             this.status = SocketStatus.UNKNOWN
             this.handleError.bind(this)
         })
@@ -291,6 +316,7 @@ export class RealTime {
         const interval = setInterval(() => {
             if (this.status === SocketStatus.OPEN) {
                 clearInterval(interval)
+                this.syncEventListeners(this.current!.value)
                 this.drain()
             } else {
                 this.current!.value?.close()
@@ -313,6 +339,10 @@ export class RealTime {
         }
     }
 
+    private syncEventListeners(target: _RealTime) {
+        target.events = this._events
+    }
+
     drain() {
         this._backpressure.forEach(data => {
             this.current!.value.push(data)
@@ -321,6 +351,7 @@ export class RealTime {
     }
 
     on(event: Events, callback: (data: any) => void) {
+        this._events[event].push(callback)
         this.current!.value.on(event, callback)
     }
 
