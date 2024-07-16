@@ -60,9 +60,7 @@ export async function createAndShuttleNotification(user_id: string, message: str
 }
 
 export function getConnectedClientSockets(user_id: string) {
-    return global.clients?.filter((client) => {
-        return client.user_id === user_id
-    }) || []
+    return [global.clients?.getClient(user_id)]
 }
 
 export async function notifyAllAndConnectedAdmins(response: SocketTemplate, sender_id: string) {
@@ -86,16 +84,10 @@ export async function socketSendData(client: Client, message: any, maxRetries = 
 }
 
 export function shuttleData(user_id: string, data: SocketTemplate) {
-    let sockets = getConnectedClientSockets(user_id)
-
-    // remove duplicate sockets
-    sockets = sockets.filter((socket, index, self) =>
-        index === self.findIndex((s) => (
-            s.Socket === socket.Socket
-        ))
-    )
+    const sockets = getConnectedClientSockets(user_id)
 
     for (const socket of sockets) {
-        socketSendData(socket.Socket, JSON.stringify(data))
+        if (!socket) return
+        socketSendData(socket, JSON.stringify(data))
     }
 }

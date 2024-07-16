@@ -5,9 +5,6 @@ import { SocketStatus } from "~/types";
 export default defineWebSocketHandler({
     open(peer: Peer) {
         const client = new WsClient(peer, SocketStatus.OPEN)
-        setTimeout(() => {
-            client.close()
-        }, 1000)
     },
     message(peer: Peer, message) {
         const client = new WsClient(peer, SocketStatus.OPEN)

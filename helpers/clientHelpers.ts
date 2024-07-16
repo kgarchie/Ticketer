@@ -74,7 +74,7 @@ export function onDeleteTicketCallback(ticket: Ticket, newTicketsState: Ref<Tick
 }
 
 export function onNewComment(comment: Comment, affect: Ref<Comment[]>) {
-    if (comment.ticketId === affect.value[0].ticketId && !affect.value.find((c: Comment) => c.id === comment.id)) {
+    if (comment?.ticketId === affect.value[0].ticketId && !affect.value.find((c: Comment) => c.id === comment.id)) {
         affect.value.unshift(comment)
     }
 }

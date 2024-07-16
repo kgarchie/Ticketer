@@ -225,11 +225,11 @@ export class Client {
     protected get status() {
         return this._status
     }
-    [Symbol.dispose]() {
-        clearInterval(this.interval!)
-    }
     toString() {
         throw new Error("Method not implemented.")
+    }
+    [Symbol.dispose]() {
+        clearInterval(this.interval!)
     }
 }
 

@@ -42,7 +42,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import {TYPE, type UserChatObject} from "~/types";
+import {TYPE, type SocketTemplate, type UserChatObject} from "~/types";
 import {onMessageCallback} from "~/helpers/clientHelpers";
 import type {Attachment, Message} from "@prisma/client";
 
@@ -229,7 +229,7 @@ function positionMessages() {
 getChats()
 
 const socket = useSocket().value
-socket?.on("data", (data: any) => {
+socket?.on("data", (data: SocketTemplate) => {
   if (data.type === TYPE.MESSAGE){
     const chat = onMessageCallback(data.body, chats, getChats)
     if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)

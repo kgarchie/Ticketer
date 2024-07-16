@@ -1,4 +1,5 @@
 import { SocketStatus, TYPE, type SocketTemplate } from "~/types";
+import consola from "consola";
 
 type Events = "data" | "error" | "open" | "close"
 abstract class _RealTime {
@@ -78,7 +79,7 @@ class SSE implements _RealTime {
         return this.eventSource
     }
     static get type() {
-        return "SSE"
+        return "Server Side Events"
     }
     set events(_events: Record<Events, Array<(data: any) => void>>) {
         this._events = _events
@@ -159,7 +160,7 @@ class Poll implements _RealTime {
         return null
     }
     static get type() {
-        return "Poll"
+        return "Long Polling"
     }
     set events(_events: Record<Events, Array<(data: any) => void>>) {
         this._events = _events
@@ -230,7 +231,7 @@ class WS implements _RealTime {
         return this.ws
     }
     static get type() {
-        return "WS"
+        return "WebSocket"
     }
     set events(_events: Record<Events, Array<(data: any) => void>>) {
         this._events = _events
@@ -293,6 +294,7 @@ export class RealTime {
 
         this.on("open", () => {
             this.status = SocketStatus.OPEN
+            consola.success("RealTime connection established via", this.current!.type)
         })
         this.on("close", () => {
             this.status = SocketStatus.CLOSED
