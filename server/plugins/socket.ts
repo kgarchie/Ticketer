@@ -13,10 +13,9 @@ export default defineNitroPlugin(app => {
     global.clients!.on("data", (data, client) => {
         console.log("Data", data)
         try {
-            var response = JSON.parse(data.toString()) as SocketTemplate;
-            console.log("Response", response)
+            var response = JSON.parse(data)
         } catch (error) {
-            client.emit("error", error)
+            var response = data
         }
     })
 

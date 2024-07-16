@@ -44,6 +44,15 @@ export class Clients extends Map<string, Client> {
 
     push(client: Client) {
         this.set(client.id, client)
+        client.on("data", (data) => {
+            this.emit("data", data, client)
+        })
+        client.on("error", (error) => {
+            this.emit("error", error, client)
+        })
+        client.on("end", () => {
+            this.emit("end", null, client)
+        })
     }
 
     on(event: Events, callback: (data: any, client: Client) => void) {
@@ -384,6 +393,7 @@ export class SseClient extends Client {
         this.eventStream?.onClosed(() => {
             this.status = SocketStatus.CLOSED
             this.close()
+            this.emit("end", null)
         })
         try {
             this.eventStream?.send()
@@ -425,6 +435,7 @@ export class SseClient extends Client {
         this.eventStream?.close()
         this.status = SocketStatus.CLOSED
         global.clients!.removeClient(this.id!)
+        this.emit("end", null)
     }
 
     [Symbol.dispose]() {

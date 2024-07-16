@@ -56,8 +56,13 @@ class SSE implements _RealTime {
             method: "POST",
             body: data,
             ...options
-        }).then(response => {
-            console.log("Response", response)
+        }).then((_response:any) => {
+            try {
+                var response = JSON.parse(_response)
+                this.emit("data", response)
+            } catch (_) {
+                this.emit("data", _response)
+            }
             return true;
         }).catch(error => {
             console.error("Error", error)
