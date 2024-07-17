@@ -153,7 +153,7 @@ export async function getUserTicket(ticketId: string | number) {
         },
         include: {
             comments: true
-        }
+        },
     }).catch(
         error => {
             console.log(error)

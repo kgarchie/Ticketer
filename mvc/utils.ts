@@ -59,8 +59,8 @@ export async function createAndShuttleNotification(user_id: string, message: str
     shuttleData(user_id, response)
 }
 
-export function getConnectedClientSockets(user_id: string) {
-    return [global.clients?.getClient(user_id)]
+export async function getConnectedClientSockets(user_id: string) {
+    return global.channels?.get(user_id)?.clients || []
 }
 
 export async function notifyAllAndConnectedAdmins(response: SocketTemplate, sender_id: string) {
@@ -72,9 +72,7 @@ export async function notifyAllAndConnectedAdmins(response: SocketTemplate, send
 }
 
 export async function shuttleDataToAllClients(response: SocketTemplate) {
-    for (const client of global.clients?.value || []) {
-        socketSendData(client, JSON.stringify(response))
-    }
+    global.channels?.broadcast(response)
 }
 
 export async function socketSendData(client: Client, message: any, maxRetries = 5) {
@@ -83,11 +81,6 @@ export async function socketSendData(client: Client, message: any, maxRetries = 
     }, 0);
 }
 
-export function shuttleData(user_id: string, data: SocketTemplate) {
-    const sockets = getConnectedClientSockets(user_id)
-
-    for (const socket of sockets) {
-        if (!socket) return
-        socketSendData(socket, JSON.stringify(data))
-    }
+export async function shuttleData(user_id: string, data: SocketTemplate) {
+    global.channels?.publish(user_id, data) || console.log("No channel found for user", user_id)
 }

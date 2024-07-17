@@ -1,5 +1,5 @@
-import {H3Event} from "h3";
-import {HttpResponseTemplate, SearchQuery, SocketTemplate, STATUS, TaggedPerson, TYPE} from "~/types";
+import { H3Event } from "h3";
+import { type HttpResponseTemplate, type SearchQuery, type SocketTemplate, STATUS, type TaggedPerson, TYPE } from "~/types";
 import {
     allSearchTickets,
     closeUserTicket,
@@ -14,13 +14,13 @@ import {
     markTicketAsResolved, randomRapidSearch,
     ticketMetrics
 } from "~/mvc/tickets/queries";
-import {createAndShuttleNotification, shuttleDataToAllClients} from "~/mvc/utils";
-import {getAuthCookie} from "~/mvc/auth/helpers";
-import {Ticket} from "@prisma/client";
-import {getUserOrEphemeralUser_Secure} from "~/mvc/user/queries";
+import { createAndShuttleNotification, shuttleDataToAllClients } from "~/mvc/utils";
+import { getAuthCookie } from "~/mvc/auth/helpers";
+import { type Ticket } from "@prisma/client";
+import { getUserOrEphemeralUser_Secure } from "~/mvc/user/queries";
 
 export async function deleteComment(event: H3Event) {
-    const {commentId} = await readBody(event)
+    const { commentId } = await readBody(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
 
@@ -57,7 +57,7 @@ export async function makeComment(event: H3Event) {
         return response
     }
 
-    const {comment, commentor, parentId, tagged} = await readBody(event)
+    const { comment, commentor, parentId, tagged } = await readBody(event)
     if (!comment || !commentor || !ticketId) {
         response.statusCode = 404
         response.body = "Bad Request"
@@ -101,7 +101,7 @@ export async function makeComment(event: H3Event) {
 
 export async function closeTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string | null
-    const {is_admin, user_id} = await getAuthCookie(event)
+    const { is_admin, user_id } = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
@@ -148,7 +148,7 @@ export async function getTicket(event: H3Event) {
 
 export async function pendTicket(event: H3Event, force = false) {
     const ticketId = event.context.params?.id as string | null
-    const {is_admin, user_id} = await getAuthCookie(event)
+    const { is_admin, user_id } = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
@@ -187,7 +187,7 @@ export async function pendTicket(event: H3Event, force = false) {
 
 export async function resolveTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string | null
-    const {is_admin, user_id} = await getAuthCookie(event)
+    const { is_admin, user_id } = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
     const user = await getUserOrEphemeralUser_Secure(user_id)
@@ -331,7 +331,7 @@ export async function searchFilter(event: H3Event) {
 
 export async function deleteTicket(event: H3Event) {
     const ticketId = event.context.params?.id as string | null
-    const {is_admin, user_id} = await getAuthCookie(event)
+    const { is_admin, user_id } = await getAuthCookie(event)
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
 

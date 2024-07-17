@@ -25,12 +25,13 @@ export class Clients extends Map<string, Client> {
         return Array.from(this.values())
     }
 
-    getClient(id: string) {
+    getClient(id: string | null) {
+        if (!id) return null
         return this.get(id)
     }
 
-    replaceClient(id: string, client: Client) {
-        this.getClient(id)?.close()
+    replaceClient(id: string, client: Client, close: boolean = true) {
+        if (close) this.getClient(id)?.close()
         this.set(id, client)
     }
 
@@ -112,6 +113,10 @@ export class Channels extends Map<string, Channel> {
         }
     }
 
+    broadcast(data: any) {
+        this.value.forEach(c => c.send(data))
+    }
+
     push(channel: Channel) {
         this.set(channel.name, channel)
     }
@@ -152,17 +157,12 @@ export class Channel {
 export class Client {
     public channels: Channels = new Channels()
     private interval: NodeJS.Timeout | null = null
-    private intervalTime = 1000 * 30 // 30 seconds
-    private _events: Record<Events, Array<(data: any) => void>> | undefined;
+    protected _events: Record<Events, Array<(data: any) => void>> | undefined;
     private _history: Record<Events, any> | undefined;
     protected _backpressure: any[] = []
     private _status: SocketStatus = SocketStatus.UNKNOWN
     constructor() {
         this._init()
-        global.clients!.push(this)
-        this.interval = setInterval(() => {
-            this.ping()
-        }, this.intervalTime)
     }
     private _init() {
         if (!global.clients) global.clients = new Clients()
@@ -181,13 +181,14 @@ export class Client {
     get backpressure() {
         return this._backpressure
     }
+    get events() {
+        return this._events
+    }
     subscribe(channel: string) {
         global.channels!.subscribe(this, channel)
-        this.channels.push(new Channel(channel))
     }
     unsubscribe(channel: string) {
         global.channels!.unsubscribe(this, channel)
-        this.channels.unsubscribe(this, channel)
     }
     hasData() {
         return this._backpressure.length > 0
@@ -226,6 +227,15 @@ export class Client {
         this._history![event].push(data)
         this._events![event].forEach(callback => callback(data))
     }
+    broadcast(data: any) {
+        console.log("Broadcasting", data)
+        console.log("Clients", global.clients?.value.length)
+        global.clients!.forEach(client => {
+            if (client.id !== this.id) {
+                client.send(data)
+            }
+        })
+    }
     get value(): any { throw new Error("Method not implemented.") }
     get id(): string { throw new Error("Method not implemented.") }
     protected set status(state: SocketStatus) {
@@ -249,15 +259,17 @@ export class WsClient extends Client {
     constructor(peer: Peer, state: SocketStatus) {
         super()
         this.peer = peer
-        const _peer = global.clients!.getClient(this.id) as unknown as Client | undefined
+        const _peer = global.clients!.getClient(peer.id) as unknown as Client | undefined
         if (_peer?.hasData()) {
             this._backpressure = _peer.backpressure
         }
         if (_peer && _peer instanceof WsClient) {
             this._id = _peer.id || ulid()
-            global.clients!.replaceClient(this.id, this)
+            this._backpressure = _peer.backpressure
+            this._events = _peer.events
+            global.clients!.replaceClient(this.id, this, false)
         } else {
-            this._id = ulid()
+            this._id = peer.id || ulid()
             global.clients!.push(this)
         }
         this.status = state
@@ -399,7 +411,6 @@ export class SseClient extends Client {
             this.eventStream?.send()
             this.status = SocketStatus.OPEN
             this.drain()
-            this.ping()
         } catch (_) { }
     }
 

@@ -140,7 +140,7 @@ export enum TYPE {
     NOTIFICATION = "NOTIFICATION",
     NEW_MESSAGE_NOTIFICATION = "NEW_MESSAGE_NOTIFICATION",
     DETAILS_REQ = "details request",
-    DETAILS_RES = "details response",
+    AUTH = "details response",
     HEARTBEAT = "heartbeat",
     DELETE_COMMENT = "delete comment",
     ERROR = "error",

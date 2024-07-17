@@ -245,7 +245,6 @@ updateNewTickets(tickets)
 
 const socket = useSocket().value
 socket?.on("data", (data: SocketTemplate) => {
-  console.log(data)
   switch (data?.type) {
     case TYPE.NEW_TICKET:
       onNewTicketCallback(data.body, tickets)
@@ -268,7 +267,7 @@ socket?.on("data", (data: SocketTemplate) => {
 function sendData() {
   if (!socket) return console.warn("Socket not connected")
   socket?.push({
-    type: "data",
+    type: "TEST",
     body: {
       message: "Hello from the client"
     }

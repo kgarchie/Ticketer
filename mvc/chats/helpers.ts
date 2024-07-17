@@ -50,7 +50,7 @@ export async function getPresignedUrl(fullyQualifiedUrl: string | null) {
     return await fileStorage.getItem(fullyQualifiedUrl).catch(console.error)
 }
 
-async function schedulePurge(totalSize: Float<number> = 0.0): Promise<null | void> {
+async function schedulePurge(totalSize: number = 0.0): Promise<null | void> {
     let batch = await getOldestUnpurgedAttachments(100)
 
     for (const attachment of batch) {

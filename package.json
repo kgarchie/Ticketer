@@ -21,7 +21,8 @@
     "@types/ws": "^8.5.10",
     "concurrently": "^8.2.2",
     "nuxt": "^3.11.2",
-    "sass": "^1.77.0"
+    "sass": "^1.77.0",
+    "type-fest": "^4.22.0"
   },
   "dependencies": {
     "@prisma/client": "^4.16.2",

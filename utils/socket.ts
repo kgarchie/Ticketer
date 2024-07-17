@@ -3,7 +3,7 @@ import consola from "consola";
 
 type Events = "data" | "error" | "open" | "close"
 abstract class _RealTime {
-    push(data: any) { }
+    push(data: string) { }
     setup() { }
     on(event: Events, callback: Function) { }
     emit(event: Events, data: any) { }
@@ -51,12 +51,12 @@ class SSE implements _RealTime {
             this.emit("open", event)
         }
     }
-    async push(data: any, options?: any) {
+    async push(data: string, options?: any) {
         return await $fetch("/sse/put", {
             method: "POST",
             body: data,
             ...options
-        }).then((_response:any) => {
+        }).then((_response: any) => {
             try {
                 var response = JSON.parse(_response)
                 this.emit("data", response)
@@ -137,7 +137,7 @@ class Poll implements _RealTime {
         }, this.intervalTime)
         this.emit("open", null)
     }
-    async push(data: any, options?: any) {
+    async push(data: string, options?: any) {
         return await $fetch("/poll/put", {
             method: "POST",
             body: data,
@@ -218,8 +218,9 @@ class WS implements _RealTime {
             this.emit("close", event)
         }
     }
-    async push(data: any, options?: any) {
+    async push(data: string, options?: any) {
         this.ws.send(data)
+        return Promise.resolve(true)
     }
     on(event: Events, callback: (data: any) => void) {
         this._events[event].push(callback)
@@ -299,6 +300,8 @@ export class RealTime {
 
         this.on("open", () => {
             this.status = SocketStatus.OPEN
+            this.drain()
+            this.syncEventListeners(this.current!.value)
             consola.success("RealTime connection established via", this.current!.type)
         })
         this.on("close", () => {
@@ -338,11 +341,16 @@ export class RealTime {
         }, intervalSeconds * 1000)
     }
 
-    push(data: any) {
-        if (this.status === SocketStatus.OPEN) {
-            this.current!.value.push(data)
+    push(data: unknown) {
+        if (typeof data !== "string") {
+            var _data = JSON.stringify(data)
         } else {
-            this._backpressure.push(data)
+            var _data = data
+        }
+        if (this.status === SocketStatus.OPEN) {
+            this.current!.value.push(_data)
+        } else {
+            this._backpressure.push(_data)
         }
     }
 

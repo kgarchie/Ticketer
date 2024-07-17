@@ -139,7 +139,7 @@ export async function placeCall(event: H3Event) {
 
     const onlineDevices = await getConnectedClientSockets(to_user_id)
 
-    if (onlineDevices.length === 0) {
+    if (onlineDevices?.length === 0) {
         response.statusCode = 204
         response.body = "User is offline"
         return response
