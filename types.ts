@@ -155,6 +155,7 @@ export enum TYPE {
     CLOSE_SOCKET = "close socket",
     PING = "ping",
     PONG = "pong",
+    DETAILS_RES = "DETAILS_RES",
 }
 
 export enum TicketOperation {

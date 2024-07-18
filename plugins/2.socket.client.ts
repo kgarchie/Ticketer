@@ -16,4 +16,18 @@ export default defineNuxtPlugin(app => {
     } else {
         console.warn("User not identified. Cannot authenticate socket")
     }
+
+    realTime.on("data", (data) => {
+        try {
+            var response = JSON.parse(data) as SocketTemplate
+        } catch (error) {
+            var response = data as SocketTemplate
+        }
+
+        switch (response?.type) {
+            case TYPE.DETAILS_RES:
+                useCookie("X-Request-Id").value = response.body
+            break
+        }
+    })
 })

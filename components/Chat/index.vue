@@ -229,9 +229,15 @@ function positionMessages() {
 getChats()
 
 const socket = useSocket().value
-socket?.on("data", (data: SocketTemplate) => {
-  if (data.type === TYPE.MESSAGE){
-    const chat = onMessageCallback(data.body, chats, getChats)
+socket?.on("data", (data: unknown) => {
+  try {
+    var _data = JSON.parse(data as string) as SocketTemplate
+  } catch (e) {
+    _data = data as SocketTemplate
+    return
+  }
+  if (_data?.type === TYPE.MESSAGE){
+    const chat = onMessageCallback(_data.body, chats, getChats)
     if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)
     positionMessages()
     sortChats()

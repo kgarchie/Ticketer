@@ -2,6 +2,7 @@ import { ulid } from "ulid"
 import { SocketStatus, TYPE, type SocketTemplate } from "~/types"
 import { H3Event } from "h3"
 import { Peer } from "crossws"
+import { get } from "node:http"
 
 type Events = "data" | "error" | "end"
 export class Clients extends Map<string, Client> {
@@ -36,7 +37,7 @@ export class Clients extends Map<string, Client> {
     }
 
     findClientsByChannel(channel: string) {
-        return this.value
+        return global.channels!.getChannel(channel)?.clients || []
     }
 
     removeClient(id: string) {
@@ -74,6 +75,10 @@ export class Channels extends Map<string, Channel> {
 
     removeChannel(channel: string) {
         this.delete(channel)
+    }
+
+    getChannel(channel: string) {
+        return this.get(channel)
     }
 
     get value() {
@@ -152,12 +157,13 @@ export class Channel {
     getSubscribers() {
         return this._clients
     }
+    
 }
 
 export class Client {
     public channels: Channels = new Channels()
     private interval: NodeJS.Timeout | null = null
-    protected _events: Record<Events, Array<(data: any) => void>> | undefined;
+    private _events: Record<Events, Array<(data: any) => void>> | undefined;
     private _history: Record<Events, any> | undefined;
     protected _backpressure: any[] = []
     private _status: SocketStatus = SocketStatus.UNKNOWN
@@ -182,7 +188,15 @@ export class Client {
         return this._backpressure
     }
     get events() {
-        return this._events
+        return this._events!
+    }
+    set events(events: Record<Events, Array<(data: any) => void>>) {
+        this._events = events
+    }
+    get data() {
+        const data = this._backpressure
+        this._backpressure = []
+        return data
     }
     subscribe(channel: string) {
         global.channels!.subscribe(this, channel)
@@ -259,22 +273,20 @@ export class WsClient extends Client {
     constructor(peer: Peer, state: SocketStatus) {
         super()
         this.peer = peer
-        const _peer = global.clients!.getClient(peer.id) as unknown as Client | undefined
-        if (_peer?.hasData()) {
-            this._backpressure = _peer.backpressure
-        }
-        if (_peer && _peer instanceof WsClient) {
-            this._id = _peer.id || ulid()
-            this._backpressure = _peer.backpressure
-            this._events = _peer.events
-            global.clients!.replaceClient(this.id, this, false)
-        } else {
-            this._id = peer.id || ulid()
-            global.clients!.push(this)
-        }
         this.status = state
-        if (state === SocketStatus.OPEN) {
-            this.drain()
+
+        const existingPeer = global.clients!.getClient(peer.id) as WsClient
+        if (existingPeer) {
+            this._id = existingPeer.id
+            this._backpressure = existingPeer.backpressure
+            this.events = existingPeer.events
+            global.clients!.replaceClient(this.id, this)
+            if (state === SocketStatus.OPEN) {
+                this.drain()
+            }
+        } else {
+            this._id = peer.id
+            global.clients!.push(this)
         }
     }
 
@@ -380,14 +392,12 @@ export class SseClient extends Client {
         super()
         const id = getCookie(event, "X-Request-Id")
         if (id) {
-            const client = global.clients!.getClient(id) as unknown as Client
-            if (client?.hasData()) {
-                this._backpressure = client.backpressure
-            }
-
-            if (client && client instanceof SseClient) {
+            const client = global.clients!.getClient(id) as SseClient
+            if (client) {
                 this._id = id
-                this.eventStream = client.eventStream
+                this.eventStream = client?.eventStream || createEventStream(event) as any
+                this.events = client.events
+                this._backpressure = client.backpressure
             } else {
                 deleteCookie(event, "X-Request-Id")
                 this.setup(event)
@@ -411,7 +421,9 @@ export class SseClient extends Client {
             this.eventStream?.send()
             this.status = SocketStatus.OPEN
             this.drain()
-        } catch (_) { }
+        } catch (_) {
+            console.error("Error sending data to client", _)
+        }
     }
 
     get value() {
@@ -432,6 +444,7 @@ export class SseClient extends Client {
         } catch (_) {
             if (backpressure) this._backpressure.push(data)
             this.status = SocketStatus.CLOSED
+            this.emit("error", _)
         }
     }
 
@@ -460,46 +473,45 @@ export class SseClient extends Client {
 
 
 export class PollClient extends Client {
-    private _id: string;
-    private _event: H3Event;
-    private _storage = [];
-
+    private _id?: string;
+    _H3Event: H3Event | undefined;
     constructor(event: H3Event) {
         super()
-        let id = getCookie(event, "X-Request-Id")
-        if (!id) {
-            id = ulid()
-            setCookie(event, "X-Request-Id", id)
-        }
-        this._id = id
-        this._event = event
-        const _client = global.clients!.getClient(this.id) as PollClient
-        if (_client?.hasData()) {
-            const _data = _client.data
-            event.respondWith(new Response(JSON.stringify(_data)))
-            global.clients!.replaceClient(this.id, this)
+        const id = getCookie(event, "X-Request-Id")
+        if (id) {
+            const client = global.clients!.getClient(id) as PollClient
+            if (client) {
+                this._id = id
+                this._H3Event = client?._H3Event || event
+                this.events = client.events
+                this._backpressure = client.backpressure
+            } else {
+                deleteCookie(event, "X-Request-Id")
+                this.setup(event)
+            }
         } else {
-            global.clients!.push(this)
-            event.respondWith(new Response(null))
+            this.setup(event)
         }
+        event.respondWith(new Response(JSON.stringify(this.data)))
+    }
+
+    private setup(event: H3Event) {
+        this._id = ulid()
+        setCookie(event, "X-Request-Id", this._id)
+        this._H3Event = event
+        global.clients!.push(this)
     }
 
     get id() {
-        return this._id
+        return this._id!
     }
 
     get value() {
-        return this._event
+        return this._H3Event
     }
 
     send(data: any): void {
-        this._storage.push(data as unknown as never)
-    }
-
-    get data() {
-        const data = this._storage
-        this._storage = []
-        return data
+        this._backpressure.push(data as unknown as never)
     }
 
     close() {
@@ -507,7 +519,7 @@ export class PollClient extends Client {
     }
 
     [Symbol.dispose]() {
-        this._event.node.res.end()
+        this._H3Event!.node.res.end()
     }
 
     toString() {

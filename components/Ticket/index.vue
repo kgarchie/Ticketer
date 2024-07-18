@@ -276,13 +276,20 @@ async function submitComment(payload: any) {
 userName.value = await getUserName(props.ticket?.creator)
 
 const socket = useSocket().value
-socket?.on("data", (data: SocketTemplate) => {
-    if (data.type === TYPE.NEW_COMMENT) {
-        onNewComment(data.body, comments)
-    } else if (data.type === TYPE.DELETE_COMMENT) {
-        onDeleteComment(data.body, comments)
-    } else if (data.type === TYPE.DELETE_TICKET) {
-        if (data.body.id !== local_ticket.value.id) return
+socket?.on("data", (data: unknown) => {
+    try {
+        var _data = JSON.parse(data as string) as SocketTemplate
+    } catch (e) {
+        _data = data as SocketTemplate
+        return
+    }
+
+    if (_data?.type === TYPE.NEW_COMMENT) {
+        onNewComment(_data?.body, comments)
+    } else if (_data?.type === TYPE.DELETE_COMMENT) {
+        onDeleteComment(_data?.body, comments)
+    } else if (_data?.type === TYPE.DELETE_TICKET) {
+        if (_data?.body?.id !== local_ticket.value.id) return
         navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
     }
 })

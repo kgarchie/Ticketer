@@ -244,18 +244,23 @@ updateTicketsMetaData(ticketsMetaDataState)
 updateNewTickets(tickets)
 
 const socket = useSocket().value
-socket?.on("data", (data: SocketTemplate) => {
-  switch (data?.type) {
+socket?.on("data", (data: unknown) => {
+  try {
+    var _data = JSON.parse(data as string) as SocketTemplate
+  } catch (error) {
+    _data = data as SocketTemplate
+  }
+  switch (_data?.type) {
     case TYPE.NEW_TICKET:
-      onNewTicketCallback(data.body, tickets)
+      onNewTicketCallback(_data.body, tickets)
       updateTicketsMetaData(ticketsMetaDataState)
       break
     case TYPE.UPDATE_TICKET:
-      onUpdateTicketCallback(data.body, tickets)
+      onUpdateTicketCallback(_data.body, tickets)
       updateTicketsMetaData(ticketsMetaDataState)
       break
     case TYPE.DELETE_TICKET:
-      onDeleteTicketCallback(data.body, tickets)
+      onDeleteTicketCallback(_data.body, tickets)
       updateTicketsMetaData(ticketsMetaDataState)
       break
     default:

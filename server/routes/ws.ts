@@ -1,10 +1,15 @@
 import type { Peer } from "crossws";
 import { WsClient } from "../utils/socket";
-import { SocketStatus } from "~/types";
+import { SocketStatus, type SocketTemplate, TYPE } from "~/types";
 
 export default defineWebSocketHandler({
     open(peer: Peer) {
         const client = new WsClient(peer, SocketStatus.OPEN)
+        client.send({
+            statusCode: 200,
+            type: TYPE.DETAILS_RES,
+            body: client.id
+        } satisfies SocketTemplate)
     },
     message(peer: Peer, message) {
         const client = new WsClient(peer, SocketStatus.OPEN)
