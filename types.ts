@@ -139,8 +139,8 @@ export enum TYPE {
     MESSAGE = "MESSAGE",
     NOTIFICATION = "NOTIFICATION",
     NEW_MESSAGE_NOTIFICATION = "NEW_MESSAGE_NOTIFICATION",
-    DETAILS_REQ = "details request",
-    AUTH = "details response",
+    AUTH_REQ = "AUTH_REQ",
+    AUTH_RES = "AUTH_RES",
     HEARTBEAT = "heartbeat",
     DELETE_COMMENT = "delete comment",
     ERROR = "error",
@@ -155,7 +155,7 @@ export enum TYPE {
     CLOSE_SOCKET = "close socket",
     PING = "ping",
     PONG = "pong",
-    DETAILS_RES = "DETAILS_RES",
+    IDENTITY = "DETAILS_RES",
 }
 
 export enum TicketOperation {

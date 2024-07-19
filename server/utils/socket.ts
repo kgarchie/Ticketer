@@ -2,7 +2,7 @@ import { ulid } from "ulid"
 import { SocketStatus, TYPE, type SocketTemplate } from "~/types"
 import { H3Event } from "h3"
 import { Peer } from "crossws"
-import { get } from "node:http"
+import { assert } from "node:console"
 
 type Events = "data" | "error" | "end"
 export class Clients extends Map<string, Client> {
@@ -66,6 +66,12 @@ export class Clients extends Map<string, Client> {
         this._history[event].push({ data, client })
         this._events[event].forEach(callback => callback(data, client))
     }
+
+    broadcast(data: any) {
+        this.forEach(client => {
+            client.send(data)
+        })
+    }
 }
 
 export class Channels extends Map<string, Channel> {
@@ -118,10 +124,6 @@ export class Channels extends Map<string, Channel> {
         }
     }
 
-    broadcast(data: any) {
-        this.value.forEach(c => c.send(data))
-    }
-
     push(channel: Channel) {
         this.set(channel.name, channel)
     }
@@ -157,7 +159,7 @@ export class Channel {
     getSubscribers() {
         return this._clients
     }
-    
+
 }
 
 export class Client {
@@ -199,7 +201,8 @@ export class Client {
         return data
     }
     subscribe(channel: string) {
-        global.channels!.subscribe(this, channel)
+        if (!global.channels) global.channels = new Channels()
+        global.channels.subscribe(this, channel)
     }
     unsubscribe(channel: string) {
         global.channels!.unsubscribe(this, channel)
@@ -209,6 +212,12 @@ export class Client {
     }
     getChannels() {
         return this.channels.value
+    }
+    detailsRequest() {
+        this.send({
+            statusCode: 200,
+            type: TYPE.AUTH_REQ,
+        } satisfies SocketTemplate)
     }
     drain() {
         throw new Error("Method not implemented.")
@@ -251,6 +260,7 @@ export class Client {
         })
     }
     get value(): any { throw new Error("Method not implemented.") }
+    get type(): string { throw new Error("Method not implemented.") }
     get id(): string { throw new Error("Method not implemented.") }
     protected set status(state: SocketStatus) {
         this._status = state
@@ -270,24 +280,40 @@ export class WsClient extends Client {
     private peer: Peer;
     private _id: string;
 
-    constructor(peer: Peer, state: SocketStatus) {
+    constructor(peer: Peer, state: SocketStatus, options?: { noAuth?: boolean }) {
         super()
         this.peer = peer
         this.status = state
 
-        const existingPeer = global.clients!.getClient(peer.id) as WsClient
+        const existingPeer = global.clients!.getClient(peer.id)
         if (existingPeer) {
             this._id = existingPeer.id
             this._backpressure = existingPeer.backpressure
             this.events = existingPeer.events
-            global.clients!.replaceClient(this.id, this)
+            global.clients!.replaceClient(this.id, this, false)
             if (state === SocketStatus.OPEN) {
                 this.drain()
             }
         } else {
             this._id = peer.id
             global.clients!.push(this)
+            if(!options?.noAuth && state === SocketStatus.OPEN) {
+                this.detailsRequest()
+            }
         }
+    }
+
+    setup() {
+        this.detailsRequest()
+        this.on("data", data => {
+            const { data: _data } = parseData(data)
+            if (!isSocketTemplate(_data)) return
+            switch (_data?.type) {
+                case TYPE.AUTH_RES:
+                    this.subscribe(_data.body)
+                    break
+            }
+        })
     }
 
     get id(): string {
@@ -302,12 +328,23 @@ export class WsClient extends Client {
         return this.peer
     }
 
-    send(data: any, backpressure = true): void {
+    get type() {
+        return "WebSocket Cient"
+    }
+
+    send(data: any, fallback = true): void {
         try {
-            this.peer.send(data)
+            const _data = typeof data === "string" ? data : JSON.stringify(data)
+            this.peer.send(_data)
         } catch (_) {
             console.error("Error sending data to peer", _)
-            if (backpressure) this._backpressure.push(data)
+            if (fallback) {
+                this._backpressure.push(data)
+            } else {
+                this.close()
+            }
+            this.status = SocketStatus.CLOSED
+            this.emit("error", _)
         }
     }
 
@@ -388,22 +425,40 @@ declare class EventStream {
 export class SseClient extends Client {
     private eventStream: EventStream | undefined;
     private _id: string | undefined;
-    constructor(event: H3Event) {
+    constructor(event: H3Event, status: SocketStatus = SocketStatus.OPEN) {
         super()
         const id = getCookie(event, "X-Request-Id")
-        if (id) {
-            const client = global.clients!.getClient(id) as SseClient
-            if (client) {
-                this._id = id
-                this.eventStream = client?.eventStream || createEventStream(event) as any
-                this.events = client.events
-                this._backpressure = client.backpressure
+        if (status === SocketStatus.OPEN) {
+            if (id) {
+                const client = global.clients!.getClient(id)
+                if (client) {
+                    this._id = id
+                    this.events = client.events
+                    this._backpressure = client.backpressure
+                    this.eventStream = createEventStream(event) as any
+                    this.eventStream?.send()
+                    global.clients!.replaceClient(id, this, false)
+                } else {
+                    deleteCookie(event, "X-Request-Id")
+                    this.setup(event)
+                }
             } else {
-                deleteCookie(event, "X-Request-Id")
                 this.setup(event)
             }
         } else {
-            this.setup(event)
+            const client = global.clients!.getClient(id!)
+            if (client) {
+                readBody(event).then(data => {
+                    client.emit("data", data)
+                    event.respondWith(new Response(null, { status: 204 }))
+                })
+            } else {
+                this.setup(event)
+                readBody(event).then(data => {
+                    this.emit("data", data)
+                    event.respondWith(new Response(null, { status: 204 }))
+                })
+            }
         }
     }
 
@@ -411,7 +466,6 @@ export class SseClient extends Client {
         this._id = ulid()
         setCookie(event, "X-Request-Id", this._id)
         this.eventStream = createEventStream(event) as any
-        global.clients!.push(this)
         this.eventStream?.onClosed(() => {
             this.status = SocketStatus.CLOSED
             this.close()
@@ -424,6 +478,17 @@ export class SseClient extends Client {
         } catch (_) {
             console.error("Error sending data to client", _)
         }
+        global.clients!.push(this)
+        this.detailsRequest()
+        this.on("data", data => {
+            const { data: _data } = parseData(data)
+            if (!isSocketTemplate(_data)) return
+            switch (_data?.type) {
+                case TYPE.AUTH_RES:
+                    this.subscribe(_data.body)
+                    break
+            }
+        })
     }
 
     get value() {
@@ -432,6 +497,10 @@ export class SseClient extends Client {
 
     get id() {
         return this._id!
+    }
+
+    get type() {
+        return "SSE Client"
     }
 
     send(data: any, backpressure = true): void {
@@ -474,17 +543,19 @@ export class SseClient extends Client {
 
 export class PollClient extends Client {
     private _id?: string;
-    _H3Event: H3Event | undefined;
-    constructor(event: H3Event) {
+    private _H3Event: H3Event | undefined;
+    constructor(event: H3Event, status: SocketStatus = SocketStatus.OPEN) {
         super()
+        this._H3Event = event
+
         const id = getCookie(event, "X-Request-Id")
         if (id) {
-            const client = global.clients!.getClient(id) as PollClient
+            const client = global.clients!.getClient(id)
             if (client) {
                 this._id = id
-                this._H3Event = client?._H3Event || event
                 this.events = client.events
                 this._backpressure = client.backpressure
+                global.clients!.replaceClient(id, this, false)
             } else {
                 deleteCookie(event, "X-Request-Id")
                 this.setup(event)
@@ -492,14 +563,31 @@ export class PollClient extends Client {
         } else {
             this.setup(event)
         }
-        event.respondWith(new Response(JSON.stringify(this.data)))
+
+        if (status === SocketStatus.OPEN) {
+            this._H3Event?.respondWith(new Response(JSON.stringify(this.data), { status: 200 }))
+        } else {
+            readBody(event).then(data => {
+                this.emit("data", data)
+                this._H3Event?.respondWith(new Response(null, { status: 204 }))
+            })
+        }
     }
 
     private setup(event: H3Event) {
         this._id = ulid()
         setCookie(event, "X-Request-Id", this._id)
-        this._H3Event = event
         global.clients!.push(this)
+        this.detailsRequest()
+        this.on("data", data => {
+            const { data: _data } = parseData(data)
+            if (!isSocketTemplate(_data)) return
+            switch (_data?.type) {
+                case TYPE.AUTH_RES:
+                    this.subscribe(_data.body)
+                    break
+            }
+        })
     }
 
     get id() {
@@ -508,6 +596,10 @@ export class PollClient extends Client {
 
     get value() {
         return this._H3Event
+    }
+
+    get type() {
+        return "Poll Client"
     }
 
     send(data: any): void {

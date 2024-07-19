@@ -264,7 +264,7 @@ socket?.on("data", (data: unknown) => {
       updateTicketsMetaData(ticketsMetaDataState)
       break
     default:
-      console.log("No valid data", data)
+      console.log("No valid data", _data)
       break
   }
 })

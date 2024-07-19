@@ -10,18 +10,8 @@ export default defineNitroPlugin(app => {
     global.clients = new Clients()
     global.channels = new Channels()
 
-    global.clients!.on("data", (data, client) => {
-        try {
-            var response = JSON.parse(data) as SocketTemplate
-        } catch (error) {
-            var response = data as SocketTemplate
-        }
-        switch (response.type) {
-            case TYPE.AUTH:
-                client.subscribe(response.body)
-            break
-        }
-        global.channels!.broadcast(response)
+    global.clients!.on("data", (data, client) => {       
+        global.clients!.broadcast(data)
     })
 
     global.clients!.on("end", (data, client) => {
@@ -38,4 +28,11 @@ export default defineNitroPlugin(app => {
         client.close()
         console.error("Error", error)
     })
+
+    setInterval(() => {
+        global.clients?.broadcast({
+            type: TYPE.HEARTBEAT,
+            body: "Pong"
+        })
+    }, 2000)
 })

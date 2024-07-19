@@ -7,12 +7,15 @@ export default defineWebSocketHandler({
         const client = new WsClient(peer, SocketStatus.OPEN)
         client.send({
             statusCode: 200,
-            type: TYPE.DETAILS_RES,
+            type: TYPE.IDENTITY,
             body: client.id
         } satisfies SocketTemplate)
+        // client.close()
     },
     message(peer: Peer, message) {
-        const client = new WsClient(peer, SocketStatus.OPEN)
+        const client = new WsClient(peer, SocketStatus.OPEN, {
+            noAuth: true
+        })
         client.emit("data", message)
     },
     close(peer: Peer, event) {
