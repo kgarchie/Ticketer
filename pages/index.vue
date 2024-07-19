@@ -181,6 +181,7 @@
     </div>
     <div>
       <button @click="sendData" class="button">Send Data</button>
+      <button @click="closeSocket" class="button">Close Socket</button>
     </div>
   </main>
 
@@ -277,6 +278,10 @@ function sendData() {
       message: "Hello from the client"
     }
   })
+}
+
+function closeSocket() {
+  socket?.close()
 }
 </script>
 <style scoped>

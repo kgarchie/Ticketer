@@ -284,7 +284,6 @@ export class WsClient extends Client {
         super()
         this.peer = peer
         this.status = state
-
         const existingPeer = global.clients!.getClient(peer.id)
         if (existingPeer) {
             this._id = existingPeer.id
@@ -302,7 +301,7 @@ export class WsClient extends Client {
             }
         }
     }
-
+    
     setup() {
         this.detailsRequest()
         this.on("data", data => {
@@ -617,4 +616,38 @@ export class PollClient extends Client {
     toString() {
         return `Poll Client ${this.id}`
     }
+}
+
+export function parseData(data: any): {
+    data: SocketTemplate,
+    type: "json" | "string" | string
+} {
+    let _data = data
+    if (typeof data === "string") {
+        try {
+            _data = JSON.parse(data)
+        } catch (_) {
+            console.warn("Invalid JSON", data)
+            _data = data
+        }
+    }
+
+    if (hasRawData(_data)) {
+        const decoder = new TextDecoder()
+        try {
+            _data = JSON.parse(decoder.decode(new Uint8Array(_data.rawData)))        
+        } catch (_) {
+            console.warn("Invalid JSON")
+        }
+    }
+
+    return _data
+}
+
+export function isSocketTemplate(data: any): data is SocketTemplate {
+    return (data as SocketTemplate)?.type !== undefined
+}
+
+export function hasRawData(data: any): data is { rawData: number[], type: string } {
+    return (data)?.rawData !== undefined
 }

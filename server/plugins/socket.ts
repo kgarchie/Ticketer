@@ -11,7 +11,7 @@ export default defineNitroPlugin(app => {
     global.channels = new Channels()
 
     global.clients!.on("data", (data, client) => {       
-        global.clients!.broadcast(data)
+        global.clients!.broadcast(parseData(data))
     })
 
     global.clients!.on("end", (data, client) => {

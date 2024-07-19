@@ -11,6 +11,7 @@ abstract class _RealTime {
     get value(): any { return null }
     get type(): string { return "RealTime" }
     set events(events: Record<Events, Array<(data: any) => void>>) { }
+    get events(): Record<Events, Array<(data: any) => void>> { return { data: [], error: [], open: [], close: [] } }
     set backpressure(data: any[]) { }
     get status(): SocketStatus { return SocketStatus.CLOSED }
     get backpressure(): any[] { return [] }
@@ -41,11 +42,7 @@ class SSE implements _RealTime {
     }
     setup() {
         this.eventSource.onmessage = (event) => {
-            try {
-                var data = JSON.parse(event.data)
-            } catch (_) {
-                var data = event.data
-            }
+            const data = parseData(event.data)
             this.emit("data", data)
         }
         this.eventSource.onerror = (event) => {
@@ -93,6 +90,7 @@ class SSE implements _RealTime {
     }
     close(): void {
         this.eventSource.close()
+        this.emit("close", null)
     }
     get value() {
         return this.eventSource
@@ -102,6 +100,9 @@ class SSE implements _RealTime {
     }
     set events(_events: Record<Events, Array<(data: any) => void>>) {
         this._events = _events
+    }
+    get events() {
+        return this._events
     }
     set backpressure(_backpressure: any[]) {
         this._backpressure = _backpressure
@@ -142,15 +143,11 @@ class Poll implements _RealTime {
             await $fetch<string>("/poll/get", {
                 method: "GET"
             }).then(_response => {
-                try {
-                    var response = JSON.parse(_response)
-                    if (Array.isArray(response)) {
-                        response.forEach(data => this.emit("data", data))
-                    } else {
-                        this.emit("data", response)
-                    }
-                } catch (_) {
-                    this.emit("data", _response)
+                var response = parseData(_response)
+                if (Array.isArray(response)) {
+                    response.forEach(data => this.emit("data", parseData(data)))
+                } else {
+                    this.emit("data", response)
                 }
             }).catch(error => {
                 console.error("Pull Poll Error", error)
@@ -206,6 +203,9 @@ class Poll implements _RealTime {
     set backpressure(_backpressure: any[]) {
         this._backpressure = _backpressure
     }
+    get events() {
+        return this._events
+    }
     get backpressure() {
         return this._backpressure
     }
@@ -239,15 +239,8 @@ class WS implements _RealTime {
     }
     setup() {
         this.ws.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data) as SocketTemplate
-                if (data?.type === TYPE.CLOSE_SOCKET) {
-                    this.close()
-                }
-                this.emit("data", data)
-            } catch (_) {
-                this.emit("data", event.data)
-            }
+            const data = parseData(event.data)
+            this.emit("data", data)
         }
         this.ws.onerror = (event) => {
             this.emit("error", event)
@@ -305,6 +298,9 @@ class WS implements _RealTime {
     get backpressure() {
         return this._backpressure
     }
+    get events() {
+        return this._events
+    }
     [Symbol.dispose]() {
         this.ws.close()
     }
@@ -337,13 +333,12 @@ export class RealTime {
             default:
                 throw new Error("Invalid priority")
         }
+        this.syncData(rt)
         this.current = {
             type: rt.type,
             value: rt,
             priority: priority
         }
-
-        this.syncData(rt)
         rt.on("open", () => {
             this.status = SocketStatus.OPEN
             consola.success("RealTime connection established via", rt.type)
@@ -385,9 +380,7 @@ export class RealTime {
 
     push(data: unknown) {
         if (this.status !== SocketStatus.OPEN) {
-            this.on("open", () => {
-                this.push(data)
-            })
+            this.current!.value.backpressure.push(data)
         }
         if (typeof data !== "string") {
             var _data = JSON.stringify(data)
@@ -398,18 +391,13 @@ export class RealTime {
     }
 
     private syncData(target: _RealTime) {
-        target.events = this.current!.value.events || {
+        target.events = this.current?.value.events || {
             data: [],
             error: [],
             open: [],
             close: [],
         }
-        target.backpressure = this.current!.value.backpressure || {
-            data: [],
-            error: [],
-            open: [],
-            close: [],
-        }
+        target.backpressure = this.current?.value.backpressure || []
     }
 
     on(event: Events, callback: (data: any) => void) {
@@ -427,31 +415,26 @@ export class RealTime {
     set status(status: SocketStatus) {
         this._status = status
     }
-}
 
-
-export function parseData(data: any): {
-    data: SocketTemplate | unknown,
-    type: "json" | "string"
-} {
-    if (typeof data === "string") {
-        try {
-            return {
-                data: JSON.parse(data) as SocketTemplate,
-                type: "json"
-            }
-        } catch (_) {
-            consola.warn("Invalid JSON", data)
-            return { data: data as unknown, type: "string" }
-        }
-    } else {
-        return {
-            data,
-            type: "json"
-        }
+    close() {
+        this.current?.value.close()
     }
 }
 
 export function isSocketTemplate(data: any): data is SocketTemplate {
-    return (data as SocketTemplate).type !== undefined
+    return (data as SocketTemplate)?.type !== undefined
+}
+
+
+export function parseData(data: any): SocketTemplate {
+    if (typeof data === "string") {
+        try {
+            return JSON.parse(data)
+        } catch (error) {
+            consola.error("Error parsing data", error)
+            return data as unknown as SocketTemplate
+        }
+    } else {
+        return data
+    }
 }

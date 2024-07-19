@@ -9,16 +9,17 @@ export default defineNuxtPlugin(app => {
 
     if (user.user_id) {
         realTime.on("data", (data) => {
-            const { data: _data } = parseData(data)
-            console.log(_data)
-            if (!isSocketTemplate(_data)) return
-            switch (_data.type) {
+            if (!isSocketTemplate(data)) return
+            switch (data?.type) {
                 case TYPE.AUTH_REQ:
                     realTime.push({
                         statusCode: 200,
                         type: TYPE.AUTH_RES,
                         body: user.user_id
                     } satisfies SocketTemplate)
+                    break
+                case TYPE.IDENTITY:
+                    useCookie("X-Request-Id", data.body)
                     break
             }
         })
