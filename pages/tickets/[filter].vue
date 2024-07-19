@@ -15,6 +15,10 @@
 <script setup lang="ts">
 import {type Ticket} from "@prisma/client";
 
+definePageMeta({
+  middleware: ["auth"],
+})
+
 const route = useRoute()
 const filter_json = route.params.filter
 let parameters = JSON.parse(filter_json?.toString() || '{}')

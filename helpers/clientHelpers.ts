@@ -3,7 +3,12 @@ import type {Attachment, Comment, Message, Notification, Ticket} from "@prisma/c
 import {type Ref} from "vue";
 
 export async function updateTicketsMetaData(StateValue: any) {
-    const res = await $fetch('/api/tickets/query/count')
+    if(process.client){
+        var res = await $fetch('/api/tickets/query/count')
+    } else {
+        const {data} = await useFetch('/api/tickets/query/count')
+        res = data.value
+    }
 
     if (res && res.statusCode === 200) {
         StateValue.value.pending_count = res.body?.pending_count

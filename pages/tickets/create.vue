@@ -171,6 +171,10 @@ if (paybills_data.value) {
     console.log(paybills_data)
 }
 
+definePageMeta({
+  middleware: ["auth"],
+})
+
 const {data: companies_data} = await useFetch('/api/company')
 if (companies_data.value) {
     companies = companies_data

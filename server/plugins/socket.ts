@@ -34,5 +34,5 @@ export default defineNitroPlugin(app => {
             type: TYPE.HEARTBEAT,
             body: "Pong"
         })
-    }, 2000)
+    }, 30000)
 })

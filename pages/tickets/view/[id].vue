@@ -15,6 +15,10 @@
 const router = useRoute()
 const id = router.params.id
 
+definePageMeta({
+  middleware: ["auth"],
+})
+
 const ticket = ref({})
 const { data: response } = await useFetch(`/api/tickets/${id}`)
 

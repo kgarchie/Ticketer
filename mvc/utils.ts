@@ -72,7 +72,7 @@ export async function notifyAllAndConnectedAdmins(response: SocketTemplate, send
 }
 
 export async function shuttleDataToAllClients(response: SocketTemplate) {
-    global.channels?.broadcast(response)
+    global.clients?.broadcast(response)
 }
 
 export async function socketSendData(client: Client, message: any, maxRetries = 5) {

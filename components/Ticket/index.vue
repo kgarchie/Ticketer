@@ -115,7 +115,7 @@
 </template>
 
 <script lang="ts" setup>
-import { type Comment, type Ticket } from "@prisma/client";
+import { type Comment } from "@prisma/client";
 import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
 import type { SocketTemplate } from "~/types"
 
@@ -137,7 +137,9 @@ const props = defineProps({
 })
 
 const local_ticket = ref(props.ticket)
-const comments = ref(local_ticket.value?.comments)
+const comments = computed(() => {
+    return orderComments(local_ticket.value?.comments)
+})
 const taggable = ref<TaggedPerson[]>([])
 
 const response = await fetch('/api/user/admins').then(res => res.json()).catch(err => console.log(err))
@@ -244,8 +246,6 @@ async function submitComment(payload: any) {
             }
         })
 
-        // console.log(response.value)
-
         if (response?.value?.statusCode !== 200) {
             console.log(response.value?.body)
             alert('An error occurred')
@@ -276,23 +276,23 @@ async function submitComment(payload: any) {
 userName.value = await getUserName(props.ticket?.creator)
 
 const socket = useSocket().value
-socket?.on("data", (data: unknown) => {
-    try {
-        var _data = JSON.parse(data as string) as SocketTemplate
-    } catch (e) {
-        _data = data as SocketTemplate
-        return
-    }
-
-    if (_data?.type === TYPE.NEW_COMMENT) {
-        onNewComment(_data?.body, comments)
-    } else if (_data?.type === TYPE.DELETE_COMMENT) {
-        onDeleteComment(_data?.body, comments)
-    } else if (_data?.type === TYPE.DELETE_TICKET) {
-        if (_data?.body?.id !== local_ticket.value.id) return
+socket?.on("data", (data: SocketTemplate) => {
+    if (data?.type === TYPE.NEW_COMMENT) {
+        onNewComment(data?.body, comments)
+    } else if (data?.type === TYPE.DELETE_COMMENT) {
+        onDeleteComment(data?.body, comments)
+    } else if (data?.type === TYPE.DELETE_TICKET) {
+        if (data?.body?.id !== local_ticket.value.id) return
         navigateTo(`${encodeURI(`/tickets/${JSON.stringify({ ticket_filter: null })}`)}`)
     }
 })
+
+function orderComments(comments: Comment[]) {
+    comments = comments.sort((a, b) => {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
+    return comments
+}
 </script>
 
 <style scoped>

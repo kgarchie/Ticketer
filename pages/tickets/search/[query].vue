@@ -3,6 +3,10 @@ const route = useRoute()
 const query = decodeURI(route.params.query as string)
 const tickets = ref([])
 
+definePageMeta({
+  middleware: ["auth"],
+})
+
 const {data: res} = await useFetch('/api/tickets/search', {
     method: 'POST',
     body: query

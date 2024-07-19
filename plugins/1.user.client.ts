@@ -16,7 +16,6 @@ export default defineNuxtPlugin(async () => {
         const {data: response} = await useFetch('/api/auth/identity')
 
         if (response?.value?.statusCode !== 200) {
-            console.log("User could not be fetched")
             return
         }
 
@@ -36,19 +35,14 @@ export default defineNuxtPlugin(async () => {
             } as UserAuth
             console.log('Auth cookie set | forcefully')
         }
-
-        console.log('User fetched')
         userState.value = user
 
     } else {
-        console.log('User Cookie found | Checking if valid...')
         const {data: response} = await useFetch(`/api/auth/identity/${user.user_id}/${user.auth_key}`)
 
         if (response?.value?.statusCode === 200) {
-            console.log('User is found and valid')
             userState.value = user
         } else {
-            console.log('User is invalid | Removing cookie')
             useCookie('auth').value = null
             alert('Your session has expired, please login again')
             window.location.reload()

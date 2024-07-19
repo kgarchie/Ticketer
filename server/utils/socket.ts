@@ -2,7 +2,13 @@ import { ulid } from "ulid"
 import { SocketStatus, TYPE, type SocketTemplate } from "~/types"
 import { H3Event } from "h3"
 import { Peer } from "crossws"
-import { assert } from "node:console"
+
+/* TODO: Production considerations
+ * - Remove history memory hog, instead replace with booleans tha check if the event has been emitted and emit immediately?? Maybe???
+ * - Ensure auto remove clients from channels on disconnect, or dump to redis
+ * - Implement a way to handle backpressure via redis
+ * - Implement a way to handle backpressure via queues and workers???
+*/
 
 type Events = "data" | "error" | "end"
 export class Clients extends Map<string, Client> {
@@ -85,6 +91,10 @@ export class Channels extends Map<string, Channel> {
 
     getChannel(channel: string) {
         return this.get(channel)
+    }
+
+    getUserClients(user_id: string) {
+        return this.get(user_id)?.clients
     }
 
     get value() {
@@ -296,12 +306,12 @@ export class WsClient extends Client {
         } else {
             this._id = peer.id
             global.clients!.push(this)
-            if(!options?.noAuth && state === SocketStatus.OPEN) {
+            if (!options?.noAuth && state === SocketStatus.OPEN) {
                 this.detailsRequest()
             }
         }
     }
-    
+
     setup() {
         this.detailsRequest()
         this.on("data", data => {
@@ -635,7 +645,7 @@ export function parseData(data: any): {
     if (hasRawData(_data)) {
         const decoder = new TextDecoder()
         try {
-            _data = JSON.parse(decoder.decode(new Uint8Array(_data.rawData)))        
+            _data = JSON.parse(decoder.decode(new Uint8Array(_data.rawData)))
         } catch (_) {
             console.warn("Invalid JSON")
         }

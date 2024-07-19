@@ -13,12 +13,12 @@
                 {{ formatDate(comment?.createdAt) }}
             </small>
         </p>
-        <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm"
-                           :taggable="taggable_computed"/>
         <div v-if="(comment.children && comment?.children.length > 0)">
             <TicketCommentList v-for="child in comment?.children" :key="child.id" :comment="child"
-                               :ticket="ticket" :taggable="taggable_computed"/>
+            :ticket="ticket" :taggable="taggable_computed"/>
         </div>
+        <TicketCommentForm v-if="comment === commentToReply" @comment="submitComment" @cancel="cancelReplyForm" class="mt-4"
+                           :taggable="taggable_computed"/>
     </div>
 </template>
 <script setup lang="ts">

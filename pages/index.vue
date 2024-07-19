@@ -179,10 +179,6 @@
         </div>
       </div>
     </div>
-    <div>
-      <button @click="sendData" class="button">Send Data</button>
-      <button @click="closeSocket" class="button">Close Socket</button>
-    </div>
   </main>
 
 </template>
@@ -197,6 +193,10 @@ import {
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";
 import { type Ticket } from "@prisma/client";
+
+definePageMeta({
+  middleware: ["auth"],
+})
 
 const tickets = ref<Ticket[]>([])
 const ticketsMetaDataState = ref({
@@ -265,24 +265,10 @@ socket?.on("data", (data: unknown) => {
       updateTicketsMetaData(ticketsMetaDataState)
       break
     default:
-      console.log("No valid data", _data)
       break
   }
 })
 
-function sendData() {
-  if (!socket) return console.warn("Socket not connected")
-  socket?.push({
-    type: "TEST",
-    body: {
-      message: "Hello from the client"
-    }
-  })
-}
-
-function closeSocket() {
-  socket?.close()
-}
 </script>
 <style scoped>
 body {

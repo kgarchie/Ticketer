@@ -11,7 +11,7 @@ import {
     readUserMessage,
     storeFiles
 } from "~/mvc/chats/queries";
-import {getConnectedClientSockets, shuttleData} from "~/mvc/utils";
+import {createAndShuttleNotification, getConnectedClientSockets, shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
 import {getPresignedUrl} from "~/mvc/chats/helpers";
 
@@ -89,8 +89,7 @@ export async function sendMessage(event: H3Event) {
 
     shuttleData(to_user_id, socketResponse)
     shuttleData(from_user_id, socketResponse)
-
-    // createAndShuttleNotification(to_user_id, `You have a new message from ${socketResponse.body.fromUserName}`, TYPE.NEW_MESSAGE_NOTIFICATION)
+    createAndShuttleNotification(to_user_id, `You have a new message from ${socketResponse.body.fromUserName}`, TYPE.NEW_MESSAGE_NOTIFICATION)
 
     response.statusCode = 200
     response.body = createdMessage

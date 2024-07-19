@@ -17,6 +17,10 @@ import {type Ticket} from "@prisma/client";
 const user = useUser().value
 const tickets = ref<Ticket[]>([])
 
+definePageMeta({
+  middleware: ["auth"],
+})
+
 if(user.user_id && user.user_id !== ''){
     const response = await $fetch(`/api/user/${user.user_id}/tickets`)
 
