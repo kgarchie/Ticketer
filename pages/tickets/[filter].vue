@@ -1,22 +1,24 @@
 <template>
+
     <Head>
         <Title>Tickets</Title>
     </Head>
     <main class="container">
         <div class="columns">
-            <SideNav/>
+            <SideNav />
             <div class="column">
-                <Tickets :tickets="tickets" :onSearch="searchFilter"/>
+                <Tickets :tickets="tickets" :onSearch="searchFilter" />
             </div>
         </div>
     </main>
 </template>
 
 <script setup lang="ts">
-import {type Ticket} from "@prisma/client";
+import { type Ticket } from "@prisma/client";
+import type { HttpResponseTemplate } from "~/types";
 
 definePageMeta({
-  middleware: ["auth"],
+    middleware: ["auth"],
 })
 
 const route = useRoute()
@@ -32,18 +34,14 @@ let query = {
     filter: filter
 }
 
-async function getData(){
-    let uriEncoded = encodeURI(`/api/tickets/query/${JSON.stringify(query)}`)
-    const {data: response} = await useFetch(uriEncoded)
-
-    // console.log(response?.value?.body)
-
-    if (response.value !== null && response.value?.statusCode === 200){
-        tickets.value = response.value.body
+const { execute: getData } = await useFetch<HttpResponseTemplate>(encodeURI(`/api/tickets/query/${JSON.stringify(query)}`), {
+    onResponse({ response }) {
+        const data = response._data
+        if (data && data.statusCode === 200) {
+            tickets.value = data.body
+        }
     }
-}
-
-getData()
+})
 
 onMounted(() => {
     const previousPage = document.getElementById('previous-page')
@@ -68,20 +66,16 @@ onMounted(() => {
 
 
 async function searchFilter(value: string) {
-    if(value !== '') {
-        const {data: response} = await useLazyFetch(`/api/tickets/search/${value}`)
-        if (response?.value?.statusCode === 200) {
-            // console.log(response.value.body)
-            response.value.body.forEach((ticket: Ticket) => {
-                if (!tickets.value.find((item: Ticket) => item.id === ticket.id)) {
-                    tickets.value.push(ticket)
-                }
-            })
+    if (!value) return
+    const response = await $fetch<HttpResponseTemplate>(`/api/tickets/search/${value}`)
+    if (response?.statusCode !== 200) console.warn(response.body)
+    
+    response.body.forEach((ticket: Ticket) => {
+        if (!tickets.value.find((item: Ticket) => item.id === ticket.id)) {
+            tickets.value.push(ticket)
         }
-    }
+    })
 }
 </script>
 
-<style scoped>
-
-</style>
+<style scoped></style>

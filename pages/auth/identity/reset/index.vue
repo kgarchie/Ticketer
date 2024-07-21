@@ -28,8 +28,7 @@ const email = ref('')
 const user = useUser().value
 
 const reset = async () => {
-    if (email.value !== '') {
-        // set loading on button
+    if (email.value) {
         const btn = document.getElementById('submit-btn')
         btn?.classList.add('is-loading')
 

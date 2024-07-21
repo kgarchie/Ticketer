@@ -1,84 +1,29 @@
 <template>
     <main class="container">
         <div class="column">
-            <h3 class="is-5 raised"><strong>Ticket Info</strong></h3>
-            <article class="columns is-flex box mt-3">
-                <div class="column">
-                    <div class="field">
-                        <label class="label">Reference</label>
+            <h3 class="heading ml-1" style="font-size: 15px;"><strong>Ticket Info</strong></h3>
+            <article class="column box p-4" style="border-top: 1px solid #f4f4f4">
+                <div class="is-flex">
+                    <div class="field is-full">
+                        <label class="heading" style="font-size: 0.9rem; letter-spacing: 0.1ch;">Reference</label>
                         <div class="control">
                             <p>{{ local_ticket?.reference }}</p>
                         </div>
                     </div>
 
-                    <div class="field">
-                        <label class="label">Safaricom Number</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.safaricom_no }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Airtel Number</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.airtel_no }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Transaction Amount</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.amount }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">User Name</label>
+                    <div class="field is-full">
+                        <label class="heading" style="font-size: 0.9rem; letter-spacing: 0.1ch;">User Name</label>
                         <div class="control">
                             <p>{{ userName }}</p>
                         </div>
                     </div>
                 </div>
-
-                <div class="column">
-                    <div class="field">
-                        <label class="label">Issue</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.issue }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Company</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.company || 'No Company Info' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Paybill</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.paybill_no }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Additional Info</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.a_info || 'No Additional Info' }}</p>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Urgency</label>
-                        <div class="control">
-                            <p>{{ local_ticket?.urgency }}</p>
-                        </div>
-                    </div>
+                <div class="content mt-3">
+                    <label class="heading" style="font-size: 0.9rem; letter-spacing: 0.1ch;">Message</label>
+                    {{ local_ticket.info }}
                 </div>
             </article>
-            <!--                Buttons for close, resolve or delete-->
-            <article class="box pb-5" v-if="user.is_admin">
+            <article class="pb-5" v-if="useCookie<UserAuth>('auth').value?.is_admin">
                 <div class="buttons mt-3 is-flex is-fullwidth">
                     <button class="button is-success" @click="resolveTicket"
                         :disabled="local_ticket.status === STATUS.R">
@@ -92,8 +37,9 @@
                     </button>
                 </div>
             </article>
+            <hr>
             <article class="comments">
-                <h3 class="is-5 raised">Comments</h3>
+                <h2 class="heading" style="font-size: medium">Comments</h2>
                 <div v-if="comments?.length > 0" v-for="comment in comments" :key="comment.id">
                     <div v-if="comment?.parentId === null">
                         <article class="media">
@@ -113,14 +59,17 @@
         </div>
     </main>
 </template>
-
+<style scoped>
+.is-full {
+    width: 100%;
+}
+</style>
 <script lang="ts" setup>
 import { type Comment } from "@prisma/client";
 import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
-import type { SocketTemplate } from "~/types"
+import type { SocketTemplate, UserAuth } from "~/types"
 
 import {
-    getUserName,
     onDeleteComment,
     onNewComment,
 } from "~/helpers/clientHelpers";

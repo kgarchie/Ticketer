@@ -17,19 +17,16 @@
           <NuxtLink to="/tickets/view/user">My Tickets</NuxtLink>
         </li>
 
-        <client-only>
-          <li v-if="user.is_admin">
+          <li v-if="userIsAuthenticated()">
             <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`">All Site Tickets
             </NuxtLink>
           </li>
-        </client-only>
       </ul>
     </aside>
   </div>
 </template>
 
 <script setup lang="ts">
-const user = useUser()
 </script>
 
 <style scoped>

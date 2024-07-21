@@ -27,8 +27,7 @@
           </div>
           <div class="navbar-end">
             <div class="navbar-item">
-              <client-only>
-                <div class="buttons" v-if="!is_authenticated">
+                <div class="buttons" v-if="!userIsAuthenticated()">
                   <NuxtLink class="button is-primary" to="/auth/identity/register"
                             style=":hover{color: black;}"
                             @click="isActive = !isActive">
@@ -43,7 +42,6 @@
                     <strong>Log out</strong>
                   </a>
                 </div>
-              </client-only>
             </div>
           </div>
         </div>
@@ -70,7 +68,7 @@
   </section>
 </template>
 <script setup lang="ts">
-import {type UserAuth} from "~/types"
+import {TYPE, type SocketTemplate, type UserAuth} from "~/types"
 import type {Notification} from "@prisma/client";
 import {onNotificationCallback, updateNotifications} from "~/helpers/clientHelpers"
 
@@ -81,19 +79,14 @@ const isActive = ref<boolean>(false)
 const user = useUser().value
 const notifications = useNotifications()
 
-const is_authenticated = ref<boolean>(false)
-is_authenticated.value = !(user?.auth_key == '' || user?.auth_key == null)
-
 async function logout() {
   const {data: response} = await useFetch('/api/auth/logout')
   if (response?.value?.statusCode !== 200) {
-    let cookie = useCookie<UserAuth | undefined>('auth').value = {
+    useCookie<UserAuth | undefined>('auth').value = {
       auth_key: null,
       is_admin: false,
       user_id: ''
     } as UserAuth
-    console.log(cookie)
-    is_authenticated.value = false
   }
   window.location.href = '/auth/login'
 }
@@ -108,33 +101,30 @@ async function markNotificationAsRead(id: any) {
   }
 }
 
-// if (process.client) callState.value = new ECall(user)
-
-const socket = useGlobalSocket().value
-
-if (socket) {
-  socket.onNotificationCallback = (_notification: Notification) => {
-
-    if (process.client && 'serviceWorker' in navigator) {
-      if (window.Notification.permission !== "granted") {
+const socket = useSocket().value
+socket?.on("data", (data: any) => {
+  const _data = parseData(data) as SocketTemplate
+  switch (_data.type){
+    case TYPE.NOTIFICATION:
+      onNotificationCallback(_data.body, notifications)
+      if(window.Notification.permission === 'granted'){
+        new Notification('Notification', {
+          body: _data.body.message
+        })
+      } else {
         window.Notification.requestPermission().then((permission) => {
           if (permission === "granted") {
-            console.log("Notification permission granted.");
+            new Notification('Notification', {
+              body: _data.body.message
+            })
           } else {
             console.warn("Notification permission denied.");
           }
-        });
+        })
       }
-
-      navigator.serviceWorker.register('/sw.js')
-          .catch((registrationError) => {
-            console.log('Service worker registration failed: ', registrationError)
-          })
-    }
-
-    onNotificationCallback(_notification, notifications)
+      break
   }
-}
+})
 
 onMounted(() => {
   updateNotifications(notifications, user.user_id)

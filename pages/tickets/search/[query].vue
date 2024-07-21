@@ -31,9 +31,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head>
-        <Title>Search Results</Title>
-    </Head>
+    <Title>Search Results</Title>
     <main class="container">
         <div class="columns">
             <SideNav/>

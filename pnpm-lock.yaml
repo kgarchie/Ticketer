@@ -20,6 +20,9 @@ importers:
       nodemailer:
         specifier: ^6.9.13
         version: 6.9.13
+      pathe:
+        specifier: ^1.1.2
+        version: 1.1.2
       prisma:
         specifier: ^4.16.2
         version: 4.16.2

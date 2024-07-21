@@ -1,23 +1,36 @@
+import {
+    type HttpResponseTemplate,
+    type SearchQuery,
+    type SocketTemplate,
+    STATUS,
+    type TaggedPerson,
+    TYPE
+} from "~/types";
 import { H3Event } from "h3";
-import { type HttpResponseTemplate, type SearchQuery, type SocketTemplate, STATUS, type TaggedPerson, TYPE } from "~/types";
+import filestorage from "~/filestorage";
 import {
     allSearchTickets,
     closeUserTicket,
     createTicket,
-    createTicketComment, deleteTicketById,
+    createTicketComment,
+    deleteTicketById,
     deleteUserComment,
     filterTickets,
     getNewTickets,
     getTicketByReference,
     getUserTicket,
     markTicketAsPending,
-    markTicketAsResolved, randomRapidSearch,
+    markTicketAsResolved,
+    randomRapidSearch,
     ticketMetrics
 } from "~/mvc/tickets/queries";
 import { createAndShuttleNotification, shuttleDataToAllClients } from "~/mvc/utils";
 import { getAuthCookie } from "~/mvc/auth/helpers";
 import { type Ticket } from "@prisma/client";
 import { getUserOrEphemeralUser_Secure } from "~/mvc/user/queries";
+import { readFiles } from "h3-formidable";
+import { join } from "pathe";
+import { createTicketAttachment as createTicketAttachmentDB } from "./queries"
 
 export async function deleteComment(event: H3Event) {
     const { commentId } = await readBody(event)
@@ -261,28 +274,35 @@ export async function countTickets() {
 
 
 export async function create(event: H3Event) {
-    const ticket = await readBody(event) as Ticket
+    const data = await readFiles(event, { includeFields: true }) as any
+    const _ticket = data.fields
+    const ticket = {} as Ticket & { [key: string]: any }
+    for (const key in _ticket) {
+        const set = new Set(_ticket[key])
+        ticket[key] = Array.from(set).at(-1)
+    }
+    const attachments = data.files as File[]
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
-    const ticketExists = await getTicketByReference(ticket.reference)
 
-    if (ticketExists) {
-        response.statusCode = 405
+    const existingTicket = await getTicketByReference(ticket.reference)
+    if (existingTicket) {
+        response.statusCode = 409
         response.body = "Ticket Already Exists"
         return response
     }
 
-    // parse ticket data and change to DB compatible format
-    ticket.transaction_date = new Date(ticket.transaction_date)
-    ticket.amount = parseFloat(ticket.amount.toString())
-    ticket.paybill_no = ticket.paybill_no.toString()
-    ticket.status = STATUS.O
 
-    const newTicket = await createTicket(ticket)
-
+    const newTicket = (await createTicket(ticket)) as Ticket | null
     if (!newTicket) {
         response.statusCode = 500
         response.body = "Internal Server Error"
+    }
+    if (attachments.length) {
+        const data = await createTicketAttachments(attachments, newTicket!.reference)
+        data.forEach(async (datum) => {
+            await createTicketAttachmentDB(newTicket!.id, datum)
+        })
     }
 
     socketResponse.statusCode = 200
@@ -361,4 +381,26 @@ export async function deleteTicket(event: H3Event) {
     response.body = "Ticket Deleted Successfully"
 
     return response
+}
+
+async function createTicketAttachments(attachments: File[], ticketUlid: string) {
+    const data = [] as {
+        name: string,
+        size: number,
+        url: string
+    }[]
+    await Promise.all(attachments.map(async (file) => {
+        return await createAttachment(file, ticketUlid, data)
+    }))
+
+    return data
+}
+
+async function createAttachment(file: File, id: string, data: any[]) {
+    await filestorage.setItem(join("./tickets", id, file.name), file)
+    data.push({
+        name: file.name,
+        size: file.size,
+        url: join("./tickets", id, file.name)
+    })
 }

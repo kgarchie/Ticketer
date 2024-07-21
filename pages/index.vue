@@ -15,10 +15,10 @@
               </div>
               <div class="container">
                 <h1 class="title">
-                  Hello <client-only>{{ name }}</client-only>
+                  Hello <span class="is-capitalized">{{ name }}</span>
                 </h1>
                 <h2 class="subtitle">
-                  You have <client-only>{{ notifications?.length }}</client-only> new notifications
+                  You have {{ notifications?.length }} new notifications
                 </h2>
               </div>
             </div>
@@ -74,8 +74,8 @@
                       <tbody>
                         <tr v-for="(item, index) in tickets" :key="index">
                           <td width="5%"><i class="fa fa-bell-o"></i></td>
-                          <td>{{ item.issue }}</td>
                           <td>{{ item.reference }}</td>
+                          <td>{{ item.info.slice(0, 20) }}</td>
                           <td class="level-right">
                             <NuxtLink class="button is-small is-primary" :to="`tickets/view/${item.id}`"
                               @click="pendTicket(item.id)">
@@ -183,13 +183,11 @@
 
 </template>
 <script setup lang="ts">
-import { type SearchQuery, type SocketTemplate, STATUS, TYPE } from "~/types";
+import { type HttpResponseTemplate, type SearchQuery, type SocketTemplate, STATUS, TYPE, type UserAuth } from "~/types";
 import {
-  updateNewTickets,
-  updateTicketsMetaData,
   onNewTicketCallback,
   onUpdateTicketCallback,
-  getUserName, onDeleteTicketCallback
+  onDeleteTicketCallback
 } from "~/helpers/clientHelpers";
 import Call from "~/components/Chat/Call.vue";
 import { type Ticket } from "@prisma/client";
@@ -212,17 +210,16 @@ const search_transaction_code_or_reference = ref('')
 const email_or_name = ref('')
 
 const user = useUser().value
-const name = await getUserName(user.user_id)
+const name = await useFetch(`/api/user/${useCookie<UserAuth>("auth").value.user_id}`).then(res => res.data?.value?.body || user.user_id).catch(() => user.user_id)
 const notifications = useNotifications()
+
 
 async function pendTicket(id: any) {
   if (user.is_admin) {
-    await useFetch(`/api/tickets/${id}/pend`)
+    await $fetch<HttpResponseTemplate>(`/api/tickets/${id}/pend`)
 
-    // @ts-ignore
     const ticket = tickets.value.find(ticket => ticket.id === id)
     if (ticket) {
-      // @ts-ignore
       ticket.status = STATUS.P
     }
   }
@@ -241,28 +238,42 @@ async function search() {
   await navigateTo(`/tickets/search/${encodeURI(JSON.stringify(query))}`)
 }
 
-updateTicketsMetaData(ticketsMetaDataState)
-updateNewTickets(tickets)
+const { data: response, refresh: refreshTicketsMetaData } = await useFetch<HttpResponseTemplate>('/api/tickets/query/count', {
+  onResponse({response}){
+    const data = response._data as HttpResponseTemplate
+    if (data.statusCode !== 200) {
+      alert(data.body?.message || 'An error occurred while fetching ticket metadata')
+    } else {
+      ticketsMetaDataState.value.pending_count = data.body?.pending_count
+      ticketsMetaDataState.value.resolved_count = data.body?.resolved_count
+      ticketsMetaDataState.value.exceptions_count = data.body?.closed_count
+      ticketsMetaDataState.value.new_count = data.body?.new_count
+    }
+  }
+})
+ticketsMetaDataState.value.pending_count = response.value?.body?.pending_count
+ticketsMetaDataState.value.resolved_count = response.value?.body?.resolved_count
+ticketsMetaDataState.value.exceptions_count = response.value?.body?.closed_count
+ticketsMetaDataState.value.new_count = response.value?.body?.new_count
+
+const { data: ticketsRes } = await useFetch<HttpResponseTemplate>('/api/tickets/query/new')
+tickets.value = ticketsRes.value?.body
 
 const socket = useSocket().value
 socket?.on("data", (data: unknown) => {
-  try {
-    var _data = JSON.parse(data as string) as SocketTemplate
-  } catch (error) {
-    _data = data as SocketTemplate
-  }
+  const _data = parseData(data) as SocketTemplate
   switch (_data?.type) {
     case TYPE.NEW_TICKET:
       onNewTicketCallback(_data.body, tickets)
-      updateTicketsMetaData(ticketsMetaDataState)
+      refreshTicketsMetaData()
       break
     case TYPE.UPDATE_TICKET:
       onUpdateTicketCallback(_data.body, tickets)
-      updateTicketsMetaData(ticketsMetaDataState)
+      refreshTicketsMetaData()
       break
     case TYPE.DELETE_TICKET:
       onDeleteTicketCallback(_data.body, tickets)
-      updateTicketsMetaData(ticketsMetaDataState)
+      refreshTicketsMetaData()
       break
     default:
       break

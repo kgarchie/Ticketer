@@ -1,6 +1,6 @@
 import prisma from "~/db";
-import {SearchQuery, STATUS} from "~/types";
-import {Ticket} from "@prisma/client";
+import {type SearchQuery, STATUS} from "~/types";
+import {type Ticket} from "@prisma/client";
 
 export async function deleteUserComment(commentId: string | number) {
     // check for child comments
@@ -59,6 +59,7 @@ export async function getTicketByReference(reference: string) {
 }
 
 export async function createTicket(data: Ticket) {
+    data.status = STATUS.O
     return prisma.ticket.create({
         data: data
     }).catch(
@@ -67,6 +68,30 @@ export async function createTicket(data: Ticket) {
             return null
         }
     )
+}
+
+export async function createTicketAttachment(ticketId: number, data: {
+    url: string,
+    name: string,
+    size: number
+}) {
+    return await prisma.attachment.create({
+        data: {
+            Ticket: {
+                connect: {
+                    id: ticketId
+                },
+            },
+            name: data.name,
+            size: data.size,
+            url: data.url
+        }
+    }).catch(
+        error => {
+            console.log(error)
+            return null
+        }
+    )   
 }
 
 export async function createTicketComment(comment: string, commentor: string, ticketId: string | number, parentId: number | null = null) {
@@ -299,10 +324,6 @@ export async function allSearchTickets(query: SearchQuery) {
 
     const otherTickets = await prisma.ticket.findMany({
         where: {
-            transaction_date: {
-                gte: query.date_from || undefined,
-                lte: query.date_to || undefined
-            },
             OR: [
                 {
                     reference: query.reference_number?.trim() === '' ? undefined : query.reference_number
@@ -385,26 +406,6 @@ export async function randomRapidSearch(keyword: string) {
             OR: [
                 {
                     reference: {
-                        contains: keyword
-                    }
-                },
-                {
-                    issue: {
-                        contains: keyword
-                    }
-                },
-                {
-                    safaricom_no: {
-                        contains: keyword
-                    }
-                },
-                {
-                    airtel_no: {
-                        contains: keyword
-                    }
-                },
-                {
-                    paybill_no: {
                         contains: keyword
                     }
                 }

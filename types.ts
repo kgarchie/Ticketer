@@ -65,9 +65,7 @@ export type LoginCredentials = {
 export type RegisterCredentials = {
     email: string,
     password: string,
-    name: string,
-    company: string | undefined,
-    user_id: string,
+    name: string | null
 }
 
 export type UserChatObject = {

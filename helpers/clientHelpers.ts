@@ -1,31 +1,7 @@
-import {STATUS, type UserChatObject} from "~/types";
-import type {Attachment, Comment, Message, Notification, Ticket} from "@prisma/client";
-import {type Ref} from "vue";
+import { STATUS, type UserChatObject } from "~/types";
+import type { Attachment, Comment, Message, Notification, Ticket } from "@prisma/client";
+import { type Ref } from "vue";
 
-export async function updateTicketsMetaData(StateValue: any) {
-    if(process.client){
-        var res = await $fetch('/api/tickets/query/count')
-    } else {
-        const {data} = await useFetch('/api/tickets/query/count')
-        res = data.value
-    }
-
-    if (res && res.statusCode === 200) {
-        StateValue.value.pending_count = res.body?.pending_count
-        StateValue.value.resolved_count = res.body?.resolved_count
-        StateValue.value.exceptions_count = res.body?.closed_count
-        StateValue.value.new_count = res.body?.new_count
-    }
-}
-
-
-export async function updateNewTickets(State: any) {
-    const res = await $fetch('/api/tickets/query/new')
-
-    if (res && res.statusCode === 200) {
-        State.value = res.body
-    }
-}
 
 export async function updateNotifications(State: any, user_id: string) {
     const res = await $fetch('/api/notifications', {
@@ -36,15 +12,6 @@ export async function updateNotifications(State: any, user_id: string) {
 
     if (res?.statusCode === 200) {
         State.value = res.body
-    }
-}
-
-export async function getUserName(user_id: string) {
-    const res = await $fetch(`/api/user/${user_id}`)
-    if (res?.statusCode === 200) {
-        return res.body
-    } else {
-        return user_id
     }
 }
 
@@ -100,8 +67,8 @@ export function onNotificationCallback(notification: Notification, notifications
 
 export function onMessageCallback(
     message: Message &
-        { attachments: Attachment[] } &
-        { chat_id: string },
+    { attachments: Attachment[] } &
+    { chat_id: string },
     chatsState: Ref<UserChatObject[]>, onNoChat: Function) {
     try {
         let chat = chatsState.value.find((chat: UserChatObject) => chat.chat_id === message?.chat_id) || null

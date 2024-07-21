@@ -1,53 +1,38 @@
 <template>
-    <Head to="head">
-        <Title>Login</Title>
-    </Head>
+    <Title>Login</Title>
     <div class="hero is-halfheight">
         <div class="hero-body is-justify-content-center is-align-items-center">
             <form class="is-flex is-flex-direction-column box" @submit.prevent="register">
                 <div class="column">
-                    <label for="name">Username</label>
-                    <input class="input is-primary" type="text" placeholder="Name" autocomplete="name"
-                           id="name" v-model="name" required>
-                </div>
-                <div class="column">
                     <label for="email">Email</label>
                     <input class="input is-primary" type="email" placeholder="Email address" autocomplete="email"
-                           id="email" v-model="email" required>
+                        id="email" v-model="data.email" required>
                 </div>
                 <div class="column">
-                    <label for="company">Company</label>
-                    <div class="field">
-                       <div class="control">
-                           <select name="company" v-model="company" class="select is-primary" id="company">
-                               <option value="">
-                                   Optional
-                               </option>
-                               <option v-for="company in companies" :key="company.id" :value="company.id">
-                                   {{ company.name }}
-                               </option>
-                           </select>
-                       </div>
-                    </div>
+                    <label for="name">Username</label>
+                    <input class="input is-primary" type="text" placeholder="(Optional)" autocomplete="name" id="name"
+                        v-model="data.name" required>
                 </div>
                 <div class="column">
                     <label for="Name">Password</label>
-                    <input class="input is-primary" type="password" placeholder="Password"
-                           autocomplete="current-password" id="password1" v-model="password1" required>
-                    <small class="has-text-danger" id="no-match">Passwords Do Not Match</small>
+                    <input class="input is-primary" type="password" placeholder="Password" autocomplete="new-password"
+                        ref="password" required>
+                    <small class="has-text-danger hidden" ref="matchErrorHelp">Passwords Do Not Match</small>
                 </div>
                 <div class="column">
                     <label for="password">Password Again</label>
-                    <input class="input is-primary" type="password" placeholder="Password"
-                           autocomplete="current-password" id="password2" v-model="password2" required>
-                    <a href="" class="is-size-7 has-text-primary">Forgot password?</a>
+                    <input class="input is-primary" type="password" placeholder="Password" autocomplete="new-password"
+                        v-model="data.password" required>
+                    <NuxtLink class="is-size-7 has-text-primary" to="/auth/identity/reset">Forgot password?</NuxtLink>
                 </div>
                 <div class="column">
-                    <button class="button is-primary is-fullwidth" type="submit" id="submit-btn" disabled>Register
-                    </button>
+                    <button class="button is-primary is-fullwidth" type="submit" id="submit-btn" ref="submitBtn"
+                        disabled>Register</button>
                 </div>
                 <div class="has-text-centered">
-                    <p class="is-size-7"> Already have an account? <NuxtLink to="/auth/login" class="has-text-primary">Log In</NuxtLink>
+                    <p class="is-size-7">
+                        Already have an account?
+                        <NuxtLink to="/auth/login" class="has-text-primary">Log In</NuxtLink>
                     </p>
                 </div>
             </form>
@@ -56,74 +41,64 @@
 </template>
 
 <script setup lang="ts">
-import {type RegisterCredentials, type UserAuth} from "~/types";
+import { type RegisterCredentials } from "~/types";
 
-let companies:any = null
-const {data:companies_data} = await useFetch('/api/company')
-if(companies_data.value){
-    companies = companies_data.value.body
-} else {
-    console.log(companies_data)
-}
-const email = ref('')
-const name = ref('')
-const company = ref('')
-const password1 = ref('')
-const password2 = ref('')
+const data = reactive({
+    email: '',
+    name: null,
+    password: '',
+    user_id: getAuthCookie()?.user_id
+} as RegisterCredentials)
 
-const {user_id} = useCookie<UserAuth>('auth').value || {auth_key: false}
-
-const register = async () => {
-    if(password1.value === password2.value && name.value && email.value){
-        const {data: response} = await useFetch('/api/auth/identity/register', {
-            method: 'POST',
-            body: JSON.stringify({
-                email: email.value,
-                password: password2.value,
-                user_id: user_id,
-                name: name.value,
-                company: company.value
-            } as RegisterCredentials)
-        })
-
-        if(response?.value?.statusCode === 200){
-            console.log(response.value)
-            window.location.href = '/'
-        } else {
-            alert(response.value.body)
-            await navigateTo({path: '/auth/identity/register'})
-        }
-    }
-}
-
-onMounted(()=>{
-    document.getElementById('no-match')?.classList.add('hidden')
-})
-
-watch([password1, password2, email, name], () => {
-    const submitBtn = document.getElementById('submit-btn')
-
-    if(password2.value && password1.value !== password2.value){
-        document.getElementById('no-match')?.classList.remove("hidden")
+async function register() {
+    const response = await $fetch('/api/auth/identity/register', {
+        method: 'POST',
+        body: {
+            ...data,
+            name: data.name || data.email.split('@')[0]
+        } satisfies RegisterCredentials
+    })
+    
+    if (response?.statusCode === 200) {
+        await navigateTo("/")
     } else {
-        document.getElementById('no-match')?.classList.add("hidden")
-        // @ts-ignore
-        submitBtn.disabled = !(name.value && email.value);
+        alert(response.body)
+        await navigateTo({ path: '/auth/identity/register' })
+    }
+}
+
+const submitBtn = ref<HTMLButtonElement | null>(null);
+const password = ref<HTMLInputElement | null>(null);
+const matchErrorHelp = ref<HTMLSpanElement | null>(null);
+watch(() => data.password, () => {
+    if (data.password && data.password !== password.value?.value) {
+        matchErrorHelp.value?.classList.remove("hidden")
+    } else {
+        matchErrorHelp.value?.classList.add("hidden")
+        submitBtn.value ? submitBtn.value.disabled = !(data.password && data.email) : true
     }
 })
 
+const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+watch([() => data.name, () => data.email], () => {
+    if (data.name && !usernameRegex.test(data.name)) {
+        data.name = data.name.replace(/[^a-zA-Z0-9_]/g, '');
+    } else if(data.name === null && data.email) {
+        data.name = data.email.split('@')[0];
+    }
+})
 </script>
 
 <style scoped>
-small{
+small {
     font-size: 0.8rem;
 }
 
-.hidden{
+.hidden {
     display: none;
 }
 
-.select{
+.select {
     width: 100%;
     border-color: #00d1b2;
     box-shadow: inset 0 0.0625em 0.125em rgba(10, 10, 10, 0.05);
@@ -136,7 +111,7 @@ small{
     padding: 11px 5px;
 }
 
-.select:focus{
+.select:focus {
     box-shadow: 0 0 0 0.125em rgba(0, 209, 178, 0.25);
     outline: #00c4a7;
 }

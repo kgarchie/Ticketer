@@ -37,7 +37,7 @@ const password = ref('')
 const success = ref(true)
 
 const login = async () => {
-    const {data: response} = await useFetch('/api/auth/login', {
+    const response = await $fetch('/api/auth/login', {
         method: 'POST',
         body: JSON.stringify({
             email: email.value,
@@ -45,11 +45,10 @@ const login = async () => {
         } as LoginCredentials)
     })
 
-    if(response.value?.statusCode === 200) {
+    if(response.statusCode === 200) {
         window.location.href = '/'
     } else {
         success.value = false
-        console.log(response.value)
     }
 }
 </script>

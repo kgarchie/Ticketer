@@ -21,13 +21,9 @@ definePageMeta({
   middleware: ["auth"],
 })
 
-if(user.user_id && user.user_id !== ''){
+if(user.user_id){
     const response = await $fetch(`/api/user/${user.user_id}/tickets`)
-
     tickets.value = response?.body
-
-    // console.log(tickets.value)
-
     onMounted(() => {
         const filters = document.getElementById('filters')
 

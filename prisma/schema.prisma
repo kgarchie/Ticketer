@@ -50,22 +50,15 @@ model User {
 
 model Ticket {
   id               Int       @id @default(autoincrement())
-  transaction_date DateTime
   reference        String    @unique
-  safaricom_no     String
-  name             String
-  paybill_no       String
-  airtel_no        String
-  issue            String    @default("Default")
-  amount           Float
-  a_info           String?
+  info            String    @default("Default")
   urgency          String    @default("Default")
   created_at       DateTime  @default(now())
   resolved_at      DateTime?
   status           String    @default("Open")
-  company          String?
   creator          String?
   deleted          Boolean   @default(false)
+  Attachment       Attachment[]
   chats            Chat[]
   comments         Comment[]
 }
@@ -129,6 +122,7 @@ model Attachment {
   messageId  Int?
   to_purge   Boolean     @default(false)
   FilePurge  FilePurge[]
+  Ticket     Ticket?     @relation(fields: [id], references: [id])
 }
 
 model FilePurge {

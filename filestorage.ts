@@ -1,7 +1,7 @@
 import {createStorage, defineDriver} from "unstorage";
 import {existsSync, watch} from "fs";
 import {readFile, writeFile, rename, unlink, readdir, lstat} from "fs/promises";
-import path from "path";
+import {join, resolve} from "pathe";
 import type {WatchEventType} from "node:fs";
 
 const customDriver = defineDriver((options?: { destination: string }) => {
@@ -9,8 +9,8 @@ const customDriver = defineDriver((options?: { destination: string }) => {
         options = {destination: './'}
     }
     const location = (destination: string) => {
-        const basePath = path.join("public", "uploads", options!.destination, destination).replace(/:/g, "_")
-        return path.resolve(basePath)
+        const basePath = join("public", "uploads", options!.destination, destination).replace(/:/g, "_")
+        return resolve(basePath)
     }
 
     return {
@@ -40,20 +40,20 @@ const customDriver = defineDriver((options?: { destination: string }) => {
                 const stats = await lstat(location).catch(e => null)
                 if (stats?.isDirectory()) {
                     const next = await readdir(location)
-                    return construct(next[0], path.join(sb, location))
+                    return construct(next[0], join(sb, location))
                 }
 
-                return path.join(sb, location)
+                return join(sb, location)
             }
 
-            const files = await readdir(path.join(options!.destination, "public", "uploads")).catch(e => {
+            const files = await readdir(join(options!.destination, "public", "uploads")).catch(e => {
                 console.error(e)
                 return []
             })
 
             const keys: string[] = []
             for (const file of files) {
-                construct(file, path.join(options!.destination, "public", "uploads")).then(value => {
+                construct(file, join(options!.destination, "public", "uploads")).then(value => {
                     keys.push(value)
                 })
             }
@@ -68,7 +68,7 @@ const customDriver = defineDriver((options?: { destination: string }) => {
 
                 for (const file of files) {
                     const stats = await lstat(file).catch(e => null)
-                    if (stats && stats.isDirectory()) {
+                    if (stats?.isDirectory()) {
                         deleteFiles(file)
                     }
 
@@ -76,12 +76,12 @@ const customDriver = defineDriver((options?: { destination: string }) => {
                 }
             }
 
-            return await deleteFiles(path.join(options!.destination, "public", "uploads"))
+            return await deleteFiles(join(options!.destination, "public", "uploads"))
         },
         async dispose() {
         },
         async watch(callback: (event: WatchEventType, filename: string | null) => void) {
-            const watcher = watch(path.join(options!.destination, "public", "uploads"), {recursive: true}, (event, filename) => {
+            const watcher = watch(join(options!.destination, "public", "uploads"), {recursive: true}, (event, filename) => {
                 callback(event, filename)
             })
 

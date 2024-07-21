@@ -17,7 +17,7 @@ export function getAuthCookie() {
         !cookie?.user_id
     ) return null
 
-    return cookie.auth_key
+    return cookie
 }
 
 export function getAuthToken() {
@@ -30,11 +30,19 @@ export function getAuthToken() {
         state === "null" ||
         state === "false" ||
         state === ""
-    ) return cookie
+    ) return cookie?.auth_key
     return state
 }
 
 export function userIsAuthenticated() {
-    console.log(getAuthToken())
     return !!getAuthToken()
+}
+
+export async function getUserName(user_id: string) {
+    const res = await $fetch(`/api/user/${user_id}`)
+    if (res?.statusCode === 200) {
+        return res.body
+    } else {
+        return user_id
+    }
 }

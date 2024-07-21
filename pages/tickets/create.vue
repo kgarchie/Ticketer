@@ -1,148 +1,62 @@
 <template>
+
     <Head>
         <Title>Create Ticket</Title>
     </Head>
     <main class="container">
         <div class="columns">
-            <SideNav/>
-            <div class="column is-10">
-                <form method="post" class="columns limited-form"
-                      @submit.prevent="createNewTicket()">
-                    <div class="column is-three-fifths">
-                        <div class="field">
-                            <label class="label">Reference</label>
-                            <div class="control">
-                                <input class="input" type="text" placeholder="Transaction Code or Ref Number"
-                                       name="reference" v-model="reference" autocomplete="none">
-                                <p class="help is-info">Required</p>
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Safaricom Phone Number</label>
-                            <div class="control">
-                                <input class="input" type="text" inputmode="number" required name="safaricom_no"
-                                       v-model="safaricom_no">
-                            </div>
-                            <p class="help is-info">Required</p>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Airtel Phone Number</label>
-                            <div class="control">
-                                <input class="input" type="text" inputmode="number" required name="airtel_no"
-                                       v-model="airtel_no">
-                            </div>
-                            <p class="help is-info">Required</p>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Amount</label>
-                            <div class="control">
-                                <input class="input" type="number" name="amount" required v-model="amount">
-                                <p class="help is-info">Required</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="column is-three-fifths">
-                        <div class="field">
-                            <label class="label">Name</label>
-                            <div class="control">
-                                <input class="input" type="text" placeholder="Sender Name or Identifier" name="name"
-                                       v-model="name">
-                                <p class="help is-success">Optional</p>
-                            </div>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Issue</label>
-                            <div class="control">
-                                <div class="select my-select">
-                                    <select name="issue" v-model="issue">
-                                        <option :value="CHOICES.EA">Excess Airtime</option>
-                                        <option :value="CHOICES.BWN">Buying To Wrong Number</option>
-                                        <option :value="CHOICES.NC">Not Credited</option>
-                                        <option :value="CHOICES.O">Other</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="help is-success">Optional</p>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Company</label>
-                            <div class="control">
-                                <div class="select my-select">
-                                    <select name="company" v-model="company">
-                                        <option v-for="company in companies" :key="company.id" :value="company.name">
-                                            {{ company.name }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="help is-success">Optional</p>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Paybill</label>
-                            <div class="control">
-                                <div class="select my-select">
-                                    <select name="paybill_no" required v-model="paybill_no">
-                                        <option v-for="paybill in paybills" :key="paybill.id" :value="paybill.number">
-                                            {{ paybill.number }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                            <p class="help is-warning">Required</p>
-                        </div>
-                    </div>
-
-                    <div class="column is-three-fifths">
-                        <label class="label">Transaction Date</label>
+            <SideNav />
+            <form method="post" class="column is-8 m-auto" @submit.prevent="createNewTicket" @reset="resetForm">
+                <div class="card p-5">
+                    <div class="field">
+                        <label class="label">Message</label>
                         <div class="control">
-                            <input class="input my-input" type="date" name="transaction_date"
-                                   v-model="transaction_date">
-                            <p class="help is-success">Default is today</p>
+                            <textarea class="textarea is-link" placeholder="Talk to us" v-model="data.text"></textarea>
                         </div>
-
-                        <div class="field mt-3">
-                            <label class="label">Additional Info</label>
-                            <div class="control">
-                                <textarea class="textarea" placeholder="Anything You Think We Should Know?" rows="1"
-                                          name="a_info" v-model="a_info"></textarea>
-                            </div>
-                            <p class="help is-success">Optional</p>
-                        </div>
-
-                        <div class="field">
-                            <label class="label">Elevation</label>
-                            <div class="control">
-                                <label class="radio">
-                                    <input type="radio" name="urgency" :value="URGENCY.U" v-model="urgency">
-                                    Urgent
-                                </label>
-                                <label class="radio">
-                                    <input type="radio" name="urgency" :value="URGENCY.E" v-model="urgency">
-                                    Emergency
-                                </label>
-                            </div>
-                            <p class="help is-success">Optional</p>
-                        </div>
-
-                        <div class="field is-grouped mt-6">
-                            <div class="control">
-                                <button class="button is-link" type="submit">Submit</button>
-                            </div>
-                            <div class="control">
-                                <button class="button is-link is-light" type="reset">Cancel</button>
-                            </div>
-                        </div>
-
+                        <p class="help is-info">Required</p>
                     </div>
-                </form>
-            </div>
+                    <div class="file has-name is-fullwidth">
+                        <label class="file-label">
+                            <input class="file-input" type="file" @change="createAttachment" multiple/>
+                            <span class="file-cta">
+                                <span class="file-icon">
+                                    <i class="fas fa-upload"></i>
+                                </span>
+                                <span class="file-label"> Choose a file… </span>
+                            </span>
+                            <span class="file-name">{{ data.attachment.names.join(', ') }}</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="is-flex is-justify-content-space-between is-align-items-center px-5">
+                    <div class="field">
+                        <label class="label">Elevation</label>
+                        <div class="control">
+                            <label class="radio">
+                                <input type="radio" name="urgency" :value="URGENCY.U" v-model="data.elevation">
+                                Urgent
+                            </label>
+                            <label class="radio">
+                                <input type="radio" name="urgency" :value="URGENCY.E" v-model="data.elevation">
+                                Emergency
+                            </label>
+                        </div>
+                        <p class="help is-success">Optional</p>
+                    </div>
+
+                    <div class="field is-grouped">
+                        <div class="control">
+                            <button class="button is-link" type="submit"
+                                :disabled="is_loading"
+                                :class="{ 'is-loading': is_loading }">Submit</button>
+                        </div>
+                        <div class="control">
+                            <button class="button is-link is-light" type="reset">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </main>
 </template>
@@ -154,92 +68,67 @@
     width: 100%;
 }
 
-.limited-form{
+.limited-form {
     max-width: 500px;
 }
 </style>
 
-<script setup>
-import {CHOICES, URGENCY} from "~/types";
-
-let paybills = null
-let companies = null
-const {data: paybills_data} = await useFetch('/api/paybills')
-if (paybills_data.value) {
-    paybills = paybills_data.value
-} else {
-    console.log(paybills_data)
-}
+<script setup lang="ts">
+import { ulid } from "ulid";
+import {type HttpResponseTemplate, URGENCY} from "~/types";
+const formData = new FormData()
+const is_loading = ref(false)
 
 definePageMeta({
-  middleware: ["auth"],
+    middleware: ["auth"],
 })
 
-const {data: companies_data} = await useFetch('/api/company')
-if (companies_data.value) {
-    companies = companies_data
-} else {
-    console.log(companies_data)
-}
-
-const safaricom_no = ref('')
-const airtel_no = ref('')
-const amount = ref('')
-const name = ref('')
-const issue = ref(CHOICES.D)
-const company = ref('')
-const paybill_no = ref('')
-const transaction_date = ref('')
-const a_info = ref('')
-const urgency = ref(URGENCY.D)
-const reference = ref('')
-const user = useUser()
+const data = reactive({
+    text: '',
+    attachment: {
+        names: [] as string[],
+        files: [] as File[]
+    },
+    elevation: URGENCY.D,
+    reference: ulid()
+})
 
 const createNewTicket = async () => {
-    const ticket = {
-        safaricom_no: safaricom_no.value,
-        airtel_no: airtel_no.value,
-        amount: amount.value,
-        name: name.value,
-        issue: issue.value,
-        company: company.value,
-        paybill_no: paybill_no.value,
-        transaction_date: transaction_date.value,
-        a_info: a_info.value,
-        urgency: urgency.value,
-        reference: reference.value,
-        creator: user.value.user_id
-    }
-    const {data: response} = await useFetch('/api/tickets/create', {
+    formData.append('info', data.text)
+    formData.append('urgency', data.elevation)
+    formData.append('creator', useUser().value.user_id)
+    formData.append('reference', data.reference)
+    is_loading.value = true
+    const response = await $fetch<HttpResponseTemplate>('/api/tickets/create', {
         method: 'POST',
-        body: ticket
+        body: formData
     })
-
-    if (response.value.statusCode === 200) {
-        console.log(response.value)
-        safaricom_no.value = ''
-        airtel_no.value = ''
-        amount.value = ''
-        name.value = ''
-        issue.value = ''
-        company.value = ''
-        paybill_no.value = ''
-        transaction_date.value = ''
-        a_info.value = ''
-        urgency.value = ''
-        reference.value = ''
-
+    is_loading.value = false
+    console.log(response)
+    if (response?.statusCode === 200) {
         alert('Ticket Created Successfully')
-
         await navigateTo('/tickets/view/user')
     } else {
-        console.log(response.value)
-        alert(response.value.message)
+        alert(response?.body?.message || 'An error occurred')
     }
 }
 
-onMounted(() => {
-    transaction_date.value = new Date().toISOString().split('T')[0]
-})
+const createAttachment = (event: Event) => {
+    const target = event.target as HTMLInputElement
+    if (!target.files) return
+    formData.delete('attachment')
+    for (const file of target.files) {
+        data.attachment.names.push(file.name)
+        data.attachment.files.push(file)
+        formData.append('attachment', file)
+    }
+}
 
+const resetForm = () => {
+    data.text = ''
+    data.attachment.names = []
+    data.attachment.files = []
+    data.elevation = URGENCY.D
+    is_loading.value = false
+}
 </script>
