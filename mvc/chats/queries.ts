@@ -245,7 +245,7 @@ export async function addToPurge(attachmentId: number) {
             attachmentId: attachmentId,
             deadline: deadline_date
         }
-    })
+    }).catch(console.error)
 
     await prisma.attachment.update({
         where: {

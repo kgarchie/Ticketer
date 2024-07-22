@@ -14,7 +14,8 @@
 
 <script setup lang="ts">
 import {type Ticket} from "@prisma/client";
-const user = useUser().value
+import type { UserAuth } from "~/types";
+const user = useCookie<UserAuth>("auth").value
 const tickets = ref<Ticket[]>([])
 
 definePageMeta({

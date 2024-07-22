@@ -45,11 +45,6 @@ export async function writeFileToStorage(constructed_path: string, file: any, me
         })
 }
 
-export async function getPresignedUrl(fullyQualifiedUrl: string | null) {
-    if (!fullyQualifiedUrl) return null
-    return await fileStorage.getItem(fullyQualifiedUrl).catch(console.error)
-}
-
 async function schedulePurge(totalSize: number = 0.0): Promise<null | void> {
     let batch = await getOldestUnpurgedAttachments(100)
 

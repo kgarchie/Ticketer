@@ -1,6 +1,6 @@
 // @ts-ignore
 import {createRouter, type H3Event} from "h3";
-import {getChats, readMessage, sendMessage, placeCall, acceptCall, rejectCall, getFileUrl} from "~/mvc/chats/functions";
+import {getChats, readMessage, sendMessage, placeCall, acceptCall, rejectCall} from "~/mvc/chats/functions";
 
 const router = createRouter();
 
@@ -13,10 +13,6 @@ router.post('/messages/send', defineEventHandler(async (event: H3Event<Request>)
         return await sendMessage(event)
     }
 ));
-
-router.post('/messages/attachment', defineEventHandler(async (event: H3Event<Request>) => {
-        return await getFileUrl(event)
-}));
 
 router.post('/call', defineEventHandler(async (event: H3Event<Request>) => {
         return await placeCall(event)

@@ -209,8 +209,8 @@ const search_date_to = ref<Date | null>(null)
 const search_transaction_code_or_reference = ref('')
 const email_or_name = ref('')
 
-const user = useUser().value
-const name = await useFetch(`/api/user/${useCookie<UserAuth>("auth").value.user_id}`).then(res => res.data?.value?.body || user.user_id).catch(() => user.user_id)
+const user = useCookie<UserAuth>("auth").value
+const name = await useFetch(`/api/user/${user.user_id}`).then(res => res.data?.value?.body || user.user_id).catch(() => user.user_id)
 const notifications = useNotifications()
 
 
@@ -232,8 +232,6 @@ async function search() {
     date_from: search_date_from.value,
     date_to: search_date_to.value
   } as SearchQuery
-
-  console.log(query)
 
   await navigateTo(`/tickets/search/${encodeURI(JSON.stringify(query))}`)
 }

@@ -104,7 +104,6 @@ const createNewTicket = async () => {
         body: formData
     })
     is_loading.value = false
-    console.log(response)
     if (response?.statusCode === 200) {
         alert('Ticket Created Successfully')
         await navigateTo('/tickets/view/user')

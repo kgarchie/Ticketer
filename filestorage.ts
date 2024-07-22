@@ -38,6 +38,10 @@ const customDriver = defineDriver((options?: { destination: string }) => {
             }
         },
         async setItemRaw(key, value, _opts) {
+            const folder = location(key).split(sep).slice(0, -1).join(sep)
+            if(!existsSync(folder)){
+                await mkdir(folder, { recursive: true })
+            }
             return await rename(value.filepath, location(key))
         },
         async removeItem(key, _opts) {

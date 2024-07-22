@@ -1,7 +1,9 @@
 <template>
   <div class="chat_box is-flex is-flex-direction-column is-justify-content-space-between" id="message-container">
     <div class="top-bar">
-      <div class="avatar"><p>{{ getUserInitial(String(to_user.name)) }}</p></div>
+      <div class="avatar">
+        <p>{{ getUserInitial(String(to_user.name)) }}</p>
+      </div>
       <div class="name">{{ String(to_user.name) }}</div>
       <div class="icons">
         <i class="fas fa-phone cursor-pointer" @click="placeAudioCall()" id="call-icon"></i>
@@ -19,14 +21,12 @@
           <p>{{ message?.message }}</p>
           <div v-if="message?.attachments?.length > 0" class="attachments">
             <div v-for="file in message.attachments" :key="file.name" class="attachment">
-                            <span
-                                class="is-flex is-align-items-center is-justify-content-space-between">
-                                <small class="is-small cursor-pointer" @click="onlinePreview(file.url)">{{
-                                    file?.name?.substring(0, 10) || 'unknown'
-                                  }}..{{ file?.name?.split('.').pop() || '???' }}</small>
-                                <a @click.prevent="downloadFile(file.url)"
-                                   class="ml-2 fas fa-download is-inline cursor-pointer"></a>
-                            </span>
+              <span class="is-flex is-align-items-center is-justify-content-space-between">
+                <small class="is-small cursor-pointer" @click="onlinePreview(file.url)">
+                  {{ file?.name }}
+                </small>
+                <a @click.prevent="downloadFile(file.url)" class="ml-2 fas fa-download is-inline cursor-pointer"></a>
+              </span>
             </div>
           </div>
           <small class="time">{{ new Date(message?.created_at).toLocaleString() || '' }}</small>
@@ -35,17 +35,11 @@
           <p>{{ message?.message }}</p>
           <div v-if="message?.attachments?.length > 0" class="attachments">
             <div v-for="file in message.attachments" :key="file.id" class="attachment">
-                            <span
-                                class="is-flex is-align-items-center is-justify-content-space-between">
-                                <span class="is-medium cursor-pointer"
-                                      @click="onlinePreview(file.url)">{{
-                                    file?.name?.substring(0, 10) || 'unknown'
-                                  }}.{{
-                                    file?.name?.split('.').pop() || '???'
-                                  }}</span>
-                                <a @click.prevent="downloadFile(file.url)"
-                                   class="ml-2 fas fa-download is-inline cursor-pointer" download></a>
-                            </span>
+              <span class="is-flex is-align-items-center is-justify-content-space-between">
+                <span class="is-medium cursor-pointer" @click="onlinePreview(file.url)">{{ file?.name }}</span>
+                <a @click.prevent="downloadFile(file.url)" class="ml-2 fas fa-download is-inline cursor-pointer"
+                  download></a>
+              </span>
             </div>
           </div>
           <small class="time">{{ new Date(message?.created_at).toLocaleString() || '' }} </small>
@@ -56,32 +50,31 @@
       <ul class="is-flex scroll-left" v-if="files">
         <li v-for="file in files" :key="file.name" class="is-inline">
           <p class="file-name is-flex is-align-items-center is-justify-content-space-between">
-            <small @click="preview(file)" class="is-small cursor-pointer">{{ file.name.substring(0, 10) }}.{{
-                file.name.split('.').pop()
-              }}</small>
+            <small @click="preview(file)" class="is-small cursor-pointer">{{ file.name }}</small>
             <i class="ml-2 fas fa-times is-inline cursor-pointer" @click="removeFile(file.name)"></i>
           </p>
         </li>
       </ul>
       <div class="text">
         <div class="is-flex is-justify-content-space-between is-align-items-center">
-                    <textarea id="chat_input" class="chat_input" type="text" placeholder="Type a message..."
-                              v-model="composed_message" autocomplete="none"></textarea>
+          <textarea id="chat_input" class="chat_input" type="text" placeholder="Type a message..."
+            v-model="composed_message" autocomplete="none"></textarea>
 
-          <button class="button attachment fas fa-paperclip" @click="openFilePicker()"
-                  :disabled="pending"></button>
-          <button class="button is-primary fas fa-paper-plane" @click="sendMessage()"
-                  :class="{ 'is-loading': pending }" :disabled="pending"></button>
+          <button class="button attachment fas fa-paperclip" @click="openFilePicker()" :disabled="pending"></button>
+          <button class="button is-primary fas fa-paper-plane" @click="sendMessage()" :class="{ 'is-loading': pending }"
+            :disabled="pending"></button>
         </div>
       </div>
-      <embed class="file-preview" id="file-preview"/>
+      <embed class="file-preview" id="file-preview" />
       <i class="fas fa-times close-preview not_active" @click="closePreview()" id="close-preview-button"></i>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {SocketStatus, type HttpResponseTemplate} from "~/types";
+import type { Attachment, Message } from "@prisma/client";
+import { joinURL } from "ufo";
+import { SocketStatus, type HttpResponseTemplate } from "~/types";
 
 const eCall = useCall().value
 
@@ -92,7 +85,7 @@ const pending = ref(false)
 
 const props = defineProps({
   messages: {
-    type: Array,
+    type: Array as PropType<Array<Message & { attachments: Array<Attachment> }>>,
     required: false,
     default: () => []
   },
@@ -225,82 +218,52 @@ function preview(file: File) {
   const previewButton = document.getElementById('close-preview-button')
   previewButton?.classList.remove('not_active')
 
-  showFile(filePreview, previewButton, file)
+  showFile(filePreview, previewButton, file)  
 }
 
-async function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | null, file_or_url: any) {
-  let ext: string | null = null
-  let type: string | null = null
-
-  if (typeof file_or_url === 'object') {
-    type = file_or_url.type.split('/')[0]
-    ext = file_or_url.name.split('.').pop()?.toLowerCase()
-    type = type?.toLowerCase() || null
+async function showFile(filePreview: HTMLElement | null, previewButton: HTMLElement | null, file_or_url: File | string) {
+  if(typeof file_or_url === "string"){
+    var { file, mimetype } = await pullFile(file_or_url) || { file: null, mimetype: null }
   } else {
-    const trail = file_or_url.split('.').pop()?.toLowerCase() || ''
-    ext = trail.split('?')[0].toLowerCase()
+    var file = file_or_url as File | null
+    var mimetype = file?.type as string | null
   }
-
-  if (type === 'video' || type === 'audio' || ext === 'mp4' || type === 'application/pdf' || ext === 'pdf') {
-    if (typeof file_or_url === 'object') {
-      filePreview?.setAttribute('src', URL.createObjectURL(file_or_url))
-      filePreview?.setAttribute('type', file_or_url.type)
-    } else {
-      const is_playable = type === 'video' || type === 'audio' || ext === 'mp4' || ext === 'mp3'
-
-      if (!is_playable) {
-        console.log('not playable')
-        filePreview?.setAttribute('src', URL.createObjectURL(await pullFile(file_or_url)))
-        return
-      }
-
-      function tagName(): string {
-        if (type === 'audio' || ext === 'mp3') return 'audio'
-        return 'video'
-      }
-
-      let tag: any
-      const otherPreview = document.getElementById('other-preview')
-      if (otherPreview) {
-        tag = otherPreview as HTMLAudioElement | HTMLVideoElement
-      } else {
-        tag = document.createElement(tagName())
-      }
-
-      tag.style.position = 'absolute'
-      tag.style.top = '0'
-      tag.style.width = '100%'
-      tag.style.height = '100%'
-      tag.style.backgroundColor = 'black'
-      tag.id = 'other-preview'
-
-      filePreview?.replaceWith(tag)
-      tag.setAttribute('src', await getUrl(file_or_url))
-      tag.setAttribute('controls', 'true')
-      console.log(tag)
-      return
-    }
-    filePreview?.setAttribute('controls', 'true')
+  
+  if(!file || !mimetype) return alert("Unsupported File: Preview not available")
+  if(isImage(file!.name)){
+    const imageElement = document.createElement('img')
+    imageElement.src = URL.createObjectURL(file)
+    imageElement.className = 'file-preview active'
+    imageElement.id = 'file-preview'
+    filePreview?.replaceWith(imageElement)
+  } else if(isPdf(file.name)){
+    filePreview?.setAttribute('src', URL.createObjectURL(file))
+    filePreview?.setAttribute('type', 'application/pdf')
+  } else if(isAudio(file.name) || isVideo(file.name)){
+    filePreview?.setAttribute('src', URL.createObjectURL(file))
+    filePreview?.setAttribute('type', mimetype)
   } else {
-    previewButton?.classList.add('not_active')
-    alert('File preview not yet supported for this kind of file')
+    alert("Unsupported File: Preview not availables")
   }
 }
 
-async function pullFile(partial_url: string) {
-  const url = await getUrl(partial_url)
-  const name = url.split('?')[0].split('/').pop() || 'file'
-  return await $fetch(url, {
-    method: 'GET',
-    responseType: 'stream'
-  }).then(async (response: any) => {
-    return new File([await response], name, {type: response.type})
+async function pullFile(partial_url: string): Promise<{ file: File, mimetype: string } | null> {
+  const url = getUrl(partial_url)
+  const response = await fetch(url).catch((e) => {
+    console.error(e)
+    return null
   })
+  if (!response) return null
+  const blob = await response?.blob()
+  const file = new File([blob], url.split('?')[0].split('/').pop() || 'file')
+  return {
+    file,
+    mimetype: response.headers.get("content-type") || 'application/octet-stream'
+  }
 }
 
 async function downloadFile(partial_url: string) {
-  const url = await getUrl(partial_url)
-  console.log(url)
+  const url = getUrl(partial_url)
   const xhr = new XMLHttpRequest()
   xhr.open('GET', url, true)
   xhr.responseType = 'blob'
@@ -312,7 +275,7 @@ async function downloadFile(partial_url: string) {
     link.click()
   }
   xhr.onprogress = function (e) {
-    // console.log(Math.ceil(e.loaded / e.total * 100), '%')
+    console.log(Math.ceil(e.loaded / e.total * 100), '%')
   }
   xhr.send()
 }
@@ -336,6 +299,8 @@ function closePreview() {
   filePreview?.removeAttribute('src')
   filePreview?.removeAttribute('type')
   filePreview?.removeAttribute('controls')
+  filePreview!.className = ""
+  filePreview!.innerHTML = ""
 }
 
 let _switch = false
@@ -349,32 +314,23 @@ function placeAudioCall() {
   _switch = !_switch
 }
 
-const getUrl = async (url: string) => {
-  return await $fetch('/api/chats/messages/attachment', {
-    method: 'POST',
-    body: {url: url}
-  }).then(
-      (response) => {
-        if (response.statusCode === 200) {
-          return response.body
-        } else {
-          alert(response.body.toString())
-          return null
-        }
-      },
-      (error) => {
-        console.log(error)
-        return null
-      }
-  ).catch(
-      (error) => {
-        console.log(error)
-        return null
-      }
-  )
+const getUrl = (url: string): string => {
+  return joinURL(window.location.origin, "files", url)
 }
 </script>
-
+<style>
+.file-preview.active {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  object-fit: contain;
+  background-color: rgba(240, 248, 255, 0.8);
+  backdrop-filter: blur(8px);
+  cursor: crosshair;
+}
+</style>
 <style scoped lang="scss">
 .icons {
   margin-left: auto;

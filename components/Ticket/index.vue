@@ -129,10 +129,9 @@
 }
 </style>
 <script lang="ts" setup>
-import { type Attachment, type Comment } from "@prisma/client";
+import { type Comment } from "@prisma/client";
 import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
 import type { SocketTemplate, UserAuth } from "~/types"
-import { joinURL } from 'ufo'
 
 import {
     onDeleteComment,
@@ -307,85 +306,5 @@ function orderComments(comments: Comment[]) {
         return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     })
     return comments
-}
-
-function isImage(name: string) {
-    const ext = name.split(".").pop()
-    if (!ext) return false
-    const images = ['jpg', 'jpeg', 'git', 'png']
-    return images.includes(ext)
-}
-
-function isPdf(name: string) {
-    return name.split(".").pop() === 'pdf'
-}
-
-function isVideo(name: string) {
-    const ext = name.split(".").pop()
-    if (!ext) return false
-    const videos = ['mp4', 'mpeg', 'avi', 'm4a', 'mov']
-    return videos.includes(ext)
-}
-
-function isAudio(name: string) {
-    const ext = name.split(".").pop()
-    if (!ext) return false
-    const audios = ['mp3', 'ogg']
-    return audios.includes(ext)
-}
-
-function videoPreview(attachment: Attachment) {
-    const element = document.createElement('video')
-    element.src = attachmentUrl(attachment)
-    element.controls = true
-    element.autoplay = true
-    return element
-}
-
-function audioPreview(attachment: Attachment) {
-    const element = document.createElement("audio")
-    element.src = attachmentUrl(attachment)
-    element.controls = true
-    return element
-}
-
-function imagePreview(attachment: Attachment) {
-    const element = document.createElement('img')
-    element.src = attachmentUrl(attachment)
-    return element
-}
-
-function pdfPreview(attachment: Attachment) {
-    const element = document.createElement('embed')
-    element.src = attachmentUrl(attachment)
-    element.type = "pdf"
-    return element
-}
-
-function loadPreview(attachment: Attachment) {
-    if (isAudio(attachment.name)) return audioPreview(attachment)
-    if (isVideo(attachment.name)) return videoPreview(attachment)
-    if (isImage(attachment.name)) return imagePreview(attachment)
-    if (isPdf(attachment.name)) return pdfPreview(attachment)
-
-    const _default = document.createElement("div")
-    _default.innerText = attachment.name
-    _default.classList.add("default")
-    return _default
-}
-
-function attachmentUrl(attachment: Attachment) {
-    const url = attachment.url
-    const fullUrl = joinURL(window.location.origin, "files", url)
-    console.log(fullUrl)
-    return fullUrl
-}
-
-function downloadAttatchment(attachment: Attachment){
-    const url = attachmentUrl(attachment)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = attachment.name
-    a.click()
 }
 </script>

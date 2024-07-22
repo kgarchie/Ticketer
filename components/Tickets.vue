@@ -101,7 +101,6 @@ const props = defineProps({
 })
 
 props.tickets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
 async function closeTicket(id: number) {
     if (user.is_admin) {
         const { data: response } = await useFetch(`/api/tickets/${id}/close`, {

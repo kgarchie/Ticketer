@@ -13,7 +13,7 @@ import {
 } from "~/mvc/chats/queries";
 import {createAndShuttleNotification, getConnectedClientSockets, shuttleData} from "~/mvc/utils";
 import {getUserName} from "~/mvc/user/queries";
-import {getPresignedUrl} from "~/mvc/chats/helpers";
+import filestorage from "~/filestorage";
 
 export async function getChats(event: H3Event) {
     const user_id = readAuthToken(event, "User")
@@ -36,10 +36,10 @@ export async function sendMessage(event: H3Event) {
         includeFields: true
     })
 
-    const chat_id = fields?.chat_id[0] || null
-    const from_user_id = fields?.from_user_id[0] || null
-    const to_user_id = fields?.to_user_id[0] || null
-    const message = fields?.message[0] || null
+    const chat_id = fields?.chat_id.at(-1)
+    const from_user_id = fields?.from_user_id.at(-1)
+    const to_user_id = fields?.to_user_id.at(-1)
+    const message = fields?.message.at(-1)
 
     let response = {} as HttpResponseTemplate
 
@@ -63,7 +63,7 @@ export async function sendMessage(event: H3Event) {
         return response
     }
 
-    if (files.files && files.files.length > 0) {
+    if (files.files?.length) {
         try {
             await storeFiles(files.files, createdMessage.id, chat.chat_id, from_user_id)
         } catch (e) {
@@ -192,22 +192,5 @@ export async function rejectCall(event: H3Event) {
     response.statusCode = 229
     response.body = "Call rejected"
 
-    return response
-}
-
-export async function getFileUrl(event: H3Event) {
-    const {url: url} = await readBody(event)
-    let link = await getPresignedUrl(url).catch(e => null)
-
-    let response = {} as HttpResponseTemplate
-
-    if (!link) {
-        response.statusCode = 500
-        response.body = "Error getting file"
-        return response
-    }
-
-    response.statusCode = 200
-    response.body = link
     return response
 }
