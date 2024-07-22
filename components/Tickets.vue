@@ -100,6 +100,8 @@ const props = defineProps({
     }
 })
 
+props.tickets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
 async function closeTicket(id: number) {
     if (user.is_admin) {
         const { data: response } = await useFetch(`/api/tickets/${id}/close`, {
@@ -120,16 +122,17 @@ async function closeTicket(id: number) {
 
 async function resolveTicket(id: number) {
     if (user.is_admin) {
-        const { data: response } = await useFetch(`/api/tickets/${id}/resolve`, {
+        const { data: response } = await $fetch(`/api/tickets/${id}/resolve`, {
             method: 'POST'
         })
 
-        // update the ticket status
-        if (response?.value?.statusCode === 200) {
+        if (response?.statusCode === 200) {
             const ticket = props.tickets.find(ticket => ticket.id === id)
             if (ticket) {
                 ticket.status = STATUS.R
             }
+        } else {
+            alert('A problem occurred while trying to resolve the ticket')
         }
     } else {
         alert('You are not authorized to perform this action')

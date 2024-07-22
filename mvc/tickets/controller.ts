@@ -8,8 +8,10 @@ import {
     pendTicket,
     resolveTicket,
     search,
-    deleteTicket, searchFilter
-} from "~/mvc/tickets/functions";
+    deleteTicket,
+    searchFilter,
+    getTicketAttachment
+} from "./functions";
 
 const router = createRouter()
 
@@ -27,6 +29,10 @@ router.post('/:id/close', defineEventHandler(async event => {
 
 router.get('/:id', defineEventHandler(async event => {
     return await getTicket(event)
+}))
+
+router.get('/:id/attachment/:attachment', defineEventHandler(async event => {
+    return await getTicketAttachment(event)
 }))
 
 router.get('/:id/pend', defineEventHandler(async event => {

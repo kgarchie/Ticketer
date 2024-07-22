@@ -22,6 +22,18 @@
                     <label class="heading" style="font-size: 0.9rem; letter-spacing: 0.1ch;">Message</label>
                     {{ local_ticket.info }}
                 </div>
+                <div class="attachments">
+                    <ClientOnly>
+                        <div class="attachment" v-for="attachment of local_ticket.Attachment">
+                            <div class="preview" v-html="loadPreview(attachment).outerHTML">
+                            </div>
+                            <span>
+                                {{ attachment.name }}
+                                <i class="fas fa-download" @click="downloadAttatchment(attachment)"></i>
+                            </span>
+                        </div>
+                    </ClientOnly>
+                </div>
             </article>
             <article class="pb-5" v-if="useCookie<UserAuth>('auth').value?.is_admin">
                 <div class="buttons mt-3 is-flex is-fullwidth">
@@ -60,14 +72,67 @@
     </main>
 </template>
 <style scoped>
+.raised {
+    margin-bottom: 0.5rem;
+    padding: 1rem;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+    box-shadow: 0 0 0 1px rgba(10, 10, 10, .1), 0 2px 4px 1px rgba(10, 10, 10, .1);
+}
+
 .is-full {
     width: 100%;
 }
+
+.attachments {
+    display: flex;
+    gap: 1rem;
+}
+
+.attachment {
+    box-shadow: 0 0 0 1px rgba(10, 10, 10, .1), 0 2px 4px 1px rgba(10, 10, 10, .1);
+    padding: 0.3rem 0.8rem;
+    cursor: pointer;
+}
+
+.attachment:hover {
+    background-color: #f5f5f5
+}
+
+.attachment span{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.attachment .preview{
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+    margin-bottom: 0.5rem;
+}
+
+.attachment .preview .default{
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f5f5;
+    color: #333;
+    font-size: 0.8rem;
+    border-radius: 5px;
+}
 </style>
 <script lang="ts" setup>
-import { type Comment } from "@prisma/client";
+import { type Attachment, type Comment } from "@prisma/client";
 import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
 import type { SocketTemplate, UserAuth } from "~/types"
+import { joinURL } from 'ufo'
 
 import {
     onDeleteComment,
@@ -225,7 +290,8 @@ async function submitComment(payload: any) {
 userName.value = await getUserName(props.ticket?.creator)
 
 const socket = useSocket().value
-socket?.on("data", (data: SocketTemplate) => {
+socket?.on("data", (_data: SocketTemplate) => {
+    const data = parseData(_data)
     if (data?.type === TYPE.NEW_COMMENT) {
         onNewComment(data?.body, comments)
     } else if (data?.type === TYPE.DELETE_COMMENT) {
@@ -242,14 +308,84 @@ function orderComments(comments: Comment[]) {
     })
     return comments
 }
-</script>
 
-<style scoped>
-.raised {
-    margin-bottom: 0.5rem;
-    padding: 1rem;
-    border-radius: 5px;
-    background-color: #f5f5f5;
-    box-shadow: 0 0 0 1px rgba(10, 10, 10, .1), 0 2px 4px 1px rgba(10, 10, 10, .1);
+function isImage(name: string) {
+    const ext = name.split(".").pop()
+    if (!ext) return false
+    const images = ['jpg', 'jpeg', 'git', 'png']
+    return images.includes(ext)
 }
-</style>
+
+function isPdf(name: string) {
+    return name.split(".").pop() === 'pdf'
+}
+
+function isVideo(name: string) {
+    const ext = name.split(".").pop()
+    if (!ext) return false
+    const videos = ['mp4', 'mpeg', 'avi', 'm4a', 'mov']
+    return videos.includes(ext)
+}
+
+function isAudio(name: string) {
+    const ext = name.split(".").pop()
+    if (!ext) return false
+    const audios = ['mp3', 'ogg']
+    return audios.includes(ext)
+}
+
+function videoPreview(attachment: Attachment) {
+    const element = document.createElement('video')
+    element.src = attachmentUrl(attachment)
+    element.controls = true
+    element.autoplay = true
+    return element
+}
+
+function audioPreview(attachment: Attachment) {
+    const element = document.createElement("audio")
+    element.src = attachmentUrl(attachment)
+    element.controls = true
+    return element
+}
+
+function imagePreview(attachment: Attachment) {
+    const element = document.createElement('img')
+    element.src = attachmentUrl(attachment)
+    return element
+}
+
+function pdfPreview(attachment: Attachment) {
+    const element = document.createElement('embed')
+    element.src = attachmentUrl(attachment)
+    element.type = "pdf"
+    return element
+}
+
+function loadPreview(attachment: Attachment) {
+    if (isAudio(attachment.name)) return audioPreview(attachment)
+    if (isVideo(attachment.name)) return videoPreview(attachment)
+    if (isImage(attachment.name)) return imagePreview(attachment)
+    if (isPdf(attachment.name)) return pdfPreview(attachment)
+
+    const _default = document.createElement("div")
+    _default.innerText = attachment.name
+    _default.classList.add("default")
+    return _default
+}
+
+function attachmentUrl(attachment: Attachment) {
+    const url = attachment.url
+    const fullUrl = joinURL(window.location.origin, "files", url)
+    console.log(fullUrl)
+    return fullUrl
+}
+
+function downloadAttatchment(attachment: Attachment){
+    const url = attachmentUrl(attachment)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = attachment.name
+    a.click()
+}
+</script>

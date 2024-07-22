@@ -1,6 +1,8 @@
 import prisma from "~/db";
 import {type SearchQuery, STATUS} from "~/types";
 import {type Ticket} from "@prisma/client";
+import filestorage from "~/filestorage";
+import { ulid } from "ulid";
 
 export async function deleteUserComment(commentId: string | number) {
     // check for child comments
@@ -82,7 +84,7 @@ export async function createTicketAttachment(ticketId: number, data: {
                     id: ticketId
                 },
             },
-            name: data.name,
+            name: data.name || ulid(),
             size: data.size,
             url: data.url
         }
@@ -177,13 +179,18 @@ export async function getUserTicket(ticketId: string | number) {
             id: Number(ticketId)
         },
         include: {
-            comments: true
+            comments: true,
+            Attachment: true
         },
     }).catch(
         error => {
             console.log(error)
         }
     )
+}
+
+export async function getTicketAttachment(id: string) {
+    return filestorage.getItem(id)
 }
 
 export async function markTicketAsPending(ticketId: string | number) {

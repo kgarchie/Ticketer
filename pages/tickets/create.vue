@@ -109,7 +109,7 @@ const createNewTicket = async () => {
         alert('Ticket Created Successfully')
         await navigateTo('/tickets/view/user')
     } else {
-        alert(response?.body?.message || 'An error occurred')
+        alert(response?.body || 'An error occurred')
     }
 }
 

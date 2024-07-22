@@ -1,15 +1,15 @@
-import {createStorage, defineDriver} from "unstorage";
-import {existsSync, watch} from "fs";
-import {readFile, writeFile, rename, unlink, readdir, lstat} from "fs/promises";
-import {join, resolve} from "pathe";
-import type {WatchEventType} from "node:fs";
+import { createStorage, defineDriver } from "unstorage";
+import { existsSync, watch } from "fs";
+import { readFile, writeFile, rename, unlink, readdir, lstat, mkdir } from "fs/promises";
+import { join, resolve, sep } from "pathe";
+import type { WatchEventType } from "node:fs";
 
 const customDriver = defineDriver((options?: { destination: string }) => {
     if (!options || !options.destination) {
-        options = {destination: './'}
+        options = { destination: './' }
     }
     const location = (destination: string) => {
-        const basePath = join("public", "uploads", options!.destination, destination).replace(/:/g, "_")
+        const basePath = join("public", "uploads", options!.destination, destination).replace(/:/g, sep)
         return resolve(basePath)
     }
 
@@ -22,11 +22,19 @@ const customDriver = defineDriver((options?: { destination: string }) => {
         async getItem(key, _opts) {
             return await readFile(location(key))
         },
-        async setItem(key, value, _opts) {
-            if (existsSync(value)) {
-                return await rename(value, location(key))
+        async setItem(key, value: File | string, _opts) {
+            const fileLocation = location(key)
+            if (!existsSync(fileLocation)) {
+                const folder = fileLocation.split(sep).slice(0, -1).join(sep)
+                await mkdir(folder, { recursive: true })
+            }
+
+            if (value instanceof File) {
+                await rename(value.filepath, fileLocation)
+                return fileLocation
             } else {
-                return await writeFile(location(key), value)
+                await writeFile(fileLocation, value)
+                return fileLocation
             }
         },
         async setItemRaw(key, value, _opts) {
@@ -81,7 +89,7 @@ const customDriver = defineDriver((options?: { destination: string }) => {
         async dispose() {
         },
         async watch(callback: (event: WatchEventType, filename: string | null) => void) {
-            const watcher = watch(join(options!.destination, "public", "uploads"), {recursive: true}, (event, filename) => {
+            const watcher = watch(join(options!.destination, "public", "uploads"), { recursive: true }, (event, filename) => {
                 callback(event, filename)
             })
 

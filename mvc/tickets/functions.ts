@@ -17,6 +17,7 @@ import {
     deleteUserComment,
     filterTickets,
     getNewTickets,
+    getTicketAttachment as getAttachment,
     getTicketByReference,
     getUserTicket,
     markTicketAsPending,
@@ -153,10 +154,21 @@ export async function getTicket(event: H3Event) {
     }
 
     const ticket = await getUserTicket(ticketId)
-
     response.statusCode = 200
     response.body = ticket
     return response
+}
+
+export async function getTicketAttachment(event: H3Event){
+    const ticketId = event.context.params?.id
+    const attachmentId = event.context.params?.attachment
+    let response = {} as HttpResponseTemplate
+    if(!ticketId || !attachmentId){
+        response.statusCode = 404
+        response.body = "No such ticket"
+    }
+
+    return await getAttachment(attachmentId!)
 }
 
 export async function pendTicket(event: H3Event, force = false) {
@@ -281,7 +293,7 @@ export async function create(event: H3Event) {
         const set = new Set(_ticket[key])
         ticket[key] = Array.from(set).at(-1)
     }
-    const attachments = data.files as File[]
+    const attachments = data.files as {attachment: File[]}
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
 
@@ -298,8 +310,8 @@ export async function create(event: H3Event) {
         response.statusCode = 500
         response.body = "Internal Server Error"
     }
-    if (attachments.length) {
-        const data = await createTicketAttachments(attachments, newTicket!.reference)
+    if (attachments?.attachment?.length) {
+        const data = await createTicketAttachments(attachments.attachment, newTicket!.reference)
         data.forEach(async (datum) => {
             await createTicketAttachmentDB(newTicket!.id, datum)
         })
@@ -396,11 +408,12 @@ async function createTicketAttachments(attachments: File[], ticketUlid: string) 
     return data
 }
 
-async function createAttachment(file: File, id: string, data: any[]) {
-    await filestorage.setItem(join("./tickets", id, file.name), file)
+async function createAttachment(file: any, id: string, data: any[]) {
+    const url = join("./tickets", id, file.originalFilename)
+    await filestorage.setItem(url, file)
     data.push({
-        name: file.name,
+        name: file.originalFilename,
         size: file.size,
-        url: join("./tickets", id, file.name)
+        url: url
     })
 }
