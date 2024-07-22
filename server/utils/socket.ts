@@ -261,8 +261,6 @@ export class Client {
         this._events![event].forEach(callback => callback(data))
     }
     broadcast(data: any) {
-        console.log("Broadcasting", data)
-        console.log("Clients", global.clients?.value.length)
         global.clients!.forEach(client => {
             if (client.id !== this.id) {
                 client.send(data)
@@ -307,15 +305,14 @@ export class WsClient extends Client {
             this._id = peer.id
             global.clients!.push(this)
             if (!options?.noAuth && state === SocketStatus.OPEN) {
-                this.detailsRequest()
+                this.setup()
             }
         }
     }
 
     setup() {
-        this.detailsRequest()
         this.on("data", data => {
-            const { data: _data } = parseData(data)
+            const _data = parseData(data)
             if (!isSocketTemplate(_data)) return
             switch (_data?.type) {
                 case TYPE.AUTH_RES:
@@ -323,6 +320,7 @@ export class WsClient extends Client {
                     break
             }
         })
+        this.detailsRequest()
     }
 
     get id(): string {
@@ -488,9 +486,8 @@ export class SseClient extends Client {
             console.error("Error sending data to client", _)
         }
         global.clients!.push(this)
-        this.detailsRequest()
         this.on("data", data => {
-            const { data: _data } = parseData(data)
+            const _data = parseData(data)
             if (!isSocketTemplate(_data)) return
             switch (_data?.type) {
                 case TYPE.AUTH_RES:
@@ -498,6 +495,7 @@ export class SseClient extends Client {
                     break
             }
         })
+        this.detailsRequest()
     }
 
     get value() {
@@ -587,9 +585,8 @@ export class PollClient extends Client {
         this._id = ulid()
         setCookie(event, "X-Request-Id", this._id)
         global.clients!.push(this)
-        this.detailsRequest()
         this.on("data", data => {
-            const { data: _data } = parseData(data)
+            const _data = parseData(data)
             if (!isSocketTemplate(_data)) return
             switch (_data?.type) {
                 case TYPE.AUTH_RES:
@@ -597,6 +594,7 @@ export class PollClient extends Client {
                     break
             }
         })
+        this.detailsRequest()
     }
 
     get id() {

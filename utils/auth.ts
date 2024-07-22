@@ -38,6 +38,10 @@ export function userIsAuthenticated() {
     return !!getAuthToken()
 }
 
+export function userIsAdmin(){
+    return getAuthCookie()?.is_admin
+}
+
 export async function getUserName(user_id: string) {
     const res = await $fetch(`/api/user/${user_id}`)
     if (res?.statusCode === 200) {

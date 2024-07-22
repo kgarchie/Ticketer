@@ -17,7 +17,7 @@
           <NuxtLink to="/tickets/view/user">My Tickets</NuxtLink>
         </li>
 
-          <li v-if="userIsAuthenticated()">
+          <li v-if="userIsAdmin()">
             <NuxtLink :to="`${encodeURI(`/tickets/${JSON.stringify({ticket_filter: null})}`)}`">All Site Tickets
             </NuxtLink>
           </li>

@@ -44,25 +44,21 @@
             </ul>
         </div>
         <div class="panel-block is-flex is-justify-content-center is-flex-direction-column">
-            <div class="table-container">
+            <div class="table-container" style="width: 95%;">
                 <table class="table is-bordered is-striped is-fullwidth is-hoverable is-fullwidth">
                     <thead>
                         <tr>
                             <th>Action</th>
                             <th>View</th>
-                            <th>Paybill</th>
-                            <th>Issue</th>
                             <th>Reference</th>
-                            <th>Amount</th>
+                            <th>Issue</th>
                             <th>Date</th>
-                            <th>Safaricom</th>
-                            <th>Airtel</th>
                             <th>Urgency</th>
                         </tr>
                     </thead>
                     <tbody class="is-vcentered">
                         <tr v-for="item in tickets" :key="item.id">
-                            <td>
+                            <td class="is-flex">
                                 <button class="button is-success mr-1" @click="resolveTicket(item.id)"
                                     :disabled="item.status === STATUS.R">✓
                                 </button>
@@ -73,13 +69,9 @@
                             <td>
                                 <NuxtLink :to="`/tickets/view/${item.id}`">View</NuxtLink>
                             </td>
-                            <td>{{ item.paybill_no }}</td>
-                            <td>{{ item.issue }}</td>
                             <td>{{ item.reference }}</td>
-                            <td>{{ item.amount }}</td>
+                            <td>{{ item.info.slice(0, 30) }}...</td>
                             <td>{{ new Date(item.created_at).toLocaleDateString() }}</td>
-                            <td>{{ item.safaricom_no }}</td>
-                            <td>{{ item.airtel_no }}</td>
                             <td>{{ item.urgency }}</td>
                         </tr>
                     </tbody>

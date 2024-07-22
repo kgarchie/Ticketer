@@ -10,17 +10,14 @@
         </div>
         <div class="is-flex is-flex-direction-column message-list">
           <ul class="people">
-            <li class="person" v-for="chat in  chats" :key="chat.id"
-                @click="chat_id = chat.chat_id!; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
+            <li class="person" v-for="chat in chats.values()" :key="chat.id"
+              @click="chat_id = chat.chat_id!; to_user = chat.WithUser; markMessagesAsRead(chat); hideChatButton()">
               <div class="message-preview">
                 <span class="chat_title">{{ getChatTitle(chat) }}</span>
-                <span class="company-info" v-if=" user.is_admin ">{{
-                    chat.WithUser?.company?.name || chat?.WithUser?.company
-                  }}</span>
-                <span class="email" v-if=" user.is_admin ">{{ chat.WithUser.email }}</span>
-                <span class="unread" v-if=" unread_count(chat.Message) > 0 ">{{
-                    unread_count(chat.Message)
-                  }}</span>
+                <span class="email" v-if="user.is_admin">{{ chat.WithUser.email }}</span>
+                <span class="unread" v-if="unread_count(chat.Message) > 0">{{
+                  unread_count(chat.Message)
+                }}</span>
                 <span class="preview">{{ lastMessage(chat.Message) }}</span>
                 <span class="time">{{ lastMessageTime(chat.Message) }}</span>
               </div>
@@ -28,9 +25,8 @@
             </li>
           </ul>
         </div>
-        <ChatMessage :messages="messages" :to_user=" to_user " :chat_id="chat_id"
-                     v-if=" message_isRevealed "
-                     @close=" closeChatBox "/>
+        <ChatMessage :messages="messages" :to_user="to_user" :chat_id="chat_id" v-if="message_isRevealed"
+          @close="closeChatBox" />
       </div>
     </div>
     <div>
@@ -42,19 +38,15 @@
   </div>
 </template>
 <script setup lang="ts">
-import {TYPE, type SocketTemplate, type UserChatObject} from "~/types";
-import {onMessageCallback} from "~/helpers/clientHelpers";
-import type {Attachment, Message} from "@prisma/client";
+import { TYPE, type UserChatObject } from "~/types";
+import { onMessageCallback } from "~/helpers/clientHelpers";
+import type { Attachment } from "@prisma/client";
 
 const user = useUser().value
-const chats = ref<UserChatObject[]>([])
+const chats = shallowRef<Map<string, UserChatObject>>(new Map())
 const chat_id = ref<string>('')
 const chat_isRevealed = ref<boolean>(false)
-
-const messages = computed(() => {
-  return chats.value.find((chat: any) => chat.chat_id === chat_id.value)?.Message
-})
-
+const messages = computed(() => chats.value.get(chat_id.value)?.Message)
 const to_user = ref<any>({})
 
 function unread_count(eval_messages: any[]) {
@@ -62,7 +54,12 @@ function unread_count(eval_messages: any[]) {
 }
 
 function show_all_unread_count() {
-  let chats_with_unread_messages = chats.value.filter((chat: any) => unread_count(chat.Message) > 0)
+  let chats_with_unread_messages = []
+  for (const chat of chats.value.values()) {
+    if (unread_count(chat.Message) > 0) {
+      chats_with_unread_messages.push(chat)
+    }
+  }
   if (!(process.client && chats_with_unread_messages.length > 0 && !chat_isRevealed.value)) return
   let new_message_indicator = document?.getElementById('new-message-indicator')
   if (!new_message_indicator) return
@@ -85,7 +82,7 @@ function getChatTitle(chat: any) {
 }
 
 
-function markMessagesAsRead(chat: any, force: boolean = false) {
+function markMessagesAsRead(chat: UserChatObject, force: boolean = false) {
   if (unread_count(chat.Message) > 0 || force) {
     $fetch('/api/chats/messages/read', {
       method: 'POST',
@@ -95,16 +92,8 @@ function markMessagesAsRead(chat: any, force: boolean = false) {
       }
     }).then((res: any) => {
       if (res.statusCode !== 200) return
-
-      chats.value = chats.value.map((c: any) => {
-        if (c.chat_id !== chat.chat_id) return c
-
-        return {
-          ...c,
-          Message: c.Message.map((m: any) => {
-            return {...m, opened: true}
-          })
-        }
+      chats.value.get(chat.chat_id!)?.Message.forEach(message => {
+        message.opened = true
       })
       show_all_unread_count()
     }).catch((e: any) => {
@@ -165,29 +154,33 @@ const message_isRevealed = computed(() => {
 
 async function getChats() {
   const id = user.user_id
-  if(!id || id.trim() === "") return
+  if (!id || id.trim() === "") return
   let db_chats = await $fetch('/api/chats', {
     headers: {
       "Authorization": "User " + id,
     }
   }).then(
-      (res: any) => {
-        if (res.statusCode !== 200) return []
-        return res.body as UserChatObject[]
-      }
+    (res: any) => {
+      if (res.statusCode !== 200) return []
+      return res.body as UserChatObject[]
+    }
   ).catch((e: any) => {
     console.log(e)
     return []
   })
+  db_chats.forEach(chat => {
+    if(chat.WithUser.user_id === user.user_id) return
+    chats.value.set(chat.chat_id || chat.id, chat)
+  })
 
-  chats.value = db_chats.filter((chat: any) => chat.WithUser.user_id !== user.user_id)
   sortChats()
-
   show_all_unread_count()
 }
 
 function sortChats() {
-  chats.value = chats.value.sort((a: any, b: any) => {
+  chats.value = new Map(Array.from(chats.value).sort((A: [string, UserChatObject], B: [string, UserChatObject]) => {
+    const a = A[1]
+    const b = B[1]
     let a_last_message = a.Message[a.Message.length - 1] || null
     let b_last_message = b.Message[b.Message.length - 1] || null
 
@@ -196,7 +189,7 @@ function sortChats() {
     } else {
       return 0
     }
-  })
+  }))
 }
 
 function closeChatBox() {
@@ -218,26 +211,22 @@ function showChatButton() {
 
 function positionMessages() {
   nextTick(() => {
-    const messages_container = document?.getElementById("messages_container")
-
-    if (messages_container) {
-      messages_container.scrollTop = messages_container.scrollHeight;
-    }
+    if(!chat_id.value) return
+    setTimeout(() => {
+      const messages_container = document?.getElementById("messages_container")
+      if (messages_container) {
+        messages_container.scrollTop = messages_container.scrollHeight;
+      }
+    }, 100)
   })
 }
 
 getChats()
-
 const socket = useSocket().value
 socket?.on("data", (data: unknown) => {
-  try {
-    var _data = JSON.parse(data as string) as SocketTemplate
-  } catch (e) {
-    _data = data as SocketTemplate
-    return
-  }
-  if (_data?.type === TYPE.MESSAGE){
-    const chat = onMessageCallback(_data.body, chats, getChats)
+  const _data = parseData(data)
+  if (_data?.type === TYPE.MESSAGE) {
+    const chat = onMessageCallback(_data.body.message, chats, getChats)
     if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)
     positionMessages()
     sortChats()

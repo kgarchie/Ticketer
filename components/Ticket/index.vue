@@ -1,7 +1,7 @@
 <template>
     <main class="container">
         <div class="column">
-            <h3 class="heading ml-1" style="font-size: 15px;"><strong>Ticket Info</strong></h3>
+            <h3 class="heading ml-1 raised" style="font-size: 15px;"><strong>Ticket Info</strong></h3>
             <article class="column box p-4" style="border-top: 1px solid #f4f4f4">
                 <div class="is-flex">
                     <div class="field is-full">
@@ -246,7 +246,6 @@ function orderComments(comments: Comment[]) {
 
 <style scoped>
 .raised {
-    margin-top: 1.5rem;
     margin-bottom: 0.5rem;
     padding: 1rem;
     border-radius: 5px;

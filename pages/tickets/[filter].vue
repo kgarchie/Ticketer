@@ -34,7 +34,7 @@ let query = {
     filter: filter
 }
 
-const { execute: getData } = await useFetch<HttpResponseTemplate>(encodeURI(`/api/tickets/query/${JSON.stringify(query)}`), {
+const { execute: getData, data } = await useFetch<HttpResponseTemplate>(encodeURI(`/api/tickets/query/${JSON.stringify(query)}`), {
     onResponse({ response }) {
         const data = response._data
         if (data && data.statusCode === 200) {
@@ -42,6 +42,9 @@ const { execute: getData } = await useFetch<HttpResponseTemplate>(encodeURI(`/ap
         }
     }
 })
+
+const res = data.value
+if (res?.statusCode === 200) tickets.value = res.body
 
 onMounted(() => {
     const previousPage = document.getElementById('previous-page')
@@ -69,7 +72,7 @@ async function searchFilter(value: string) {
     if (!value) return
     const response = await $fetch<HttpResponseTemplate>(`/api/tickets/search/${value}`)
     if (response?.statusCode !== 200) console.warn(response.body)
-    
+
     response.body.forEach((ticket: Ticket) => {
         if (!tickets.value.find((item: Ticket) => item.id === ticket.id)) {
             tickets.value.push(ticket)
