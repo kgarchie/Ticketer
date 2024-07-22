@@ -275,7 +275,7 @@ async function downloadFile(partial_url: string) {
     link.click()
   }
   xhr.onprogress = function (e) {
-    console.log(Math.ceil(e.loaded / e.total * 100), '%')
+    // console.log(Math.ceil(e.loaded / e.total * 100), '%')
   }
   xhr.send()
 }
