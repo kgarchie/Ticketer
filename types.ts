@@ -33,10 +33,10 @@ export type TaggedPerson = {
 }
 
 
-export type SocketTemplate = {
+export type SocketTemplate<T = any> = {
     statusCode: number;
     type: TYPE;
-    body?: any
+    body?: T 
 }
 
 export type HttpResponseTemplate = {

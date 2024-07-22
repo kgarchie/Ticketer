@@ -322,6 +322,7 @@ export async function create(event: H3Event) {
     socketResponse.body = newTicket
 
     shuttleDataToAllClients(socketResponse)
+    const notifications =
 
     response.statusCode = 200
     response.body = newTicket

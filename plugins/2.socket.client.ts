@@ -4,11 +4,14 @@ export default defineNuxtPlugin(app => {
     const socket = useSocket()
     const user = useUser().value
     if (socket.value) return
+    
     const realTime = new RealTime()
+    // @ts-ignore
     socket.value = realTime
 
     if (user.user_id) {
-        realTime.on("data", (data) => {
+        realTime.on("data", (_data: any) => {
+            const data = parseData(_data)
             if (!isSocketTemplate(data)) return
             switch (data?.type) {
                 case TYPE.AUTH_REQ:

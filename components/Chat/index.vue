@@ -38,9 +38,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { TYPE, type UserChatObject } from "~/types";
+import { TYPE, type SocketTemplate, type UserChatObject } from "~/types";
 import { onMessageCallback } from "~/helpers/clientHelpers";
-import type { Attachment } from "@prisma/client";
+import type { Attachment, Message } from "@prisma/client";
 
 const user = useUser().value
 const chats = shallowRef<Map<string, UserChatObject>>(new Map())
@@ -169,7 +169,7 @@ async function getChats() {
     return []
   })
   db_chats.forEach(chat => {
-    if(chat.WithUser.user_id === user.user_id) return
+    if (chat.WithUser.user_id === user.user_id) return
     chats.value.set(chat.chat_id || chat.id, chat)
   })
 
@@ -211,7 +211,7 @@ function showChatButton() {
 
 function positionMessages() {
   nextTick(() => {
-    if(!chat_id.value) return
+    if (!chat_id.value) return
     setTimeout(() => {
       const messages_container = document?.getElementById("messages_container")
       if (messages_container) {
@@ -224,9 +224,9 @@ function positionMessages() {
 getChats()
 const socket = useSocket().value
 socket?.on("data", (data: unknown) => {
-  const _data = parseData(data)
+  const _data = parseData(data) as SocketTemplate
   if (_data?.type === TYPE.MESSAGE) {
-    const chat = onMessageCallback(_data.body.message, chats, getChats)
+    const chat = onMessageCallback(_data.body!.message, chats, getChats)
     if (chat?.chat_id === chat_id.value) markMessagesAsRead(chat, true)
     positionMessages()
     sortChats()

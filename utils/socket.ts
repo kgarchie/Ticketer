@@ -1,4 +1,4 @@
-import { SocketStatus, TYPE, type SocketTemplate } from "~/types";
+import { SocketStatus, type SocketTemplate } from "~/types";
 import consola from "consola";
 
 type Events = "data" | "error" | "open" | "close"

@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { Client } from "~/server/utils/socket";
 import prisma from "~/db";
 import { getAdmins, getUserName } from "~/mvc/user/queries";
+import { createNotification } from "./notifications/functions";
 
 export const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -41,22 +42,8 @@ export async function mailResetPasswordLink(email: string, origin: string, token
 }
 
 
-export async function createAndShuttleNotification(user_id: string, message: string, type: TYPE) {
-    const notification = await prisma.notification.create({
-        data: {
-            for_user_id: user_id,
-            message: message,
-            type: type,
-            opened: type === TYPE.NEW_MESSAGE_NOTIFICATION
-        }
-    })
-
-    const response = {} as SocketTemplate
-    response.statusCode = 200
-    response.type = type
-    response.body = notification
-
-    shuttleData(user_id, response)
+export async function createAndShuttleNotification(user_id: string, message: string, type?: TYPE) {
+    return createNotification(user_id, message, type)
 }
 
 export async function getConnectedClientSockets(user_id: string) {

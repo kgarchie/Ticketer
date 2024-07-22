@@ -3,18 +3,6 @@ import type { Attachment, Comment, Message, Notification, Ticket } from "@prisma
 import { type Ref } from "vue";
 
 
-export async function updateNotifications(State: any, user_id: string) {
-    const res = await $fetch('/api/notifications', {
-        headers: {
-            "Authorization": `User ${user_id}`
-        }
-    })
-
-    if (res?.statusCode === 200) {
-        State.value = res.body
-    }
-}
-
 export function onNewTicketCallback(ticket: Ticket, newTicketsState: Ref<Ticket[] | null>) {
     if (!newTicketsState.value?.find((t: Ticket) => t.id === ticket.id)) {
         newTicketsState.value?.unshift(ticket)
@@ -77,8 +65,7 @@ export function onMessageCallback(
             onNoChat()
             return
         }
-
-        if (!chat.Message.find((_message: any) => _message.id === message.id)) {
+        if (!chat.Message.find((_message) => _message.id === message.id)) {
             chat.Message.push(message)
         } else {
             console.log('message already exists')

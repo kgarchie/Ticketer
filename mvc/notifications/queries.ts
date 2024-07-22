@@ -1,11 +1,12 @@
+import type { Notification } from "@prisma/client";
 import prisma from "~/db";
 
-export function markNotificationAsRead(id:string | number){
+export function markNotificationAsRead(id: string | number) {
     return prisma.notification.update({
-        where:{
+        where: {
             id: Number(id)
         },
-        data:{
+        data: {
             opened: true
         }
     })
@@ -23,4 +24,11 @@ export async function getAllUnreadNotifications(user_id: string) {
             return []
         }
     )
+}
+
+
+export async function createNotification(notification: { message: string; for_user_id: string, type: string }) {
+    return await prisma.notification.create({
+        data: notification
+    })
 }
