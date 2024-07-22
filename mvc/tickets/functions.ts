@@ -28,10 +28,11 @@ import {
 import { createAndShuttleNotification, shuttleDataToAllClients } from "~/mvc/utils";
 import { getAuthCookie } from "~/mvc/auth/helpers";
 import { type Ticket } from "@prisma/client";
-import { getUserOrEphemeralUser_Secure } from "~/mvc/user/queries";
+import { getAdmins, getUserOrEphemeralUser_Secure } from "~/mvc/user/queries";
 import { readFiles } from "h3-formidable";
 import { join } from "pathe";
 import { createTicketAttachment as createTicketAttachmentDB } from "./queries"
+import { createNotification } from "../notifications/functions";
 
 export async function deleteComment(event: H3Event) {
     const { commentId } = await readBody(event)
@@ -159,11 +160,11 @@ export async function getTicket(event: H3Event) {
     return response
 }
 
-export async function getTicketAttachment(event: H3Event){
+export async function getTicketAttachment(event: H3Event) {
     const ticketId = event.context.params?.id
     const attachmentId = event.context.params?.attachment
     let response = {} as HttpResponseTemplate
-    if(!ticketId || !attachmentId){
+    if (!ticketId || !attachmentId) {
         response.statusCode = 404
         response.body = "No such ticket"
     }
@@ -293,7 +294,7 @@ export async function create(event: H3Event) {
         const set = new Set(_ticket[key])
         ticket[key] = Array.from(set).at(-1)
     }
-    const attachments = data.files as {attachment: File[]}
+    const attachments = data.files as { attachment: File[] }
     let response = {} as HttpResponseTemplate
     let socketResponse = {} as SocketTemplate
 
@@ -322,7 +323,9 @@ export async function create(event: H3Event) {
     socketResponse.body = newTicket
 
     shuttleDataToAllClients(socketResponse)
-    const notifications =
+    for (const admin of await getAdmins()) {
+        createNotification(admin.user_id, "New Ticket Created")
+    }
 
     response.statusCode = 200
     response.body = newTicket

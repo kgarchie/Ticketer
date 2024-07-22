@@ -121,7 +121,6 @@ const socket = useSocket().value
 socket?.on("data", (data: any) => {
   const _data = parseData(data) as SocketTemplate<Notification>
   switch (_data.type) {
-    case TYPE.NEW_MESSAGE_NOTIFICATION:
     case TYPE.NOTIFICATION:
       onNotificationCallback(_data.body!, notifications)
       chime(_data.body!.message)
@@ -131,7 +130,7 @@ socket?.on("data", (data: any) => {
 
 const { data } = await useFetch<HttpResponseTemplate>("/api/notifications", {
   headers: {
-    "Authorization": `User ${user.user_id}`
+    "Authorization": `User ${user?.user_id}`
   }
 })
 
