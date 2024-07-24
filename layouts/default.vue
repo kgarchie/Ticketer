@@ -97,7 +97,7 @@ async function markNotificationAsRead(id: any) {
 }
 
 async function chime(body: string) {
-  if (document.hasFocus()) return
+  if (document.visibilityState === 'visible') return
   const audio = new Audio(`${window.location.origin}/notification.mp3`)
   audio.play()
   if (window.Notification.permission === 'granted') {
