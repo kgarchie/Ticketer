@@ -1,5 +1,5 @@
 import {H3Event} from "h3";
-import {HttpResponseTemplate} from "~/types";
+import type {HttpResponseTemplate} from "~/types";
 import {
     createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
@@ -143,7 +143,7 @@ export async function saveNewPassword(event: H3Event) {
 
 export async function register(event: H3Event) {
     let response = {} as HttpResponseTemplate;
-    const {email, password, name, company} = await readBody(event)
+    const {email, password, name} = await readBody(event)
 
     const {user_id} = await getAuthCookie(event)
 
@@ -155,7 +155,7 @@ export async function register(event: H3Event) {
         return response;
     }
 
-    const user = await createUser(email, password, false, user_id, name, company.id)
+    const user = await createUser(email, password, false, user_id, name)
     // We log in the user after registration
     const token = await loginWithEmailPassword(email, password, null)
 

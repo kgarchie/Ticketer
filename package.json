@@ -30,6 +30,7 @@
     "h3-formidable": "^0.3.8",
     "nodemailer": "^6.9.13",
     "pathe": "^1.1.2",
+    "perfect-debounce": "^1.0.0",
     "prisma": "^4.16.2",
     "ts-node": "^10.9.2",
     "typescript": "^4.9.5",

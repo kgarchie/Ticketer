@@ -11,7 +11,9 @@
                 <div class="column">
                     <label for="name">Username</label>
                     <input class="input is-primary" type="text" placeholder="(Optional)" autocomplete="name" id="name"
-                        v-model="data.name" required>
+                        :class="nameConfict ? 'is-danger' : ''" v-model="data.name" required  @input="checkUser"
+                        ref="name">
+                    <small class="has-text-danger" v-if="nameConfict">Username is already taken</small>
                 </div>
                 <div class="column">
                     <label for="Name">Password</label>
@@ -42,7 +44,8 @@
 
 <script setup lang="ts">
 import { type RegisterCredentials } from "~/types";
-
+import { debounce } from "perfect-debounce";
+const nameConfict = ref(false);
 const data = reactive({
     email: '',
     name: null,
@@ -58,7 +61,7 @@ async function register() {
             name: data.name || data.email.split('@')[0]
         } satisfies RegisterCredentials
     })
-    
+
     if (response?.statusCode === 200) {
         await navigateTo("/")
     } else {
@@ -83,10 +86,32 @@ const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
 watch([() => data.name, () => data.email], () => {
     if (data.name && !usernameRegex.test(data.name)) {
         data.name = data.name.replace(/[^a-zA-Z0-9_]/g, '');
-    } else if(data.name === null && data.email) {
+    } else if (data.name === null && data.email) {
         data.name = data.email.split('@')[0];
     }
 })
+
+async function checkUser() {
+    nameConfict.value = false;
+    const debouncedFetch = debounce(async () => {
+        await $fetch(`/api/auth/find/${data.name}`, {
+            onResponse({response}) {
+                if(response._data.statusCode == 200){
+                    nameConfict.value = true;
+                } else {
+                    nameConfict.value = false;
+                }
+            },
+            onRequestError({error}) {
+                console.error(error)
+            },
+            onResponseError({error}) {
+                console.error(error)
+            }
+        })
+    }, 500)
+    await debouncedFetch()
+}
 </script>
 
 <style scoped>

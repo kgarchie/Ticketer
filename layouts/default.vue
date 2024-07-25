@@ -45,19 +45,21 @@
         </div>
       </div>
     </nav>
-    <div class="notification" v-if="(notifications?.length > 0)">
-      <div class="is-flex notification-item" v-for="notification in notifications.slice(-5)" :key="notification.id">
-        <div class="is-flex notification-body is-justify-content-space-between">
-          <i class="fas fa-info-circle fa-2x"></i>
-          <strong>Notification: &nbsp;</strong><span style="text-align: left">{{ notification.message }}</span>
-          <p class="ml-4">
-            <button class="button is-primary is-small" @click="markNotificationAsRead(Number(notification?.id))">
-              Clear
-            </button>
-          </p>
+    <ClientOnly>
+      <div class="notification" v-if="Array.isArray(notifications) && notifications.length">
+        <div class="is-flex notification-item" v-for="notification in notifications.slice(-5)" :key="notification.id">
+          <div class="is-flex notification-body is-justify-content-space-between">
+            <i class="fas fa-info-circle fa-2x"></i>
+            <strong>Notification: &nbsp;</strong><span style="text-align: left">{{ notification.message }}</span>
+            <p class="ml-4">
+              <button class="button is-primary is-small" @click="markNotificationAsRead(Number(notification?.id))">
+                Clear
+              </button>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+    </ClientOnly>
     <slot />
     <Chat />
   </section>
@@ -72,7 +74,14 @@ import { onNotificationCallback } from "~/helpers/clientHelpers"
 
 const isActive = ref<boolean>(false)
 const user = useCookie<UserAuth>("auth").value
-const notifications = useNotifications()
+const notifications = computed({
+  get: () => useNotifications().value,
+  set: (value: Notification[]) => {
+    useNotifications().value = value
+  }
+})
+
+console.log(notifications.value)
 
 async function logout() {
   const { data: response } = await useFetch('/api/auth/logout')

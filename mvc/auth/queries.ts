@@ -1,9 +1,9 @@
-import {UserAuth} from "~/types";
+import type {UserAuth} from "~/types";
 import {H3Event} from "h3";
 import {generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
 import prisma from "~/db";
 import {v4 as uuidv4} from "uuid";
-import {Token} from "@prisma/client";
+import type {Token} from "@prisma/client";
 import {validateLoginBody} from "~/mvc/auth/validations";
 
 export async function loginUser(event: H3Event): Promise<UserAuth | null> {
@@ -131,15 +131,14 @@ export async function createEphemeralUser() {
     )
 }
 
-export async function createUser(email: string, password: string, is_admin: boolean, user_id: string, name: string, companyId: string | number) {
+export async function createUser(email: string, password: string, is_admin: boolean, user_id: string, name: string) {
     return await prisma.user.create({
         data: {
             email: email,
             password: password,
             is_admin: is_admin,
             user_id: user_id,
-            name: name,
-            companyId: Number(companyId) || undefined
+            name: name
         }
     }).then(
         (data: any) => {

@@ -70,3 +70,11 @@ export async function getUserNameOrUser_Id(user_id: string | null) {
         return user_id
     }
 }
+
+export async function getUserFromName(name: string) {
+    return await prisma.user.findFirst({
+        where: {
+            name: name
+        }
+    })
+}
