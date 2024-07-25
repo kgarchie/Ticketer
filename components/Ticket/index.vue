@@ -134,8 +134,7 @@ import { SocketStatus, STATUS, TYPE, type TaggedPerson } from "~/types";
 import type { SocketTemplate, UserAuth } from "~/types"
 
 import {
-    onDeleteComment,
-    onNewComment,
+    onDeleteComment
 } from "~/helpers/clientHelpers";
 
 
@@ -292,7 +291,9 @@ const socket = useSocket().value
 socket?.on("data", (_data: SocketTemplate) => {
     const data = parseData(_data)
     if (data?.type === TYPE.NEW_COMMENT) {
-        onNewComment(data?.body, comments)
+        if (data?.body?.ticketId !== local_ticket.value.id) return
+        if (comments.value.find((c: any) => c.id === data?.body?.id)) return
+        comments.value.push(data?.body)
     } else if (data?.type === TYPE.DELETE_COMMENT) {
         onDeleteComment(data?.body, comments)
     } else if (data?.type === TYPE.DELETE_TICKET) {

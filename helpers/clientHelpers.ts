@@ -33,12 +33,6 @@ export function onDeleteTicketCallback(ticket: Ticket, newTicketsState: Ref<Tick
     newTicketsState.value?.splice(ticketIndexDel, 1)
 }
 
-export function onNewComment(comment: Comment, affect: Ref<Comment[]>) {
-    if (comment?.ticketId === affect.value[0].ticketId && !affect.value.find((c: Comment) => c.id === comment.id)) {
-        affect.value.unshift(comment)
-    }
-}
-
 export function onDeleteComment(comment: Comment & { ticket: Ticket }, affect: Ref<Comment[]>) {
     const commentIndex = affect.value.findIndex((c: Comment) => c.id === comment.id)
 
