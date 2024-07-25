@@ -91,9 +91,7 @@ watch([() => data.name, () => data.email], () => {
     }
 })
 
-async function checkUser() {
-    nameConfict.value = false;
-    const debouncedFetch = debounce(async () => {
+const debouncedFetch = debounce(async () => {
         await $fetch(`/api/auth/find/${data.name}`, {
             onResponse({response}) {
                 if(response._data.statusCode == 200){
@@ -110,6 +108,9 @@ async function checkUser() {
             }
         })
     }, 500)
+
+async function checkUser() {
+    nameConfict.value = false;
     await debouncedFetch()
 }
 </script>

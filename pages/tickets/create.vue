@@ -116,6 +116,8 @@ const createAttachment = (event: Event) => {
     const target = event.target as HTMLInputElement
     if (!target.files) return
     formData.delete('attachment')
+    data.attachment.names = []
+    data.attachment.files = []
     for (const file of target.files) {
         data.attachment.names.push(file.name)
         data.attachment.files.push(file)
