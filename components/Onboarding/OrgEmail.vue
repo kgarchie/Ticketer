@@ -58,34 +58,54 @@ function submitCode() {
 
 const otp_input_fields = ref<HTMLElement | null>(null)
 const otp_inputs = computed(() => {
-  console.log(otp_input_fields.value)
   if (!otp_input_fields.value) return []
   return Array.from(otp_input_fields.value.children) as HTMLInputElement[]
 })
+const validKeys = "0 1 2 3 4 5 6 7 8 9 Backspace Delete Enter".split(" ")
 function handle_next_input(event: KeyboardEvent) {
+  if (validKeys.indexOf(event.key) === -1) return
+
+  event.preventDefault()
+  event.stopPropagation()
   let current = event.target as HTMLInputElement
-  var mykey = "0123456789".split("")
-  let index = parseInt(current.classList[1].split("__")[2])
+  let index = code.value.length
+
+  if (event.key === "Backspace") {
+    if (index === 0) return
+    if (index < 6) {
+      otp_inputs.value[index].value = ""
+    } else if (index === 6) {
+      otp_inputs.value[index - 1].value = ""
+    }
+    code.value = code.value.slice(0, -1)
+    otp_inputs.value[index - 1].focus()
+    return
+  } else if (event.key === "Enter") {
+    submitCode()
+    return
+  } else if (event.key === "Delete") {
+    return
+  }
+
   current.value = event.key
+  if (index > 5) return
 
-  if (event.keyCode == 8 && index > 1) {
-    (current.previousElementSibling as HTMLInputElement)?.focus()
-  }
-  if (index < 6 && mykey.indexOf("" + event.key + "") != -1) {
-    var next = current.nextElementSibling as HTMLInputElement;
-    next?.focus()
-  }
-  var _finalKey = ""
-  for (let { value } of otp_inputs.value) {
-    _finalKey += value
-  }
+  otp_inputs.value[index + 1]?.focus()
+  code.value += event.key
+}
 
-  if (_finalKey.length == 6) {
-    code.value = _finalKey
-    document.querySelector("#_otp")?.classList.replace("_notok", "_ok")
-  } else {
-    document.querySelector("#_otp")?.classList.replace("_ok", "_notok")
+function handlePaste(event: ClipboardEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  const clipboardData = event.clipboardData
+  if (!clipboardData) return
+  const pastedData = clipboardData.getData("text")
+  if (pastedData.length !== 6) return
+  code.value = pastedData
+  for (let i = 0; i < 6; i++) {
+    otp_inputs.value[i].value = pastedData[i]
   }
+  submitCode()
 }
 </script>
 
@@ -106,14 +126,14 @@ function handle_next_input(event: KeyboardEvent) {
         <button class="button is-primary is-fullwidth" type="submit">Continue</button>
       </div>
     </form>
-    <form @submit.prevent="submitCode" class="otp-form" name="otp-form" v-else>
-      <div class="otp-input-fields" ref="otp_input_fields" @keydown="handle_next_input">
-        <input type="number" class="otp__digit otp__field__1">
-        <input type="number" class="otp__digit otp__field__2">
-        <input type="number" class="otp__digit otp__field__3">
-        <input type="number" class="otp__digit otp__field__4">
-        <input type="number" class="otp__digit otp__field__5">
-        <input type="number" class="otp__digit otp_Q_field__6">
+    <form @submit.prevent="submitCode" class="otp-form mt-5" name="otp-form" v-else>
+      <div class="otp-input-fields" ref="otp_input_fields" @keydown="handle_next_input" @paste="handlePaste">
+        <input type="number" class="otp__digit">
+        <input type="number" class="otp__digit">
+        <input type="number" class="otp__digit">
+        <input type="number" class="otp__digit">
+        <input type="number" class="otp__digit">
+        <input type="number" class="otp__digit">
       </div>
       <p>
         <small>Didn't receive the code? <a @click="submitEmail">Resend</a></small>
@@ -138,10 +158,6 @@ function handle_next_input(event: KeyboardEvent) {
   border-radius: 8px;
   width: auto;
   text-align: center;
-
-  small {
-    color: #2f8f1f;
-  }
 }
 
 .otp-buttons {
@@ -168,7 +184,7 @@ function handle_next_input(event: KeyboardEvent) {
     width: 40px;
     background-color: transparent;
     border-radius: 4px;
-    border: 1px solid #2f8f1f;
+    border: 1px solid #00c4a7;
     text-align: center;
     outline: none;
     font-size: 16px;

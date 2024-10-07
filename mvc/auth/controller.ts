@@ -47,7 +47,7 @@ router.post("/onboard/email", defineEventHandler(async event => {
 
 router.post("/onboard/email/verify", defineEventHandler(async event => {
     const schema = z.object({
-        token: z.string(),
+        code: z.string(),
         email: z.string().email()
     })
 
@@ -61,7 +61,7 @@ router.post("/onboard/email/verify", defineEventHandler(async event => {
         })
     }
 
-    const user = await getOnboardingUser({ email: data.email, token: data.token });
+    const user = await getOnboardingUser({ email: data.email, token: data.code });
     if (!user) {
         return createError({
             statusCode: 401,

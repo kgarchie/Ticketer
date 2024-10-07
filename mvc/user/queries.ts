@@ -79,22 +79,30 @@ export async function getUserFromName(name: string) {
     })
 }
 
-export async function getOnboardingUser({email, token}: { email: string, token: string }) {
-    const search = {
-        email: email,
-        token: token,
-        is_valid: true
-    }
-    const user = await prisma.token.findFirst({
-        where: search
+export async function getOnboardingUser({ email, token }: { email: string, token: string }) {
+    const user = await prisma.token.findMany({
+        where: {
+            email: email,
+            token: token,
+            is_valid: true
+        }
+    }).then(results => {
+        if (results.length > 0) {
+            return results[0]
+        }
+        return null
     }).catch(e => {
         console.log(e)
         return null
     })
 
-    if (user){
-        await prisma.token.update({
-            where: search,
+    if (user) {
+        await prisma.token.updateMany({
+            where: {
+                email: email,
+                token: token,
+                is_valid: true
+            },
             data: {
                 is_valid: false
             }
