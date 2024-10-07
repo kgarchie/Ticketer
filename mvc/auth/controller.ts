@@ -1,6 +1,8 @@
 import { createRouter, defineEventHandler } from "h3";
-import { identify, login, register, reset, saveNewPassword, logout, getUserToken } from "~/mvc/auth/functions";
-import { getUserFromName } from "../user/queries";
+import { identify, login, register, reset, saveNewPassword, logout, getUserToken, sendOnboardingEmailValidation } from "~/mvc/auth/functions";
+import { getUserFromName, getOnboardingUser } from "../user/queries";
+import { z } from 'zod';
+import { getRegisteredUser } from "./queries";
 
 const router = createRouter();
 
@@ -8,6 +10,72 @@ router.post('/login', defineEventHandler(async (event) => {
     return await login(event)
 }
 ));
+
+router.post("/onboard/email", defineEventHandler(async event => {
+    const schema = z.object({
+        email: z.string().email(),
+        origin: z.string().url()
+    });
+
+    const { data, error } = await readValidatedBody(event, schema.safeParse);
+    if (!data || error) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: error.message,
+            data: error
+        })
+    }
+
+    const user = await getRegisteredUser({ email: data.email });
+    if (user) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: "User already exists"
+        })
+    }
+
+    sendOnboardingEmailValidation({email: data.email, origin: data.origin})
+
+    return createResponse({
+        statusCode: 200,
+        statusMessage: "OK"
+    })
+}))
+
+
+router.post("/onboard/email/verify", defineEventHandler(async event => {
+    const schema = z.object({
+        token: z.string(),
+        email: z.string().email()
+    })
+
+    const {data, error} = await readValidatedBody(event, schema.safeParse);
+    if (!data || error) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: error.message,
+            data: error
+        })
+    }
+
+    const user = await getOnboardingUser({ email: data.email, token: data.token });
+    if (!user) {
+        return createError({
+            statusCode: 401,
+            statusMessage: "Unauthorized",
+            message: "Invalid token or Email Not Found"
+        })
+    }
+
+    return createResponse({
+        statusCode: 200,
+        statusMessage: "OK",
+        data: user
+    })
+}))
 
 router.post('/logout', defineEventHandler(async (event) => {
     return await logout(event)

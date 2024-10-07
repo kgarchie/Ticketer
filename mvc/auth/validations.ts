@@ -1,5 +1,5 @@
 import {H3Event} from "h3";
-import {LoginCredentials} from "~/types";
+import type {LoginCredentials} from "~/types";
 
 export async function validateLoginBody(event: H3Event) {
     const credentials = await readBody(event) as LoginCredentials

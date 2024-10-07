@@ -1,5 +1,5 @@
 import {H3Event} from "h3";
-import type {HttpResponseTemplate} from "~/types";
+import {CONFIRMATION_TEMPLATE, type HttpResponseTemplate} from "~/types";
 import {
     createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
@@ -9,7 +9,7 @@ import {
     updatePassword
 } from "~/mvc/auth/queries";
 import {clearAuthCookie, generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
-import {mailResetPasswordLink} from "~/mvc/utils";
+import {mailResetPasswordLink, sendMail} from "~/mvc/utils";
 import auth from "~/server/api/auth";
 
 export async function login(event: H3Event): Promise<HttpResponseTemplate> {
@@ -147,7 +147,7 @@ export async function register(event: H3Event) {
 
     const {user_id} = await getAuthCookie(event)
 
-    const userExists = await getRegisteredUser(user_id, email)
+    const userExists = await getRegisteredUser({user_id, email})
 
     if (userExists) {
         response.statusCode = 401;
@@ -204,4 +204,23 @@ export async function reset(event: H3Event) {
     response.statusCode = 200;
     response.body = "Reset Link Sent"
     return response;
+}
+
+
+export async function sendOnboardingEmailValidation({email, origin}: { email: string, origin: string }) {
+    const token = Math.floor(100000 + Math.random() * 900000).toString()
+
+    const message = `Your verification code is ${token}`
+    await saveNewToken(token, email, false)
+
+    const options = {
+        to: email,
+        subject: "Email Code Verification",
+        text: message,
+        html: CONFIRMATION_TEMPLATE(token)
+    }
+
+    console.log(message)
+
+    return await sendMail(options)
 }

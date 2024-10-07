@@ -225,8 +225,8 @@ async function showFile(filePreview: HTMLElement | null, previewButton: HTMLElem
   if(typeof file_or_url === "string"){
     var { file, mimetype } = await pullFile(file_or_url) || { file: null, mimetype: null }
   } else {
-    var file = file_or_url as File | null
-    var mimetype = file?.type as string | null
+    file = file_or_url as File | null
+    mimetype = file?.type as string | null
   }
   
   if(!file || !mimetype) return alert("Unsupported File: Preview not available")
@@ -243,7 +243,7 @@ async function showFile(filePreview: HTMLElement | null, previewButton: HTMLElem
     filePreview?.setAttribute('src', URL.createObjectURL(file))
     filePreview?.setAttribute('type', mimetype)
   } else {
-    alert("Unsupported File: Preview not availables")
+    alert("Unsupported File: Preview not available")
   }
 }
 
@@ -255,7 +255,7 @@ async function pullFile(partial_url: string): Promise<{ file: File, mimetype: st
   })
   if (!response) return null
   const blob = await response?.blob()
-  const file = new File([blob], url.split('?')[0].split('/').pop() || 'file')
+  const file = new File([blob], url.split('?')[0]?.split('/').pop() || 'file')
   return {
     file,
     mimetype: response.headers.get("content-type") || 'application/octet-stream'

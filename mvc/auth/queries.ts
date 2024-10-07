@@ -1,10 +1,10 @@
-import type {UserAuth} from "~/types";
-import {H3Event} from "h3";
-import {generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
+import type { UserAuth } from "~/types";
+import { H3Event } from "h3";
+import { generateRandomToken, getAuthCookie, setAuthCookie } from "~/mvc/auth/helpers";
 import prisma from "~/db";
-import {v4 as uuidv4} from "uuid";
-import type {Token} from "@prisma/client";
-import {validateLoginBody} from "~/mvc/auth/validations";
+import { v4 as uuidv4 } from "uuid";
+import type { Token } from "@prisma/client";
+import { validateLoginBody } from "~/mvc/auth/validations";
 
 export async function loginUser(event: H3Event): Promise<UserAuth | null> {
     const authCookie = await getAuthCookie(event)
@@ -43,9 +43,9 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
     // If the token is created, return the new user auth object
     if (token && token.is_valid === true) {
         const user = {
-            user_id: token.User.user_id,
+            user_id: token.User?.user_id,
             auth_key: token.token,
-            is_admin: token.User.is_admin
+            is_admin: token.User?.is_admin
         } as UserAuth
         setAuthCookie(event, user)
         return user
@@ -124,11 +124,11 @@ export async function createEphemeralUser() {
         (data: any) => {
             return data
         }).catch(
-        (error: any) => {
-            console.log(error)
-            return null
-        }
-    )
+            (error: any) => {
+                console.log(error)
+                return null
+            }
+        )
 }
 
 export async function createUser(email: string, password: string, is_admin: boolean, user_id: string, name: string) {
@@ -144,10 +144,10 @@ export async function createUser(email: string, password: string, is_admin: bool
         (data: any) => {
             return data
         }).catch(
-        (error: any) => {
-            console.log(error)
-            return null
-        })
+            (error: any) => {
+                console.log(error)
+                return null
+            })
 }
 
 
@@ -188,13 +188,13 @@ export async function getToken(user_id: string, token: string | null) {
 
 export async function getUserOrEphemeralUser(user_id: string) {
     return await prisma.user.findUnique({
-            where: {
-                user_id: user_id
-            }
-        }).catch((err) => {
-            console.log(err)
-            return null;
-        })  // Or:-
+        where: {
+            user_id: user_id
+        }
+    }).catch((err) => {
+        console.log(err)
+        return null;
+    })  // Or:-
         || await prisma.ephemeralUser.findUnique({
             where: {
                 user_id: user_id
@@ -219,7 +219,7 @@ export async function getUserFromEmail(email: string) {
 export async function updatePassword(user_id: string, password: string) {
     await prisma.token.updateMany({
         where: {
-            User:{
+            User: {
                 user_id: user_id
             }
         },
@@ -250,23 +250,20 @@ export async function updatePassword(user_id: string, password: string) {
     })
 }
 
-export async function saveNewToken(token: string, email: string) {
-    return await prisma.token.create({
-        data: {
-            token: token,
-            User: {
-                connect: {
-                    email: email
-                }
-            }
-        },
-        include: {
-            User: true
-        }
-    }).catch((err) => {
-        console.log(err)
+export async function saveNewToken(token: string, email: string, validUser: boolean = true) {
+    try {
+        const data = validUser
+            ? { token, User: { connect: { email } } }
+            : { token, email };
+
+        return await prisma.token.create({
+            data,
+            include: { User: true }
+        });
+    } catch (err) {
+        console.log(err);
         return null;
-    })
+    }
 }
 
 export async function deleteEphemeralUser(user_id: string) {
@@ -280,15 +277,18 @@ export async function deleteEphemeralUser(user_id: string) {
     })
 }
 
-export async function getRegisteredUser(user_id: string, email:string) {
+export async function getRegisteredUser(data: {
+    user_id?: string;
+    email?: string
+}) {
     return await prisma.user.findFirst({
         where: {
             OR: [
                 {
-                    user_id: user_id
+                    user_id: data.user_id || undefined
                 },
                 {
-                    email: email
+                    email: data.email || undefined
                 }
             ]
         },
@@ -304,10 +304,10 @@ export async function getRegisteredUser(user_id: string, email:string) {
 }
 
 
-export async function invalidateAllUserTokens(user_id:string){
+export async function invalidateAllUserTokens(user_id: string) {
     return await prisma.token.updateMany({
         where: {
-            User:{
+            User: {
                 user_id: user_id
             }
         },

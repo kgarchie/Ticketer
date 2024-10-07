@@ -78,3 +78,33 @@ export async function getUserFromName(name: string) {
         }
     })
 }
+
+export async function getOnboardingUser({email, token}: { email: string, token: string }) {
+    const search = {
+        email: email,
+        token: token,
+        is_valid: true
+    }
+    const user = await prisma.token.findFirst({
+        where: search
+    }).catch(e => {
+        console.log(e)
+        return null
+    })
+
+    if (user){
+        await prisma.token.update({
+            where: search,
+            data: {
+                is_valid: false
+            }
+        }).catch(e => {
+            console.log(e)
+            return null
+        })
+
+        return email
+    }
+
+    return false
+}

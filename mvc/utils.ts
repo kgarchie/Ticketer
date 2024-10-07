@@ -1,7 +1,6 @@
 import { PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE } from "~/types";
 import nodemailer from "nodemailer";
 import { Client } from "~/server/utils/socket";
-import prisma from "~/db";
 import { getAdmins, getUserName } from "~/mvc/user/queries";
 import { createNotification } from "./notifications/functions";
 

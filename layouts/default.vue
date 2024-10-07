@@ -50,7 +50,7 @@
         <div class="is-flex notification-item" v-for="notification in notifications.slice(-5)" :key="notification.id">
           <div class="is-flex notification-body is-justify-content-space-between">
             <i class="fas fa-info-circle fa-2x"></i>
-            <strong>Notification: &nbsp;</strong><span style="text-align: left">{{ notification.message }}</span>
+            <strong style="margin-left: 5px; margin-right: 10px;">Notification:</strong><span style="text-align: left">{{ notification.message }}</span>
             <p class="ml-4">
               <button class="button is-primary is-small" @click="markNotificationAsRead(Number(notification?.id))">
                 Clear
@@ -76,12 +76,10 @@ const isActive = ref<boolean>(false)
 const user = useCookie<UserAuth>("auth").value
 const notifications = computed({
   get: () => useNotifications().value,
-  set: (value: Notification[]) => {
+  set: (value) => {
     useNotifications().value = value
   }
 })
-
-console.log(notifications.value)
 
 async function logout() {
   const { data: response } = await useFetch('/api/auth/logout')
@@ -96,10 +94,12 @@ async function logout() {
 }
 
 async function markNotificationAsRead(id: any) {
+  if(id === 0) return notifications.value = notifications.value.filter((notification) => notification.id.toString() != id.toString())
+
   const { data: response } = await useFetch(`/api/notifications/${id.toString()}/read`)
   if (response?.value?.statusCode == 200) {
     console.log('Notification marked as read')
-    notifications.value = notifications.value.filter((notification: Notification) => notification.id.toString() != id.toString())
+    notifications.value = notifications.value.filter((notification) => notification.id.toString() != id.toString())
   } else {
     console.log(`Notification could not be marked as read | ${response?.value?.statusCode} | ${response?.value?.body}`)
   }
