@@ -1,6 +1,6 @@
 import {H3Event} from "h3";
 import {getAllCompanies, getCompanyById} from "~/mvc/company/queries";
-import {HttpResponseTemplate} from "~/types";
+import type {HttpResponseTemplate} from "~/types";
 
 export async function getCompany(event:H3Event){
     const companyId = event.context.params?.id

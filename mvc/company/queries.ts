@@ -16,3 +16,11 @@ export async function getCompanyById(id: string | number) {
 export async function getAllCompanies() {
     return prisma.company.findMany()
 }
+
+export async function getCompanyByName(name: string) {
+    return await prisma.company.findUnique({
+        where: {
+            name: name
+        }
+    })
+}

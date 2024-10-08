@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { DomainSettings } from '~/types';
+
 const step = ref(0);
 const data = reactive({
   email: '',
@@ -7,7 +9,12 @@ const data = reactive({
     inviteOnly: false,
     requireApproval: false,
     allowDomain: false,
-  }
+    allowedDomains: [],
+    chat: {
+      enabled: false,
+      allowGuests: false,
+    }
+  } as DomainSettings
 })
 
 function addEmail(email: string) {
@@ -20,7 +27,7 @@ function addName(name: string) {
   data.name = name;
 }
 
-function addSettings(settings: { inviteOnly: boolean, requireApproval: boolean, allowDomain: boolean }) {
+function addSettings(settings: DomainSettings) {
   step.value++;
   data.settings = settings;
 }
@@ -29,8 +36,9 @@ function addSettings(settings: { inviteOnly: boolean, requireApproval: boolean, 
 <template>
 <Title>Sign Up</Title>
 <TransitionGroup name="slide" tag="div" class="onboarding">
-  <OnboardingOrgEmail v-if="step === 0" @data="addEmail"/>
-  <OnboardingOrgName v-if="step === 1"/>
+  <!-- <OnboardingOrgEmail v-if="step === 0" @data="addEmail"/>
+  <OnboardingOrgName @data="addName" :email="data.email" v-if="step === 1"/> -->
+  <OnboardingOrgInvite @data="addSettings"/>
 </TransitionGroup>
 </template>
 

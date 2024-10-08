@@ -383,3 +383,13 @@ export interface ValidationError {
     inclusive?: boolean;
     exact?: boolean;
 }
+
+export type DomainSettings = {
+    inviteOnly: boolean,
+    allowDomain: boolean,
+    allowedDomains: string[],
+    chat: {
+        enabled: boolean,
+        allowGuests: boolean
+    }
+}

@@ -11,10 +11,23 @@ datasource db {
 }
 
 model Company {
-  id      Int       @id @default(autoincrement())
-  name    String    @unique
-  User    User[]
-  Paybill Paybill[]
+  id           Int            @id @default(autoincrement())
+  name         String         @unique
+  settings     Json
+  User         User[]
+  Paybill      Paybill[]
+  AccessLevels AccessLevels[]
+}
+
+model AccessLevels {
+  id        Int     @id @default(autoincrement())
+  user      User    @relation(fields: [userId], references: [id])
+  access    Json
+  company   Company @relation(fields: [companyId], references: [id])
+  userId    Int
+  companyId Int
+
+  @@unique([userId, companyId])
 }
 
 model EphemeralUser {
@@ -30,38 +43,39 @@ model Token {
   is_valid   Boolean  @default(true)
   created_at DateTime @default(now())
   is_active  Boolean  @default(false)
-  User       User?     @relation(fields: [userId], references: [id])
+  User       User?    @relation(fields: [userId], references: [id])
   email      String?
   userId     Int?
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  name       String   @unique
-  companyId  Int?
-  company    Company? @relation(fields: [companyId], references: [id])
-  is_admin   Boolean  @default(false)
-  is_active  Boolean  @default(false)
-  user_id    String   @unique
-  password   String?
-  token      Token[]
-  created_at DateTime @default(now())
+  id           Int            @id @default(autoincrement())
+  email        String         @unique
+  name         String         @unique
+  companyId    Int?
+  company      Company?       @relation(fields: [companyId], references: [id])
+  is_admin     Boolean        @default(false)
+  is_active    Boolean        @default(false)
+  user_id      String         @unique
+  password     String?
+  token        Token[]
+  created_at   DateTime       @default(now())
+  AccessLevels AccessLevels[]
 }
 
 model Ticket {
-  id               Int       @id @default(autoincrement())
-  reference        String    @unique
-  info            String    @default("Default")
-  urgency          String    @default("Default")
-  created_at       DateTime  @default(now())
-  resolved_at      DateTime?
-  status           String    @default("Open")
-  creator          String?
-  deleted          Boolean   @default(false)
-  Attachment       Attachment[]
-  chats            Chat[]
-  comments         Comment[]
+  id          Int          @id @default(autoincrement())
+  reference   String       @unique
+  info        String       @default("Default")
+  urgency     String       @default("Default")
+  created_at  DateTime     @default(now())
+  resolved_at DateTime?
+  status      String       @default("Open")
+  creator     String?
+  deleted     Boolean      @default(false)
+  Attachment  Attachment[]
+  chats       Chat[]
+  comments    Comment[]
 }
 
 model Comment {

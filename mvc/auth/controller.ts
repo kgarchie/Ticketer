@@ -3,6 +3,7 @@ import { identify, login, register, reset, saveNewPassword, logout, getUserToken
 import { getUserFromName, getOnboardingUser } from "../user/queries";
 import { z } from 'zod';
 import { getRegisteredUser } from "./queries";
+import { getCompanyByName } from "../company/queries";
 
 const router = createRouter();
 
@@ -74,6 +75,38 @@ router.post("/onboard/email/verify", defineEventHandler(async event => {
         statusCode: 200,
         statusMessage: "OK",
         data: user
+    })
+}))
+
+
+router.post("/onboard/name/verify", defineEventHandler(async event => {
+    const schema = z.object({
+        name: z.string()
+    })
+
+    const {data, error} = await readValidatedBody(event, schema.safeParse);
+
+    if (!data || error) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: error.message,
+            data: error
+        })
+    }
+    
+    const company = await getCompanyByName(data.name);
+    if (company) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: "Company already exists"
+        })
+    }
+
+    return createResponse({
+        statusCode: 200,
+        statusMessage: "OK"
     })
 }))
 
