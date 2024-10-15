@@ -113,7 +113,7 @@ function handlePaste(event: ClipboardEvent) {
   <TransitionGroup name="fade" tag="div">
     <form @submit.prevent="submitEmail" class="is-flex is-flex-direction-column box onboarding" v-if="!showCodeInput">
       <div class="column">
-        <label>Work Email</label>
+        <label class="heading">Work Email</label>
         <input class="input is-primary mt-1" type="email" placeholder="username@organisation.domain" v-model="email"
           required autocomplete="off">
         <small class="has-text-grey">We'll send you a confirmation email to verify your account</small>

@@ -5,10 +5,11 @@ const step = ref(0);
 const data = reactive({
   email: '',
   name: '',
+  invites: new Set<{email: string}>(),
   settings: {
-    inviteOnly: false,
     requireApproval: false,
     allowDomain: false,
+    emailExtension: undefined,
     allowedDomains: [],
     chat: {
       enabled: false,
@@ -31,14 +32,19 @@ function addSettings(settings: DomainSettings) {
   step.value++;
   data.settings = settings;
 }
+
+function addInvites<T extends Set<{email: string}>>(invites: T) {
+  step.value++;
+  data.invites = invites;
+}
 </script>
 
 <template>
 <Title>Sign Up</Title>
 <TransitionGroup name="slide" tag="div" class="onboarding">
-  <!-- <OnboardingOrgEmail v-if="step === 0" @data="addEmail"/>
-  <OnboardingOrgName @data="addName" :email="data.email" v-if="step === 1"/> -->
-  <OnboardingOrgInvite @data="addSettings"/>
+  <OnboardingOrgEmail v-if="step === 0" @data="addEmail" />
+  <OnboardingOrgName @data="addName" :email="data.email" :settings="data.settings" v-if="step === 1"/>
+  <OnboardingOrgInvite @data="addInvites" :settings="data.settings" v-if="step === 2"/>
 </TransitionGroup>
 </template>
 

@@ -57,7 +57,7 @@ function formatErrors(data: any[]) {
         }
     })
     const join = formatValidationErrorArray(validationErrors).join("/n")
-    return `${join}/n${rest.join("/")}`
+    return `${join}/n${rest.join("/n")}`
 }
 
 function formatErrorMessage(message: any) {

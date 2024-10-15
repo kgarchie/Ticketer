@@ -385,8 +385,9 @@ export interface ValidationError {
 }
 
 export type DomainSettings = {
-    inviteOnly: boolean,
     allowDomain: boolean,
+    requireApproval: boolean,
+    emailExtension?: string,
     allowedDomains: string[],
     chat: {
         enabled: boolean,
