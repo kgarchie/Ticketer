@@ -130,6 +130,37 @@ router.post('/identity/register', defineEventHandler(async (event) => {
 }
 ));
 
+router.post("/onboard/signup", defineEventHandler(async event => {
+    const schema = z.object({
+        email: z.string().email(),
+        name: z.string(),
+        invites: z.array(z.object({
+            email: z.string().email()
+        })),
+        settings: z.object({
+            requireApproval: z.boolean(),
+            emailExtension: z.string().optional(),
+            allowDomain: z.boolean(),
+            allowedDomains: z.array(z.string()).optional(),
+            chat: z.object({
+                enabled: z.boolean()
+            }).optional()
+        })
+    })
+
+    const {data, error} = await readValidatedBody(event, schema.safeParse);
+    if (!data || error) {
+        return createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: error.message,
+            data: error
+        })
+    }
+
+    
+}))
+
 router.post('/identity/reset', defineEventHandler(async (event) => {
     return await reset(event)
 }

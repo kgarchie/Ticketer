@@ -8,7 +8,7 @@ export async function getAdmins() {
         select: {
             name: true,
             email: true,
-            company: true,
+            CompaniesMember: true,
             is_admin: true,
             user_id: true,
             password: false
@@ -29,7 +29,7 @@ export async function getUserOrEphemeralUser_Secure(user_id: string | undefined)
         select: {
             name: true,
             email: true,
-            company: true,
+            CompaniesMember: true,
             is_admin: true,
             user_id: true
         }

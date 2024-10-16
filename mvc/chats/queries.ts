@@ -12,12 +12,12 @@ export async function getUserChats(user_id: string) {
             ]
         },
         select: {
-            chat: true
+            Chat: true
         },
         distinct: ['chatId']
     })
 
-    const chatIds = chatsFromMessages.map(chat => chat.chat.id)
+    const chatIds = chatsFromMessages.map(chat => chat.Chat.id)
 
     let chatsWithMessages = await prisma.chat.findMany({
         where: {
@@ -28,7 +28,7 @@ export async function getUserChats(user_id: string) {
         include: {
             Message: {
                 include: {
-                    attachments: true
+                    Attachment: true
                 }
             }
         }
@@ -95,7 +95,7 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
     return await prisma.message.create(
         {
             data: {
-                chat: {
+                Chat: {
                     connect: {
                         chat_id: chat_id
                     }
@@ -118,7 +118,7 @@ export async function readUserMessage(user_id: string, chat_id: string) {
     await prisma.message.updateMany({
         where: {
             to_user_id: user_id.toString(),
-            chat: {
+            Chat: {
                 chat_id: chat_id
             },
             opened: false
@@ -177,7 +177,7 @@ export async function getMessageById(messageId: number) {
             id: messageId
         },
         include: {
-            attachments: true
+            Attachment: true
         }
     })
 }
@@ -187,7 +187,7 @@ export async function deleteMessage(messageId: number) {
     const message = await getMessageById(messageId)
     if (!message) return true
 
-    for (let attachment of message.attachments) {
+    for (let attachment of message.Attachment) {
         await prisma.attachment.delete({
             where: {
                 id: attachment.id
@@ -265,7 +265,7 @@ export async function getPurgeList() {
             }
         },
         include: {
-            attachment: true
+            Attachment: true
         }
     })
 }

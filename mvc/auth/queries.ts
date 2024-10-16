@@ -294,7 +294,7 @@ export async function getRegisteredUser(data: {
         },
         select: {
             password: false,
-            token: false,
+            Token: false,
             user_id: true,
         }
     }).catch((err) => {

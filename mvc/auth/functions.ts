@@ -156,7 +156,7 @@ export async function register(event: H3Event) {
     }
 
     const user = await createUser(email, password, false, user_id, name)
-    // We log in the user after registration
+    
     const token = await loginWithEmailPassword(email, password, null)
 
     if (!user || !token) {

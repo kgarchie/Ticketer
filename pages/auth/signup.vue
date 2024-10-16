@@ -12,8 +12,7 @@ const data = reactive({
     emailExtension: undefined,
     allowedDomains: [],
     chat: {
-      enabled: false,
-      allowGuests: false,
+      enabled: true
     }
   } as DomainSettings
 })
@@ -36,7 +35,30 @@ function addSettings(settings: DomainSettings) {
 function addInvites<T extends Set<{email: string}>>(invites: T) {
   step.value++;
   data.invites = invites;
+
+  signup();
 }
+
+function signup(){
+  loading.value = true;
+  $fetch("/api/auth/signup", {
+    method: "POST",
+    body: data,
+    onResponse({response}){
+      loading.value = false;
+      if(!response.ok) return
+    },
+    onResponseError({response}){
+      useNotifications().value.push({
+        id: 0,
+        message: unWrapFetchError(response),
+        opened: false,
+      })
+    }
+  })
+}
+
+const loading = ref(true);
 </script>
 
 <template>
@@ -45,6 +67,7 @@ function addInvites<T extends Set<{email: string}>>(invites: T) {
   <OnboardingOrgEmail v-if="step === 0" @data="addEmail" />
   <OnboardingOrgName @data="addName" :email="data.email" :settings="data.settings" v-if="step === 1"/>
   <OnboardingOrgInvite @data="addInvites" :settings="data.settings" v-if="step === 2"/>
+  <div :class="{'is-loading': loading}" v-if="step === 3"></div>
 </TransitionGroup>
 </template>
 

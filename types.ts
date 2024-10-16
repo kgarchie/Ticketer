@@ -390,7 +390,6 @@ export type DomainSettings = {
     emailExtension?: string,
     allowedDomains: string[],
     chat: {
-        enabled: boolean,
-        allowGuests: boolean
+        enabled: boolean
     }
 }

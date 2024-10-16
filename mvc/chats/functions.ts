@@ -1,6 +1,4 @@
-// @ts-ignore
 import {H3Event} from "h3";
-// @ts-ignore
 import {readFiles} from 'h3-formidable'
 import {type HttpResponseTemplate, type sdpCall, type SocketTemplate, TYPE} from "~/types";
 import {

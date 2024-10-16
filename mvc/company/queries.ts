@@ -24,3 +24,11 @@ export async function getCompanyByName(name: string) {
         }
     })
 }
+
+export async function getUserCompany(data: { name: string, user: string}){
+    
+}
+
+export async function getUserCompanies(data: { user: string}){
+    
+}

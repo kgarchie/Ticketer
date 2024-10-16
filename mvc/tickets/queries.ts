@@ -8,7 +8,7 @@ export async function deleteUserComment(commentId: string | number) {
     // check for child comments
     const childComments = await prisma.comment.findMany({
         where: {
-            parent: {
+            Parent: {
                 id: Number(commentId)
             }
         }
@@ -29,7 +29,7 @@ export async function deleteUserComment(commentId: string | number) {
             id: Number(commentId)
         },
         include: {
-            ticket: true
+            Ticket: true
         }
     })
 }
@@ -103,20 +103,20 @@ export async function createTicketComment(comment: string, commentor: string, ti
         newComment = await prisma.comment.create({
             data: {
                 comment: comment,
-                ticket: {
+                Ticket: {
                     connect: {
                         id: Number(ticketId)
                     }
                 },
                 commentor: commentor,
-                parent: {
+                Parent: {
                     connect: {
                         id: parentId || undefined
                     }
                 }
             },
             include: {
-                ticket: true
+                Ticket: true
             }
         }).then(
             (comment) => {
@@ -136,7 +136,7 @@ export async function createTicketComment(comment: string, commentor: string, ti
         newComment = await prisma.comment.create({
             data: {
                 comment: comment,
-                ticket: {
+                Ticket: {
                     connect: {
                         id: Number(ticketId)
                     }
@@ -144,7 +144,7 @@ export async function createTicketComment(comment: string, commentor: string, ti
                 commentor: commentor,
             },
             include: {
-                ticket: true
+                Ticket: true
             }
         }).catch(
             (error) => {
@@ -179,7 +179,7 @@ export async function getUserTicket(ticketId: string | number) {
             id: Number(ticketId)
         },
         include: {
-            comments: true,
+            Comments: true,
             Attachment: true
         },
     }).catch(

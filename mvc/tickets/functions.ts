@@ -88,12 +88,17 @@ export async function makeComment(event: H3Event) {
         return response
     }
 
-    // @ts-ignore
-    if (newComment.ticket.status !== STATUS.P || newComment.ticket.status !== STATUS.O) {
-        await pendTicket(event, true)
+    switch (newComment.Ticket.status){
+        case STATUS.P:
+        case STATUS.O:
+            await pendTicket(event, true)
+            break
+        case STATUS.R:
+            await resolveTicket(event)
+            break
     }
 
-    const notificationMessage = `${comment.split(':')[0]} mentioned you in a comment | Ticket ref: ${newComment.ticket.reference}`
+    const notificationMessage = `${comment.split(':')[0]} mentioned you in a comment | Ticket ref: ${newComment.Ticket.reference}`
 
     if (tagged_people.length > 0) {
         for (const person of tagged_people) {
