@@ -7,7 +7,7 @@
     </div>
     <div class="column is-flex is-flex-direction-row-reverse is-justify-content-flex-end py-1" @change="showValidationModal"
       style="font-size: 0.95rem;">
-      <label for="allowDomain" class="ml-2 is-small has-text-grey checkbox">Let anyone with your {{ emailExt }} email
+      <label for="allowDomain" class="ml-2 is-small has-text-grey checkbox">Let anyone with your <code>{{ emailExt }}</code> email
         extenstion join</label>
       <input type="checkbox" id="allowDomain" class="switch has-text-grey" v-model="settings.allowDomain" :checked="settings.allowDomain"
         style="margin-left: 1px; width: 12px;" />

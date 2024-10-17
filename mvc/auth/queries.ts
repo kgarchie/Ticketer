@@ -1,4 +1,4 @@
-import type { UserAuth } from "~/types";
+import type { DomainSettings, UserAuth } from "~/types";
 import { H3Event } from "h3";
 import { generateRandomToken, getAuthCookie, setAuthCookie } from "~/mvc/auth/helpers";
 import prisma from "~/db";
@@ -8,6 +8,7 @@ import { validateLoginBody } from "~/mvc/auth/validations";
 
 export async function loginUser(event: H3Event): Promise<UserAuth | null> {
     const authCookie = await getAuthCookie(event)
+    const {companyName} = await readBody(event)
     if (!authCookie) return null
 
     // Try to authenticate with the cookie token
@@ -19,7 +20,11 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
             }
         },
         include: {
-            User: true
+            User: {
+                include: {
+                    CompaniesOwned: true
+                }
+            }
         }
     });
 
@@ -28,7 +33,7 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
         return {
             user_id: authCookie.user_id,
             auth_key: token.token,
-            is_admin: token?.User?.is_admin
+            is_admin: token.User?.CompaniesOwned.some(c => c.name === companyName)
         } as UserAuth
     }
 
@@ -38,6 +43,7 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
     if (!loginBody) return null
 
     // Try to authenticate and get a new token
+    // @ts-ignore
     token = await loginWithEmailPassword(loginBody.email, loginBody.password, authCookie.auth_key)
 
     // If the token is created, return the new user auth object
@@ -45,7 +51,7 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
         const user = {
             user_id: token.User?.user_id,
             auth_key: token.token,
-            is_admin: token.User?.is_admin
+            is_admin: token.User?.CompaniesOwned.some(c => c.name === companyName)
         } as UserAuth
         setAuthCookie(event, user)
         return user
@@ -56,43 +62,29 @@ export async function loginUser(event: H3Event): Promise<UserAuth | null> {
 }
 
 
-export async function loginWithEmailPassword(email: string, password: string, previous_token_string: string | null) {
+export async function loginWithEmailPassword(email: string, password: string, _token: string | null) {
     return await prisma.user.findFirst({
         where: {
             email: email
         }
     }).then(
         async (data) => {
-            if (data && data.password == password) {
-                if (previous_token_string == "") {
-                    previous_token_string = null
-                }
-
-                let previous_token = await prisma.token.findFirst({
+            if (data && verifyPassword(password, data.password)) {
+                prisma.token.updateMany({
                     where: {
-                        token: previous_token_string || undefined,
+                        token: _token || undefined,
                         User: {
                             email: email
                         }
+                    },
+                    data: {
+                        is_valid: false
                     }
                 })
 
-                if (previous_token) {
-                    await prisma.token.update({
-                        where: {
-                            id: previous_token.id
-                        },
-                        data: {
-                            is_valid: false
-                        }
-                    })
-                }
-
-                let new_token = generateRandomToken()
-
                 return prisma.token.create({
                     data: {
-                        token: new_token,
+                        token: generateRandomToken(),
                         User: {
                             connect: {
                                 user_id: data.user_id || undefined
@@ -131,23 +123,40 @@ export async function createEphemeralUser() {
         )
 }
 
-export async function createUser(email: string, password: string, is_admin: boolean, user_id: string, name: string) {
+export async function createUser(data: { email: string, password: string, user_id: string, name: string, companyName: string }) {
+    data.password = hashPassword(data.password)
     return await prisma.user.create({
         data: {
-            email: email,
-            password: password,
-            is_admin: is_admin,
-            user_id: user_id,
-            name: name
+            email: data.email,
+            password: data.password,
+            user_id: data.user_id,
+            name: data.name,
+            CompaniesMember: {
+                connect: {
+                    name: data.companyName
+                }
+            }
+        }, include: {
+            CompaniesOwned: true
         }
-    }).then(
-        (data: any) => {
-            return data
-        }).catch(
-            (error: any) => {
-                console.log(error)
-                return null
-            })
+    })
+}
+
+export async function createSuperUser(data: { email: string, user_id: string, password: string, company: { name: string, settings: DomainSettings } }) {
+    data.password = hashPassword(data.password)
+    return await prisma.user.create({
+        data: {
+            email: data.email,
+            password: data.password,
+            user_id: data.user_id,
+            CompaniesOwned: {
+                create: {
+                    name: data.company.name,
+                    settings: data.company.settings
+                }
+            }
+        }
+    })
 }
 
 
@@ -277,20 +286,33 @@ export async function deleteEphemeralUser(user_id: string) {
     })
 }
 
-export async function getRegisteredUser(data: {
-    user_id?: string;
-    email?: string
-}) {
+export async function getRegisteredUser(data: { user_id: string } | { email: string } & { companyName: string }) {
     return await prisma.user.findFirst({
         where: {
-            OR: [
-                {
-                    user_id: data.user_id || undefined
+            AND: {
+                OR: [
+                    {
+                        // @ts-ignore
+                        user_id: data.user_id || undefined
+                    },
+                    {
+                        // @ts-ignore
+                        email: data.email || undefined
+                    }
+                ],
+                CompaniesOwned: {
+                    every: {
+                        // @ts-ignore
+                        name: data.companyName
+                    }
                 },
-                {
-                    email: data.email || undefined
+                CompaniesMember: {
+                    some: {
+                        // @ts-ignore
+                        name: data.companyName
+                    }
                 }
-            ]
+            }
         },
         select: {
             password: false,

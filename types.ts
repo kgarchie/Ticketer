@@ -388,8 +388,8 @@ export type DomainSettings = {
     allowDomain: boolean,
     requireApproval: boolean,
     emailExtension?: string,
-    allowedDomains: string[],
-    chat: {
+    allowedDomains?: string[],
+    chat?: {
         enabled: boolean
     }
 }

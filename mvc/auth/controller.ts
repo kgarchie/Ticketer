@@ -2,8 +2,9 @@ import { createRouter, defineEventHandler } from "h3";
 import { identify, login, register, reset, saveNewPassword, logout, getUserToken, sendOnboardingEmailValidation } from "~/mvc/auth/functions";
 import { getUserFromName, getOnboardingUser } from "../user/queries";
 import { z } from 'zod';
-import { getRegisteredUser } from "./queries";
-import { getCompanyByName } from "../company/queries";
+import { createSuperUser, getRegisteredUser, loginWithEmailPassword } from "./queries";
+import { createCompany, getCompanyByName, getUserCompany } from "../company/queries";
+import type { UserAuth } from "~/types";
 
 const router = createRouter();
 
@@ -15,7 +16,8 @@ router.post('/login', defineEventHandler(async (event) => {
 router.post("/onboard/email", defineEventHandler(async event => {
     const schema = z.object({
         email: z.string().email(),
-        origin: z.string().url()
+        origin: z.string().url(),
+        companyName: z.string()
     });
 
     const { data, error } = await readValidatedBody(event, schema.safeParse);
@@ -28,7 +30,7 @@ router.post("/onboard/email", defineEventHandler(async event => {
         })
     }
 
-    const user = await getRegisteredUser({ email: data.email });
+    const user = await getRegisteredUser({ email: data.email, companyName: data.companyName });
     if (user) {
         return createError({
             statusCode: 400,
@@ -37,7 +39,7 @@ router.post("/onboard/email", defineEventHandler(async event => {
         })
     }
 
-    sendOnboardingEmailValidation({email: data.email, origin: data.origin})
+    sendOnboardingEmailValidation({ email: data.email, origin: data.origin })
 
     return createResponse({
         statusCode: 200,
@@ -52,7 +54,7 @@ router.post("/onboard/email/verify", defineEventHandler(async event => {
         email: z.string().email()
     })
 
-    const {data, error} = await readValidatedBody(event, schema.safeParse);
+    const { data, error } = await readValidatedBody(event, schema.safeParse);
     if (!data || error) {
         return createError({
             statusCode: 400,
@@ -84,7 +86,7 @@ router.post("/onboard/name/verify", defineEventHandler(async event => {
         name: z.string()
     })
 
-    const {data, error} = await readValidatedBody(event, schema.safeParse);
+    const { data, error } = await readValidatedBody(event, schema.safeParse);
 
     if (!data || error) {
         return createError({
@@ -94,7 +96,7 @@ router.post("/onboard/name/verify", defineEventHandler(async event => {
             data: error
         })
     }
-    
+
     const company = await getCompanyByName(data.name);
     if (company) {
         return createError({
@@ -131,9 +133,12 @@ router.post('/identity/register', defineEventHandler(async (event) => {
 ));
 
 router.post("/onboard/signup", defineEventHandler(async event => {
+    // @ts-ignore
+    const { user_id, auth_key } = await getAuthCookie(event)
     const schema = z.object({
         email: z.string().email(),
         name: z.string(),
+        password: z.string().min(8),
         invites: z.array(z.object({
             email: z.string().email()
         })),
@@ -148,7 +153,7 @@ router.post("/onboard/signup", defineEventHandler(async event => {
         })
     })
 
-    const {data, error} = await readValidatedBody(event, schema.safeParse);
+    const { data, error } = await readValidatedBody(event, schema.safeParse);
     if (!data || error) {
         return createError({
             statusCode: 400,
@@ -158,7 +163,34 @@ router.post("/onboard/signup", defineEventHandler(async event => {
         })
     }
 
-    
+    const existing = await getUserCompany({ name: data.name, email: data.email })
+    if (existing) {
+        return createError({
+            statusCode: 400,
+            message: "This company already exists for the user",
+            data: error
+        })
+    }
+
+    const user = await createSuperUser({ email: data.email, user_id, company: { name: data.name, settings: data.settings }, password: data.password })
+    const token = await loginWithEmailPassword(user.email, data.password, auth_key)
+    if(!token){
+        return createError({
+            statusCode: 500,
+            message: "Internal Server Error",
+            data: error
+        })
+    }
+
+    return createResponse({
+        statusCode: 200,
+        statusMessage: "OK",
+        data: {
+            auth_key: token.token,
+            is_admin: true,
+            user_id: user.user_id
+        } satisfies UserAuth
+    })
 }))
 
 router.post('/identity/reset', defineEventHandler(async (event) => {

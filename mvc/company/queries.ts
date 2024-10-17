@@ -1,4 +1,5 @@
 import prisma from "~/db";
+import type { DomainSettings } from "~/types";
 
 export async function getCompanyById(id: string | number) {
     return prisma.company.findUnique({
@@ -25,10 +26,33 @@ export async function getCompanyByName(name: string) {
     })
 }
 
-export async function getUserCompany(data: { name: string, user: string}){
-    
+export async function getUserCompany(data: { name: string, email: string } | { name: string, userId: number }) {
+    return prisma.company.findFirst({
+        where: {
+            name: data.name,
+            Owner: {
+                OR: [
+                    {
+                        name: (data as any)?.name,
+                        email: (data as any)?.email
+                    }
+                ]
+            }
+        }
+    })
 }
 
-export async function getUserCompanies(data: { user: string}){
-    
+export async function getUserCompanies(userId: number) {
+    return prisma.company.findMany({
+        where: {
+            ownerId: userId
+        }
+    })
+}
+
+
+export async function createCompany(data: {settings: DomainSettings, name: string, ownerId: number}) {
+    return await prisma.company.create({
+        data: data
+    })
 }

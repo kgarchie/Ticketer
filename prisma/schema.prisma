@@ -53,12 +53,11 @@ model Token {
 model User {
   id              Int            @id @default(autoincrement())
   email           String         @unique
-  name            String         @unique
+  name            String?        @unique
   companyId       Int?
-  is_admin        Boolean        @default(false)
   is_active       Boolean        @default(false)
   user_id         String         @unique
-  password        String?
+  password        String
   created_at      DateTime       @default(now())
   Token           Token[]
   AccessLevels    AccessLevels[]
