@@ -41,12 +41,9 @@
 import type { DomainSettings } from '~/types';
 const text = ref('')
 const input = ref<HTMLDivElement | null>(null)
+const loading = ref(false)
 
 const props = defineProps({
-    settings: {
-        required: true,
-        type: Object as PropType<DomainSettings>
-    },
     emailExt: {
         default: () => 'gmail.com',
         type: String
@@ -94,7 +91,21 @@ function submitInvites() {
 }
 
 function copyInviteLink() {
-    console.log('copying invite link')
+    loading.value = true
+    $fetch("/api/auth/onboard/invite/link", {
+        headers: {
+            Authorization: `Bearer ${getAuthToken()}`
+        },
+        method: "POST",
+        async onResponse({ response }) {
+            loading.value = false
+            if (!response.ok) return
+
+            const { link } = response._data
+            navigator.clipboard.writeText(link)
+            navigator.share?.({ title: 'Invite Link', text: link, url: link })
+        }
+    })
 }
 
 function addEmail() {

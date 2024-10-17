@@ -45,6 +45,7 @@ model Token {
   is_valid   Boolean  @default(true)
   created_at DateTime @default(now())
   is_active  Boolean  @default(false)
+  detail    String?
   email      String?
   userId     Int?
   User       User?    @relation(fields: [userId], references: [id])

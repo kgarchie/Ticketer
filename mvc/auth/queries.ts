@@ -8,7 +8,7 @@ import { validateLoginBody } from "~/mvc/auth/validations";
 
 export async function loginUser(event: H3Event): Promise<UserAuth | null> {
     const authCookie = await getAuthCookie(event)
-    const {companyName} = await readBody(event)
+    const { companyName } = await readBody(event)
     if (!authCookie) return null
 
     // Try to authenticate with the cookie token
@@ -226,7 +226,7 @@ export async function getUserFromEmail(email: string) {
 }
 
 export async function updatePassword(user_id: string, password: string) {
-    await prisma.token.updateMany({
+    prisma.token.updateMany({
         where: {
             User: {
                 user_id: user_id
@@ -259,15 +259,26 @@ export async function updatePassword(user_id: string, password: string) {
     })
 }
 
-export async function saveNewToken(token: string, email: string, validUser: boolean = true) {
+export async function saveNewToken(token: string, email: string, options: {
+    validUser: boolean,
+    detail?: string
+} = { validUser: true }) {
     try {
-        const data = validUser
-            ? { token, User: { connect: { email } } }
-            : { token, email };
+        const data = options.validUser
+            ? { User: { connect: { email } } }
+            : { email };
 
         return await prisma.token.create({
-            data,
-            include: { User: true }
+            data: {
+                ...data,
+                token,
+                detail: options?.detail
+            },
+            include: { User: {
+                select: {
+                    CompaniesOwned: true
+                }
+            } }
         });
     } catch (err) {
         console.log(err);
@@ -286,33 +297,19 @@ export async function deleteEphemeralUser(user_id: string) {
     })
 }
 
-export async function getRegisteredUser(data: { user_id: string } | { email: string } & { companyName: string }) {
+export async function getRegisteredUser(data: { user_id: string } | { email: string }) {
     return await prisma.user.findFirst({
         where: {
-            AND: {
-                OR: [
-                    {
-                        // @ts-ignore
-                        user_id: data.user_id || undefined
-                    },
-                    {
-                        // @ts-ignore
-                        email: data.email || undefined
-                    }
-                ],
-                CompaniesOwned: {
-                    every: {
-                        // @ts-ignore
-                        name: data.companyName
-                    }
+            OR: [
+                {
+                    // @ts-ignore
+                    user_id: data.user_id || undefined
                 },
-                CompaniesMember: {
-                    some: {
-                        // @ts-ignore
-                        name: data.companyName
-                    }
+                {
+                    // @ts-ignore
+                    email: data.email || undefined
                 }
-            }
+            ]
         },
         select: {
             password: false,

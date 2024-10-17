@@ -1,5 +1,5 @@
 import { H3Event } from "h3";
-import { CONFIRMATION_TEMPLATE, type HttpResponseTemplate } from "~/types";
+import { CONFIRMATION_TEMPLATE, TokenDetail, type HttpResponseTemplate, INVITATON_TEMPLATE } from "~/types";
 import {
     createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
@@ -11,7 +11,7 @@ import {
 import { clearAuthCookie, generateRandomToken, getAuthCookie, setAuthCookie } from "~/mvc/auth/helpers";
 import { mailResetPasswordLink, sendMail } from "~/mvc/utils";
 import { string, z } from "zod";
-import company from "~/server/api/company";
+import { getCompanyMember } from "../company/queries";
 
 export async function login(event: H3Event): Promise<HttpResponseTemplate> {
     let response = {} as HttpResponseTemplate;
@@ -109,7 +109,7 @@ export async function getUserToken(event: H3Event) {
 
 export async function saveNewPassword(event: H3Event) {
     let response = {} as HttpResponseTemplate;
-    const { user_id, token, password, email } = await readBody(event)
+    const { user_id, token, password, email, companyName } = await readBody(event)
 
     // check if token is valid
     const tokenOrNull = await getToken(user_id, token)
@@ -129,7 +129,7 @@ export async function saveNewPassword(event: H3Event) {
         setAuthCookie(event, {
             user_id: updatedUserOrNull?.user_id,
             auth_key: newToken?.token,
-            is_admin: updatedUserOrNull?.is_admin
+            is_admin: newToken.User?.CompaniesOwned.some(c => c.name === companyName) || false
         })
 
         response.statusCode = 200;
@@ -159,7 +159,7 @@ export async function register(event: H3Event) {
 
     const { user_id } = await getAuthCookie(event)
 
-    const userExists = await getRegisteredUser({ email: data.email, companyName: data.companyName })
+    const userExists = await getCompanyMember({ email: data.email, companyName: data.companyName })
 
     if (userExists) {
         response.statusCode = 401;
@@ -223,7 +223,7 @@ export async function sendOnboardingEmailValidation({ email, origin }: { email: 
     const token = Math.floor(100000 + Math.random() * 900000).toString()
 
     const message = `Your verification code is ${token}`
-    await saveNewToken(token, email, false)
+    await saveNewToken(token, email, {validUser: false})
 
     const options = {
         to: email,
@@ -233,6 +233,26 @@ export async function sendOnboardingEmailValidation({ email, origin }: { email: 
     }
 
     console.log(message)
+
+    return await sendMail(options)
+}
+
+
+export async function sendOnboadingEmailInvite({ email, origin }: { email: string, origin: string }) {
+    const token = generateRandomToken()
+    const link = `${origin}/invite?token=${token}&email=${email}`
+
+    const message = `You have been invited to join ticketing our platform. Click the link below to join`
+    await saveNewToken(token, email, {validUser: false, detail: TokenDetail.invite})
+
+    const options = {
+        to: email,
+        subject: "Invitation to Join Ticketing",
+        text: message,
+        html: INVITATON_TEMPLATE(link)
+    }
+
+    console.log(link)
 
     return await sendMail(options)
 }

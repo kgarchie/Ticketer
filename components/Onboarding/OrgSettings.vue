@@ -9,7 +9,7 @@
             </div>
             <div>
                 <label for="chatEnabled">Chat Enabled</label>
-                <input type="checkbox" id="chatEnabled" v-model="settings.chat.enabled"/>
+                <input type="checkbox" id="chatEnabled" v-model="settings.chat?.enabled"/>
             </div>
             <button type="submit" @submit="submitSettings">Next</button>
         </form>
@@ -24,6 +24,12 @@ const props = defineProps({
         type: Object as PropType<DomainSettings>
     }
 })
+
+if(!props.settings.chat) {
+    props.settings.chat = {
+        enabled: true
+    }
+}
 
 const emit = defineEmits<{
     data: [DomainSettings]

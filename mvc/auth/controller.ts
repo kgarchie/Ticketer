@@ -3,7 +3,8 @@ import { identify, login, register, reset, saveNewPassword, logout, getUserToken
 import { getUserFromName, getOnboardingUser } from "../user/queries";
 import { z } from 'zod';
 import { createSuperUser, getRegisteredUser, loginWithEmailPassword } from "./queries";
-import { createCompany, getCompanyByName, getUserCompany } from "../company/queries";
+import {getCompanyByName, getUserCompany } from "../company/queries";
+import { getAuthCookie } from "./helpers";
 import type { UserAuth } from "~/types";
 
 const router = createRouter();
@@ -16,8 +17,7 @@ router.post('/login', defineEventHandler(async (event) => {
 router.post("/onboard/email", defineEventHandler(async event => {
     const schema = z.object({
         email: z.string().email(),
-        origin: z.string().url(),
-        companyName: z.string()
+        origin: z.string().url()
     });
 
     const { data, error } = await readValidatedBody(event, schema.safeParse);
@@ -30,7 +30,7 @@ router.post("/onboard/email", defineEventHandler(async event => {
         })
     }
 
-    const user = await getRegisteredUser({ email: data.email, companyName: data.companyName });
+    const user = await getRegisteredUser({ email: data.email });
     if (user) {
         return createError({
             statusCode: 400,
@@ -191,6 +191,19 @@ router.post("/onboard/signup", defineEventHandler(async event => {
             user_id: user.user_id
         } satisfies UserAuth
     })
+}))
+
+router.post("/onboard/invite/link", defineEventHandler(async event => {
+    const { user_id, auth_key } = await getAuthCookie(event)
+    if(!user_id || !auth_key){
+        return createError({
+            statusCode: 401,
+            statusMessage: "Unauthorized",
+            message: "User not authenticated"
+        })
+    }
+
+    const company = getUserCompany({ user_id })
 }))
 
 router.post('/identity/reset', defineEventHandler(async (event) => {
