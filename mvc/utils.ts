@@ -1,7 +1,6 @@
 import { PASSWORD_RESET_TEMPLATE, type SocketTemplate, TYPE } from "~/types";
 import nodemailer from "nodemailer";
 import { Client } from "~/server/utils/socket";
-import prisma from "~/db";
 import { getAdmins, getUserName } from "~/mvc/user/queries";
 import { createNotification } from "./notifications/functions";
 
@@ -50,11 +49,14 @@ export async function getConnectedClientSockets(user_id: string) {
     return global.channels?.get(user_id)?.clients || []
 }
 
-export async function notifyAllAndConnectedAdmins(response: SocketTemplate, sender_id: string) {
-    const admins = await getAdmins()
+export async function notifyAllAndConnectedAdmins(response: SocketTemplate, sender: {
+    companyName: string,
+    sender_id: string
+}) {
+    const admins = await getAdmins({companyName: sender.companyName})
 
     for (const admin of admins) {
-        createAndShuttleNotification(admin.user_id, `New ticket created by ${await getUserName(sender_id)}`, TYPE.NEW_TICKET)
+        createAndShuttleNotification(admin.user_id, `New ticket created by ${await getUserName(sender.sender_id)}`, TYPE.NEW_TICKET)
     }
 }
 

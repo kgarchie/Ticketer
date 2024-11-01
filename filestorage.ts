@@ -14,7 +14,7 @@ const customDriver = defineDriver((options?: { destination: string }) => {
     }
 
     return {
-        name: "custom-driver",
+        name: "file-storage",
         options,
         hasItem(key, _opts) {
             return existsSync(location(key))

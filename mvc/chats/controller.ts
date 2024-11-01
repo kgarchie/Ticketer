@@ -1,4 +1,3 @@
-// @ts-ignore
 import {createRouter, type H3Event} from "h3";
 import {getChats, readMessage, sendMessage, placeCall, acceptCall, rejectCall} from "~/mvc/chats/functions";
 

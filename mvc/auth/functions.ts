@@ -1,5 +1,5 @@
-import {H3Event} from "h3";
-import type {HttpResponseTemplate} from "~/types";
+import { H3Event } from "h3";
+import { CONFIRMATION_TEMPLATE, TokenDetail, type HttpResponseTemplate, INVITATON_TEMPLATE } from "~/types";
 import {
     createUser, deleteEphemeralUser, getRegisteredUser,
     getToken, getUserFromEmail,
@@ -8,9 +8,10 @@ import {
     saveNewToken,
     updatePassword
 } from "~/mvc/auth/queries";
-import {clearAuthCookie, generateRandomToken, getAuthCookie, setAuthCookie} from "~/mvc/auth/helpers";
-import {mailResetPasswordLink} from "~/mvc/utils";
-import auth from "~/server/api/auth";
+import { clearAuthCookie, generateRandomToken, getAuthCookie, setAuthCookie } from "~/mvc/auth/helpers";
+import { mailResetPasswordLink, sendMail } from "~/mvc/utils";
+import { string, z } from "zod";
+import { getCompanyMember } from "../company/queries";
 
 export async function login(event: H3Event): Promise<HttpResponseTemplate> {
     let response = {} as HttpResponseTemplate;
@@ -51,7 +52,7 @@ export async function identify(event: H3Event) {
 
     // TODO: Check Platform - If API will be used by mobile app, there will be no cookies
 
-    const {user_id, auth_key} = await getAuthCookie(event)
+    const { user_id, auth_key } = await getAuthCookie(event)
 
     let user = await getUserOrEphemeralUser(user_id)
     let token = await getToken(user_id, auth_key)
@@ -73,11 +74,11 @@ export async function identify(event: H3Event) {
 }
 
 
-export async function getUserToken(event:H3Event){
+export async function getUserToken(event: H3Event) {
     let response = {} as HttpResponseTemplate;
 
-    const {user_id, auth_key} = await getAuthCookie(event)
-    if(!auth_key || auth_key.trim() === ""){
+    const { user_id, auth_key } = await getAuthCookie(event)
+    if (!auth_key || auth_key.trim() === "") {
         response.statusCode = 200;
         response.body = "Not Logged In";
         return response;
@@ -94,7 +95,7 @@ export async function getUserToken(event:H3Event){
         response.statusCode = 401;
         response.body = "Unauthorized"
         return response;
-    } else if(!token){
+    } else if (!token) {
         response.statusCode = 404;
         response.body = "Forbidden"
         return response;
@@ -108,7 +109,7 @@ export async function getUserToken(event:H3Event){
 
 export async function saveNewPassword(event: H3Event) {
     let response = {} as HttpResponseTemplate;
-    const {user_id, token, password, email} = await readBody(event)
+    const { user_id, token, password, email, companyName } = await readBody(event)
 
     // check if token is valid
     const tokenOrNull = await getToken(user_id, token)
@@ -128,7 +129,7 @@ export async function saveNewPassword(event: H3Event) {
         setAuthCookie(event, {
             user_id: updatedUserOrNull?.user_id,
             auth_key: newToken?.token,
-            is_admin: updatedUserOrNull?.is_admin
+            is_admin: newToken.User?.CompaniesOwned.some(c => c.name === companyName) || false
         })
 
         response.statusCode = 200;
@@ -143,11 +144,22 @@ export async function saveNewPassword(event: H3Event) {
 
 export async function register(event: H3Event) {
     let response = {} as HttpResponseTemplate;
-    const {email, password, name} = await readBody(event)
+    const schema = z.object({
+        email: z.string().email(),
+        password: z.string(),
+        name: z.string(),
+        companyName: z.string()
+    })
+    const { data, error } = await readValidatedBody(event, schema.safeParse)
+    if (!data || error) {
+        response.statusCode = 400;
+        response.body = error?.message || "Bad Request"
+        return response;
+    }
 
-    const {user_id} = await getAuthCookie(event)
+    const { user_id } = await getAuthCookie(event)
 
-    const userExists = await getRegisteredUser(user_id, email)
+    const userExists = await getCompanyMember({ email: data.email, companyName: data.companyName })
 
     if (userExists) {
         response.statusCode = 401;
@@ -155,9 +167,9 @@ export async function register(event: H3Event) {
         return response;
     }
 
-    const user = await createUser(email, password, false, user_id, name)
-    // We log in the user after registration
-    const token = await loginWithEmailPassword(email, password, null)
+    const user = await createUser({ ...data, user_id: user_id })
+
+    const token = await loginWithEmailPassword(data.email, data.password, null)
 
     if (!user || !token) {
         response.statusCode = 500;
@@ -168,10 +180,10 @@ export async function register(event: H3Event) {
     setAuthCookie(event, {
         user_id: user?.user_id,
         auth_key: token?.token,
-        is_admin: user?.is_admin
+        is_admin: user?.CompaniesOwned.some(c => c.name === data.companyName)
     })
 
-    await deleteEphemeralUser(user_id)
+    deleteEphemeralUser(user_id)
 
     response.statusCode = 200;
     response.body = user;
@@ -180,7 +192,7 @@ export async function register(event: H3Event) {
 
 export async function reset(event: H3Event) {
     const response = {} as HttpResponseTemplate;
-    const {email, origin} = await readBody(event)
+    const { email, origin } = await readBody(event)
 
     const user = await getUserFromEmail(email)
     if (!user) {
@@ -204,4 +216,43 @@ export async function reset(event: H3Event) {
     response.statusCode = 200;
     response.body = "Reset Link Sent"
     return response;
+}
+
+
+export async function sendOnboardingEmailValidation({ email, origin }: { email: string, origin: string }) {
+    const token = Math.floor(100000 + Math.random() * 900000).toString()
+
+    const message = `Your verification code is ${token}`
+    await saveNewToken(token, email, {validUser: false})
+
+    const options = {
+        to: email,
+        subject: "Email Code Verification",
+        text: message,
+        html: CONFIRMATION_TEMPLATE(token)
+    }
+
+    console.log(message)
+
+    return await sendMail(options)
+}
+
+
+export async function sendOnboadingEmailInvite({ email, origin }: { email: string, origin: string }) {
+    const token = generateRandomToken()
+    const link = `${origin}/invite?token=${token}&email=${email}`
+
+    const message = `You have been invited to join ticketing our platform. Click the link below to join`
+    await saveNewToken(token, email, {validUser: false, detail: TokenDetail.invite})
+
+    const options = {
+        to: email,
+        subject: "Invitation to Join Ticketing",
+        text: message,
+        html: INVITATON_TEMPLATE(link)
+    }
+
+    console.log(link)
+
+    return await sendMail(options)
 }

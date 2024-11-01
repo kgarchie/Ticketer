@@ -41,7 +41,7 @@ export function onDeleteComment(comment: Comment & { ticket: Ticket }, affect: R
     }
 }
 
-export function onNotificationCallback(notification: Notification, notificationsState: Ref<Notification[] | null>) {
+export function onNotificationCallback(notification: Notification, notificationsState: Ref<Notification[] | any>) {
     if (notificationsState && !notificationsState.value?.find((n: Notification) => n.id === notification.id)) {
         notificationsState.value?.unshift(notification)
     }

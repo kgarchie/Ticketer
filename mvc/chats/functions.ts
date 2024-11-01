@@ -1,6 +1,4 @@
-// @ts-ignore
 import {H3Event} from "h3";
-// @ts-ignore
 import {readFiles} from 'h3-formidable'
 import {type HttpResponseTemplate, type sdpCall, type SocketTemplate, TYPE} from "~/types";
 import {
@@ -40,6 +38,7 @@ export async function sendMessage(event: H3Event) {
     const from_user_id = fields?.from_user_id.at(-1)
     const to_user_id = fields?.to_user_id.at(-1)
     const message = fields?.message.at(-1)
+    const companyName = fields?.companyName.at(-1)
 
     let response = {} as HttpResponseTemplate
 
@@ -49,7 +48,7 @@ export async function sendMessage(event: H3Event) {
         return response
     }
 
-    const chat = await getOrCreateChat(from_user_id, to_user_id)
+    const chat = await getOrCreateChat(from_user_id, to_user_id, {name: companyName})
     if (!chat) {
         response.statusCode = 500
         response.body = "Error creating chat"

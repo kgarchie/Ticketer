@@ -11,9 +11,9 @@
                 <div class="column">
                     <label for="name">Username</label>
                     <input class="input is-primary" type="text" placeholder="(Optional)" autocomplete="name" id="name"
-                        :class="nameConfict ? 'is-danger' : ''" v-model="data.name" required  @input="checkUser"
-                        ref="name">
-                    <small class="has-text-danger" v-if="nameConfict">Username is already taken</small>
+                           :class="nameConflict ? 'is-danger' : ''" v-model="data.name" required @input="checkUser"
+                           ref="name">
+                    <small class="has-text-danger" v-if="nameConflict">Username is already taken</small>
                 </div>
                 <div class="column">
                     <label for="Name">Password</label>
@@ -45,7 +45,7 @@
 <script setup lang="ts">
 import { type RegisterCredentials } from "~/types";
 import { debounce } from "perfect-debounce";
-const nameConfict = ref(false);
+const nameConflict = ref(false);
 const data = reactive({
     email: '',
     name: null,
@@ -95,9 +95,9 @@ const debouncedFetch = debounce(async () => {
         await $fetch(`/api/auth/find/${data.name}`, {
             onResponse({response}) {
                 if(response._data.statusCode == 200){
-                    nameConfict.value = true;
+                    nameConflict.value = true;
                 } else {
-                    nameConfict.value = false;
+                    nameConflict.value = false;
                 }
             },
             onRequestError({error}) {
@@ -110,7 +110,7 @@ const debouncedFetch = debounce(async () => {
     }, 500)
 
 async function checkUser() {
-    nameConfict.value = false;
+    nameConflict.value = false;
     await debouncedFetch()
 }
 </script>

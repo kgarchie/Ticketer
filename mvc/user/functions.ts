@@ -20,11 +20,11 @@ export async function getUser(event:H3Event){
     return response
 }
 
-export async function getAdminUsers(){
+export async function getAdminUsers(companyName: string){
     const response = {} as HttpResponseTemplate;
 
     response.statusCode = 200
-    response.body = await getAdmins()
+    response.body = await getAdmins({companyName})
 
     return response
 }

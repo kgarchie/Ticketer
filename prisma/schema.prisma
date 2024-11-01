@@ -11,10 +11,28 @@ datasource db {
 }
 
 model Company {
-  id      Int       @id @default(autoincrement())
-  name    String    @unique
-  User    User[]
-  Paybill Paybill[]
+  id            Int             @id @default(autoincrement())
+  name          String          @unique
+  settings      Json
+  ownerId       Int
+  Owner         User            @relation(name: "CompanyOwner", fields: [ownerId], references: [id])
+  Members       User[]
+  Paybill       Paybill[]
+  AccessLevels  AccessLevels[]
+  Ticket        Ticket[]
+  Chat          Chat[]
+  EphemeralUser EphemeralUser[]
+}
+
+model AccessLevels {
+  id        Int     @id @default(autoincrement())
+  access    Json
+  userId    Int
+  companyId Int
+  User      User    @relation(fields: [userId], references: [id])
+  Company   Company @relation(fields: [companyId], references: [id])
+
+  @@unique([userId, companyId])
 }
 
 model EphemeralUser {
@@ -22,6 +40,8 @@ model EphemeralUser {
   user_id    String   @unique
   created_at DateTime @default(now())
   is_active  Boolean  @default(false)
+  companyId  Int
+  Company    Company  @relation(fields: [companyId], references: [id])
 }
 
 model Token {
@@ -30,57 +50,64 @@ model Token {
   is_valid   Boolean  @default(true)
   created_at DateTime @default(now())
   is_active  Boolean  @default(false)
-  User       User     @relation(fields: [userId], references: [id])
-  userId     Int
+  detail     String?
+  email      String?
+  userId     Int?
+  User       User?    @relation(fields: [userId], references: [id])
 }
 
 model User {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  name       String   @unique
-  companyId  Int?
-  company    Company? @relation(fields: [companyId], references: [id])
-  is_admin   Boolean  @default(false)
-  is_active  Boolean  @default(false)
-  user_id    String   @unique
-  password   String?
-  token      Token[]
-  created_at DateTime @default(now())
+  id              Int            @id @default(autoincrement())
+  email           String         @unique
+  name            String?        @unique
+  companyId       Int?
+  is_active       Boolean        @default(false)
+  user_id         String         @unique
+  password        String
+  created_at      DateTime       @default(now())
+  Token           Token[]
+  AccessLevels    AccessLevels[]
+  CompaniesOwned  Company[]      @relation("CompanyOwner")
+  CompaniesMember Company[]
 }
 
 model Ticket {
-  id               Int       @id @default(autoincrement())
-  reference        String    @unique
-  info            String    @default("Default")
-  urgency          String    @default("Default")
-  created_at       DateTime  @default(now())
-  resolved_at      DateTime?
-  status           String    @default("Open")
-  creator          String?
-  deleted          Boolean   @default(false)
-  Attachment       Attachment[]
-  chats            Chat[]
-  comments         Comment[]
+  id          Int          @id @default(autoincrement())
+  reference   String       @unique
+  info        String       @default("Default")
+  urgency     String       @default("Default")
+  created_at  DateTime     @default(now())
+  resolved_at DateTime?
+  status      String       @default("Open")
+  creator     String?
+  deleted     Boolean      @default(false)
+  companyId   Int
+  Company     Company      @relation(fields: [companyId], references: [id])
+  Attachment  Attachment[]
+  Chats       Chat[]
+  Comments    Comment[]
 }
 
 model Comment {
   id            Int       @id @default(autoincrement())
   comment       String
   ticketId      Int
-  ticket        Ticket    @relation(fields: [ticketId], references: [id])
   parentId      Int?
-  parent        Comment?  @relation("ChildComments", fields: [parentId], references: [id])
   createdAt     DateTime  @default(now())
   commentor     String
+  Parent        Comment?  @relation("ChildComments", fields: [parentId], references: [id])
+  Ticket        Ticket    @relation(fields: [ticketId], references: [id])
   ChildComments Comment[] @relation("ChildComments")
 }
 
 model Chat {
   id         Int       @id @default(autoincrement())
   ticketId   Int?
-  ticket     Ticket?   @relation(fields: [ticketId], references: [id])
   created_at DateTime  @default(now())
   chat_id    String    @unique
+  Ticket     Ticket?   @relation(fields: [ticketId], references: [id])
+  companyId  Int
+  Company    Company   @relation(fields: [companyId], references: [id])
   Message    Message[]
   Call       Call[]
 }
@@ -91,23 +118,23 @@ model Message {
   created_at   DateTime     @default(now())
   opened       Boolean      @default(false)
   chatId       Int
-  chat         Chat         @relation(fields: [chatId], references: [id])
   from_user_id String?
   to_user_id   String?
   is_call      Boolean      @default(false)
-  call         Call?        @relation(fields: [callId], references: [id])
-  attachments  Attachment[]
   callId       Int?
+  Call         Call?        @relation(fields: [callId], references: [id])
+  Attachment   Attachment[]
+  Chat         Chat         @relation(fields: [chatId], references: [id])
 }
 
 model Call {
   id         Int       @id @default(autoincrement())
   created_at DateTime  @default(now())
   chatId     Int
-  chat       Chat      @relation(fields: [chatId], references: [id])
   from       String
   to         String
   duration   Float
+  Chat       Chat      @relation(fields: [chatId], references: [id])
   Message    Message[]
 }
 
@@ -118,9 +145,9 @@ model Attachment {
   created_at DateTime    @default(now())
   size       Float
   deleted    Boolean     @default(false)
-  Message    Message?    @relation(fields: [messageId], references: [id])
   messageId  Int?
   to_purge   Boolean     @default(false)
+  Message    Message?    @relation(fields: [messageId], references: [id])
   FilePurge  FilePurge[]
   Ticket     Ticket?     @relation(fields: [id], references: [id])
 }
@@ -129,14 +156,14 @@ model FilePurge {
   id           Int        @id @default(autoincrement())
   attachmentId Int        @unique
   deadline     DateTime
-  attachment   Attachment @relation(fields: [attachmentId], references: [id])
+  Attachment   Attachment @relation(fields: [attachmentId], references: [id])
 }
 
 model Paybill {
   id        Int     @id @default(autoincrement())
   number    Int
   companyId Int
-  company   Company @relation(fields: [companyId], references: [id])
+  Company   Company @relation(fields: [companyId], references: [id])
 }
 
 model Notification {

@@ -62,7 +62,7 @@ async function schedulePurge(totalSize: number = 0.0): Promise<null | void> {
 async function startPurge() {
     const discard = await getPurgeList()
     for (const attachment of discard) {
-        await fileStorage.removeItem(attachment.attachment.url)
+        await fileStorage.removeItem(attachment.Attachment.url)
         await deletePurgeItem(attachment.id)
     }
 }

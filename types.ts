@@ -1,5 +1,5 @@
-import {WebSocket} from "ws";
-import {type Message} from "@prisma/client";
+import { WebSocket } from "ws";
+import { type Message } from "@prisma/client";
 
 /*
     *  Define custom types here
@@ -36,7 +36,7 @@ export type TaggedPerson = {
 export type SocketTemplate<T = any> = {
     statusCode: number;
     type: TYPE;
-    body?: T 
+    body?: T
 }
 
 export type HttpResponseTemplate = {
@@ -181,24 +181,24 @@ export enum Initiator {
     *  Define custom const here
  */
 
-export const videoConstraints:MediaStreamConstraints = {
+export const videoConstraints: MediaStreamConstraints = {
     audio: {
-        echoCancellation: {exact: true}
+        echoCancellation: { exact: true }
     },
     video: {
         width: 1280, height: 720
     }
 };
 
-export const audioConstraints:MediaStreamConstraints = {
+export const audioConstraints: MediaStreamConstraints = {
     audio: {
-        echoCancellation: {exact: true}
+        echoCancellation: { exact: true }
     }
 };
 
 export const websocketPort = 9000;
 
-export function PASSWORD_RESET_TEMPLATE(link:any) {
+export function PASSWORD_RESET_TEMPLATE(link: any) {
     return `<!DOCTYPE html>
 <html lang="en">
 
@@ -284,4 +284,208 @@ export function PASSWORD_RESET_TEMPLATE(link:any) {
 
 </html>
 `
+}
+
+
+export function CONFIRMATION_TEMPLATE(code: string | number) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Email Confirmation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .email-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #1a1a1a;
+        }
+
+        .email-container {
+            width: 400px;
+            height: 300px;
+            background: #fff;
+            border-radius: 5px;
+        }
+
+        .email-header {
+            background: linear-gradient(to bottom right, #9b08ff, #1ae7a3);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-footer {
+            background: linear-gradient(to bottom right, #1ae7a3, #9b08ff);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        p {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+            font-weight: 300;
+            line-height: 22px;
+            margin: 0;
+        }
+
+        a {
+            color: #9b08ff;
+            text-decoration: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="email-content">
+        <div class="email-container">
+            <div class="email-header">
+                <h1>Code Confirmation</h1>
+            </div>
+            <div class="email-body">
+                <p>Hi there, your email confirmation code is <strong>${code}</strong>.</p>
+            </div>
+            <div class="email-footer">
+                <p>If you didn't request this, safely ignore this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+`
+}
+
+export function INVITATON_TEMPLATE(link: string | number) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Email Confirmation</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        .email-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #1a1a1a;
+        }
+
+        .email-container {
+            width: 400px;
+            height: 300px;
+            background: #fff;
+            border-radius: 5px;
+        }
+
+        .email-header {
+            background: linear-gradient(to bottom right, #9b08ff, #1ae7a3);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .email-body {
+            padding: 20px;
+        }
+
+        .email-footer {
+            background: linear-gradient(to bottom right, #1ae7a3, #9b08ff);
+            color: #fff;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        p {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+            font-weight: 300;
+            line-height: 22px;
+            margin: 0;
+        }
+
+        a {
+            color: #9b08ff;
+            text-decoration: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="email-content">
+        <div class="email-container">
+            <div class="email-header">
+                <h1>Invitation</h1>
+            </div>
+            <div class="email-body">
+                <p>Hi there, you've been invited to join our ticker platform. Your invitation link is <strong>${link}</strong>.</p>
+                <button><a href="${link}">Join</a></button>
+            </div>
+            <div class="email-footer">
+                <p>If you didn't request this, safely ignore this email.</p>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
+`
+}
+
+export interface ValidationError {
+    validation?: string;
+    code: string;
+    message: string;
+    path: string[];
+    minimum?: number;
+    type?: string;
+    inclusive?: boolean;
+    exact?: boolean;
+}
+
+export type DomainSettings = {
+    allowDomain: boolean,
+    requireApproval: boolean,
+    emailExtension?: string,
+    allowedDomains?: string[],
+    chat?: {
+        enabled: boolean
+    }
+}
+
+export enum TokenDetail {
+    invite = "invite",
+    reset = "reset",
+    email = "email",
+    auth = "auth"
 }

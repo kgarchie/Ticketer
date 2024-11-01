@@ -10,7 +10,8 @@ export const useUser = () => useState<UserAuth>('user', () => {
     }
 });
 
+type Notifications = { id: number | 0, message: string, opened: boolean}[]
 export const useCall = () => useState<any>('call', () => null);
 export const useGlobalSocket = () => useState<any>('globalSocket', () => null);
-export const useNotifications = () => useState<Notification[]>('notifications', () => []);
+export const useNotifications = () => useState<Notifications>('notifications', () => []);
 export const useSocket = () => useState<RealTime | undefined>('socket', () => undefined);

@@ -1,13 +1,16 @@
 import {H3Event} from "h3";
-import {UserAuth} from "~/types";
+import type {UserAuth} from "~/types";
 import {createEphemeralUser} from "~/mvc/auth/queries";
 
 export async function getAuthCookie(event: H3Event) {
+    // @ts-ignore
     const user_auth_string = getCookie(event, "auth") || "{}"
+    // @ts-ignore
     const user_auth = JSON.parse(user_auth_string) as UserAuth
 
     if (!user_auth.user_id) {
-        const user = await createEphemeralUser()
+        // TODO: Define starndard way to handle company users
+        const user = await createEphemeralUser("Anonymous")
         setAuthCookie(event, {
             user_id: user.user_id,
             auth_key: null,
@@ -24,6 +27,7 @@ export async function getAuthCookie(event: H3Event) {
     return user_auth
 }
 export function setAuthCookie(event:H3Event, userAuth: UserAuth) {
+    // @ts-ignore
     setCookie(event, "auth", JSON.stringify({
         user_id: userAuth.user_id,
         auth_key: userAuth.auth_key,

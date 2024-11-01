@@ -4,20 +4,24 @@ import {obtainChat_id, writeFileToStorage} from "~/mvc/chats/helpers";
 import path from "path";
 
 export async function getUserChats(user_id: string) {
+    user_id = user_id.toString()
+    const user = await getUserOrEphemeralUser_Secure(user_id).catch(e => e as Error)
+    if (!user || user instanceof Error) return []
+
     const chatsFromMessages = await prisma.message.findMany({
         where: {
             OR: [
-                {from_user_id: user_id.toString()},
-                {to_user_id: user_id.toString()}
+                {from_user_id: user_id},
+                {to_user_id: user_id}
             ]
         },
         select: {
-            chat: true
+            Chat: true
         },
         distinct: ['chatId']
     })
 
-    const chatIds = chatsFromMessages.map(chat => chat.chat.id)
+    const chatIds = chatsFromMessages.map(chat => chat.Chat.id)
 
     let chatsWithMessages = await prisma.chat.findMany({
         where: {
@@ -28,7 +32,7 @@ export async function getUserChats(user_id: string) {
         include: {
             Message: {
                 include: {
-                    attachments: true
+                    Attachment: true
                 }
             }
         }
@@ -47,8 +51,8 @@ export async function getUserChats(user_id: string) {
             }
         })
     )
-
-    let admins = await getAdmins()
+    
+    let admins = await getAdmins({companyId: user!.companyId!})
     let chat_length = mapped_chats.length
 
     // if an admin is not in the chats, create a chat with them
@@ -63,6 +67,7 @@ export async function getUserChats(user_id: string) {
                 created_at: new Date(),
                 ticketId: null,
                 user_id: user_id.toString(),
+                companyId: user.companyId!,
                 WithUser: admin
             })
         }
@@ -71,10 +76,13 @@ export async function getUserChats(user_id: string) {
     return mapped_chats
 }
 
-export async function getOrCreateChat(from_user_id: string, to_user_id: string) {
+export async function getOrCreateChat(from_user_id: string, to_user_id: string, company: {id: number} | {name: string}) {
     return await prisma.chat.upsert({
         create: {
             chat_id: obtainChat_id(from_user_id, to_user_id).toString(),
+            Company: {
+                connect: company
+            }
         },
         update: {},
         where: {
@@ -95,7 +103,7 @@ export async function createMessage(chat_id: string, from_user_id: string, to_us
     return await prisma.message.create(
         {
             data: {
-                chat: {
+                Chat: {
                     connect: {
                         chat_id: chat_id
                     }
@@ -118,7 +126,7 @@ export async function readUserMessage(user_id: string, chat_id: string) {
     await prisma.message.updateMany({
         where: {
             to_user_id: user_id.toString(),
-            chat: {
+            Chat: {
                 chat_id: chat_id
             },
             opened: false
@@ -177,7 +185,7 @@ export async function getMessageById(messageId: number) {
             id: messageId
         },
         include: {
-            attachments: true
+            Attachment: true
         }
     })
 }
@@ -187,7 +195,7 @@ export async function deleteMessage(messageId: number) {
     const message = await getMessageById(messageId)
     if (!message) return true
 
-    for (let attachment of message.attachments) {
+    for (let attachment of message.Attachment) {
         await prisma.attachment.delete({
             where: {
                 id: attachment.id
@@ -265,7 +273,7 @@ export async function getPurgeList() {
             }
         },
         include: {
-            attachment: true
+            Attachment: true
         }
     })
 }
